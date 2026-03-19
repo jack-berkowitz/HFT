@@ -1,6 +1,6 @@
 psSimBaseName                      	build/softmax.simv
 psLogFileName                      	NULL
-psDaiDir                           	/home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir
+psDaiDir                           	/home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir
 destPath                           	build/csrc/
 fSharedMasterElab                  	0
 fHsimPCSharedLibSpecified          	0

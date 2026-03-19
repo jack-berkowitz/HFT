@@ -1,21 +1,20 @@
 #!/bin/sh -f
 
-cd "/home/jackberk/eecs570fp/softmax"
+cd "/home/jackberk/HFT/HFT_Modules"
 export BASH_ENV="/usr/share/lmod/lmod/init/bash"
 export BROWSER="/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/bin/helpers/browser.sh"
-export BUNDLED_DEBUGPY_PATH="/home/jackberk/.vscode-server/extensions/ms-python.debugpy-2025.18.0/bundled/libs/debugpy"
 export CLOCK_PERIOD="15.0"
 export COLORTERM="truecolor"
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/114455181/bus"
 export DEBUGINFOD_IMA_CERT_PATH="/etc/keys/ima:"
 export DISABLE_LIBRARY_MAP_CHECK="1"
-export FLEXLM_BORROWFILE="/home/jackberk/.caen-vnc-mi14.engin.umich.edu-borrow.txt"
+export FLEXLM_BORROWFILE="/home/jackberk/.caen-vnc-mi13.engin.umich.edu-borrow.txt"
 export FPATH="/usr/share/lmod/lmod/init/ksh_funcs"
 export GIT_ASKPASS="/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/extensions/git/dist/askpass.sh"
 export HISTCONTROL="ignoredups"
 export HISTSIZE="1000"
 export HOME="/home/jackberk"
-export HOSTNAME="caen-vnc-mi14.engin.umich.edu"
+export HOSTNAME="caen-vnc-mi13.engin.umich.edu"
 export KRB5CCNAME="KEYRING:persistent:114455181"
 export LANG="C.UTF-8"
 export LD_LIBRARY_PATH="/usr/caen/vcs-2023.12-SP2-1/lib:/usr/caen/vcs-2023.12-SP2-1/linux64/lib:"
@@ -34,8 +33,8 @@ export LOGNAME="jackberk"
 export MAIL="/var/spool/mail/jackberk"
 export MAKEFLAGS=""
 export MAKELEVEL="1"
-export MAKE_TERMERR="/dev/pts/12"
-export MAKE_TERMOUT="/dev/pts/12"
+export MAKE_TERMERR="/dev/pts/6"
+export MAKE_TERMOUT="/dev/pts/6"
 export MANPATH="/usr/share/lmod/lmod/share/man:"
 export MFLAGS=""
 export MODULEPATH="/etc/scl/modulefiles:/etc/modulefiles:/usr/share/modulefiles:/usr/caen/misc/modules:/usr/caen/misc/class/modules:/usr/share/modulefiles/Linux:/usr/share/modulefiles/Core:/usr/share/lmod/lmod/modulefiles/Core"
@@ -45,13 +44,10 @@ export MOTD_SHOWN="pam"
 export NOVAS_ENABLE_NOBINDDOC_CHECK=""
 export NOVAS_LC_ALL="C"
 export NOVAS_NO_DUMP_LOGDIR="1"
-export OLDPWD
+export OLDPWD="/home/jackberk/HFT"
 export OVA_UUM="0"
-export PATH=".:/usr/caen/vcs-2023.12-SP2-1/bin:/usr/caen/verdi-2023.12-SP2-1/bin:/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/um/bin:/usr/caen/bin:/home/jackberk/.vscode-server/extensions/ms-python.debugpy-2025.18.0/bundled/scripts/noConfigScripts:/home/jackberk/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand"
-export PWD="/home/jackberk/eecs570fp/softmax"
-export PYDEVD_DISABLE_FILE_VALIDATION="1"
-export PYTHONSTARTUP="/home/jackberk/.vscode-server/data/User/workspaceStorage/cc2bddb9a75214950b2069a73b3303b2/ms-python.python/pythonrc.py"
-export PYTHON_BASIC_REPL="1"
+export PATH=".:/usr/caen/vcs-2023.12-SP2-1/bin:/usr/caen/verdi-2023.12-SP2-1/bin:/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/bin/remote-cli:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/um/bin:/usr/caen/bin:/home/jackberk/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand"
+export PWD="/home/jackberk/HFT/HFT_Modules"
 export SCRIPT_NAME="vcs"
 export SCRNAME="vcs"
 export SELINUX_LEVEL_REQUESTED=""
@@ -62,17 +58,17 @@ export SHLVL="5"
 export SNPSLMD_LICENSE_FILE="/usr/caen/FLEXlm/data/license.dat.synopsys"
 export SNPS_INTERNAL_VCS_LINUX_OS="linux"
 export SNPS_VCS_CLANG_PATH="/usr/caen/vcs-2023.12-SP2-1/linux64/clang"
-export SNPS_VCS_INTERNAL_CURR_PID="127713"
+export SNPS_VCS_INTERNAL_CURR_PID="176788"
 export SNPS_VCS_INTERNAL_MAKE="make"
 export SNPS_VCS_INTERNAL_MAKE_OPT=""
 export SNPS_VCS_INTERNAL_MEMPRELOAD_USE_LIBC="1"
-export SNPS_VCS_INTERNAL_ROOT_PID="127713"
-export SNPS_VCS_INTERNAL_ROOT_START_TIME="1773862587.848444450"
+export SNPS_VCS_INTERNAL_ROOT_PID="176788"
+export SNPS_VCS_INTERNAL_ROOT_START_TIME="1773943879.499243812"
 export SNPS_VCS_INTERNAL_SR_ASLR_RESTART="1"
 export SNPS_VCS_PYTHON3="/usr/caen/vcs-2023.12-SP2-1/linux64/bin/Python-3.6.1/bin/python3"
 export SNPS_VERDI_INTERNAL_LP_XML_NEW_FLOW="1"
-export SSH_CLIENT="35.3.41.31 58218 22"
-export SSH_CONNECTION="35.3.41.31 58218 141.211.160.35 22"
+export SSH_CLIENT="35.7.2.27 53036 22"
+export SSH_CONNECTION="35.7.2.27 53036 141.211.160.36 22"
 export SSL_CERT_DIR="/etc/pki/tls/certs"
 export SSL_CERT_FILE="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
 export SYNOPSYS_SIM="/usr/caen/vcs-2023.12-SP2-1"
@@ -80,7 +76,7 @@ export TERM="xterm-256color"
 export TERM_PROGRAM="vscode"
 export TERM_PROGRAM_VERSION="1.100.2"
 export TOOL_HOME="/usr/caen/vcs-2023.12-SP2-1/linux64"
-export TURBO_LOG_DIR="/tmp/vcs_20260318193627_127713"
+export TURBO_LOG_DIR="/tmp/vcs_20260319181119_176788"
 export UNAME="/bin/uname"
 export USER="jackberk"
 export VCS_ARCH="linux64"
@@ -97,46 +93,45 @@ export VCS_PYTHON3="/usr/caen/vcs-2023.12-SP2-1/linux64/bin/Python-3.6.1/bin/pyt
 export VCS_TARGET_ARCH="linux64"
 export VERDI_HOME="/usr/caen/verdi-2023.12-SP2-1"
 export VMR_MODE_FLAG="64"
-export VSCODE_DEBUGPY_ADAPTER_ENDPOINTS="/home/jackberk/.vscode-server/extensions/ms-python.debugpy-2025.18.0/.noConfigDebugAdapterEndpoints/endpoint-cda665259ef43222.txt"
 export VSCODE_GIT_ASKPASS_EXTRA_ARGS=""
 export VSCODE_GIT_ASKPASS_MAIN="/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/extensions/git/dist/askpass-main.js"
 export VSCODE_GIT_ASKPASS_NODE="/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/node"
-export VSCODE_GIT_IPC_HANDLE="/run/user/114455181/vscode-git-380b29a538.sock"
-export VSCODE_IPC_HOOK_CLI="/run/user/114455181/vscode-ipc-7c707c06-3fdc-4477-ae80-5330a3659dd5.sock"
+export VSCODE_GIT_IPC_HANDLE="/run/user/114455181/vscode-git-b89ff5585d.sock"
+export VSCODE_IPC_HOOK_CLI="/run/user/114455181/vscode-ipc-5b7db229-4db3-403f-a3dc-a868fe62215d.sock"
 export XDG_DATA_DIRS="/home/jackberk/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share"
 export XDG_RUNTIME_DIR="/run/user/114455181"
 export XDG_SESSION_CLASS="user"
-export XDG_SESSION_ID="1002"
+export XDG_SESSION_ID="1153"
 export XDG_SESSION_TYPE="tty"
 export _="/usr/bin/time"
 export _LMFILES_="/usr/caen/misc/modules/verdi/2023.12-SP2-1.lua:/usr/caen/misc/modules/vcs/2023.12-SP2-1.lua"
-export _ModuleTable001_="X01vZHVsZVRhYmxlXyA9IHsKTVR2ZXJzaW9uID0gMywKY19yZWJ1aWxkVGltZSA9IDcyMDAuMCwKY19zaG9ydFRpbWUgPSAwLjAxMDgzMjA3MTMwNDMyMSwKZGVwdGhUID0ge30sCmZhbWlseSA9IHt9LAptVCA9IHsKdmNzID0gewpkZXBUID0gewpkZXBBID0gewp7CnNuID0gInZlcmRpIiwKdmVyc2lvbiA9IHsKa2luZCA9ICJmaXhlZCIsCnZhbHVlID0gIjIwMjMuMTItU1AyLTEiLAp9LAp9LAp9LAp9LApmbiA9ICIvdXNyL2NhZW4vbWlzYy9tb2R1bGVzL3Zjcy8yMDIzLjEyLVNQMi0xLmx1YSIsCmZ1bGxOYW1lID0gInZjcy8yMDIzLjEyLVNQMi0xIiwKbG9hZE9yZGVyID0gMiwKcHJvcFQgPSB7fSwKc3RhY2tEZXB0aCA9IDAsCnN0YXR1cyA9ICJhY3RpdmUiLAp1c2VyTmFt"
+export _ModuleTable001_="X01vZHVsZVRhYmxlXyA9IHsKTVR2ZXJzaW9uID0gMywKY19yZWJ1aWxkVGltZSA9IDcyMDAuMCwKY19zaG9ydFRpbWUgPSAwLjAxODczNDkzMTk0NTgwMSwKZGVwdGhUID0ge30sCmZhbWlseSA9IHt9LAptVCA9IHsKdmNzID0gewpkZXBUID0gewpkZXBBID0gewp7CnNuID0gInZlcmRpIiwKdmVyc2lvbiA9IHsKa2luZCA9ICJmaXhlZCIsCnZhbHVlID0gIjIwMjMuMTItU1AyLTEiLAp9LAp9LAp9LAp9LApmbiA9ICIvdXNyL2NhZW4vbWlzYy9tb2R1bGVzL3Zjcy8yMDIzLjEyLVNQMi0xLmx1YSIsCmZ1bGxOYW1lID0gInZjcy8yMDIzLjEyLVNQMi0xIiwKbG9hZE9yZGVyID0gMiwKcHJvcFQgPSB7fSwKc3RhY2tEZXB0aCA9IDAsCnN0YXR1cyA9ICJhY3RpdmUiLAp1c2VyTmFt"
 export _ModuleTable002_="ZSA9ICJ2Y3MvMjAyMy4xMi1TUDItMSIsCndWID0gIjAwMDAwMjAyMy4wMDAwMDAwMTIuKnNwLjAwMDAwMDAwMi4qemZpbmFsLS4wMDAwMDAwMDEuKnpmaW5hbCIsCn0sCnZlcmRpID0gewpmbiA9ICIvdXNyL2NhZW4vbWlzYy9tb2R1bGVzL3ZlcmRpLzIwMjMuMTItU1AyLTEubHVhIiwKZnVsbE5hbWUgPSAidmVyZGkvMjAyMy4xMi1TUDItMSIsCmxvYWRPcmRlciA9IDEsCnByb3BUID0ge30sCnJlZl9jb3VudCA9IDEsCnN0YWNrRGVwdGggPSAxLApzdGF0dXMgPSAiYWN0aXZlIiwKdXNlck5hbWUgPSAidmVyZGkvMjAyMy4xMi1TUDItMSIsCndWID0gIjAwMDAwMjAyMy4wMDAwMDAwMTIuKnNwLjAwMDAwMDAwMi4qemZpbmFsLS4wMDAwMDAwMDEuKnpmaW5hbCIsCn0sCn0sCm1w"
-export _ModuleTable003_="YXRoQSA9IHsKIi9ldGMvc2NsL21vZHVsZWZpbGVzIiwgIi9ldGMvc2NsL21vZHVsZWZpbGVzIiwgIi9ldGMvbW9kdWxlZmlsZXMiLCAiL3Vzci9zaGFyZS9tb2R1bGVmaWxlcyIsICIvdXNyL2NhZW4vbWlzYy9tb2R1bGVzIiwgIi91c3IvY2Flbi9taXNjL2NsYXNzL21vZHVsZXMiCiwgIi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvTGludXgiLCAiL3Vzci9zaGFyZS9tb2R1bGVmaWxlcy9Db3JlIiwgIi91c3Ivc2hhcmUvbG1vZC9sbW9kL21vZHVsZWZpbGVzL0NvcmUiLCAiL3Vzci9jYWVuL21pc2MvbW9kdWxlcyIsICIvdXNyL2NhZW4vbWlzYy9jbGFzcy9tb2R1bGVzIiwKfSwKc3lzdGVtQmFzZU1QQVRIID0gIi9ldGMvc2NsL21vZHVsZWZpbGVzOi9ldGMvc2NsL21vZHVsZWZp"
-export _ModuleTable004_="bGVzOi9ldGMvbW9kdWxlZmlsZXM6L3Vzci9zaGFyZS9tb2R1bGVmaWxlczovdXNyL2NhZW4vbWlzYy9tb2R1bGVzOi91c3IvY2Flbi9taXNjL2NsYXNzL21vZHVsZXM6L3Vzci9zaGFyZS9tb2R1bGVmaWxlcy9MaW51eDovdXNyL3NoYXJlL21vZHVsZWZpbGVzL0NvcmU6L3Vzci9zaGFyZS9sbW9kL2xtb2QvbW9kdWxlZmlsZXMvQ29yZTovdXNyL2NhZW4vbWlzYy9tb2R1bGVzOi91c3IvY2Flbi9taXNjL2NsYXNzL21vZHVsZXMiLAp9Cg=="
+export _ModuleTable003_="YXRoQSA9IHsKIi9ldGMvc2NsL21vZHVsZWZpbGVzIiwgIi9ldGMvc2NsL21vZHVsZWZpbGVzIiwgIi9ldGMvbW9kdWxlZmlsZXMiLCAiL3Vzci9zaGFyZS9tb2R1bGVmaWxlcyIsICIvdXNyL2NhZW4vbWlzYy9tb2R1bGVzIgosICIvdXNyL2NhZW4vbWlzYy9jbGFzcy9tb2R1bGVzIiwgIi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvTGludXgiLCAiL3Vzci9zaGFyZS9tb2R1bGVmaWxlcy9Db3JlIiwgIi91c3Ivc2hhcmUvbG1vZC9sbW9kL21vZHVsZWZpbGVzL0NvcmUiCiwgIi91c3IvY2Flbi9taXNjL21vZHVsZXMiLCAiL3Vzci9jYWVuL21pc2MvY2xhc3MvbW9kdWxlcyIsCn0sCnN5c3RlbUJhc2VNUEFUSCA9ICIvZXRjL3NjbC9tb2R1bGVmaWxlczovZXRjL3NjbC9tb2R1bGVm"
+export _ModuleTable004_="aWxlczovZXRjL21vZHVsZWZpbGVzOi91c3Ivc2hhcmUvbW9kdWxlZmlsZXM6L3Vzci9jYWVuL21pc2MvbW9kdWxlczovdXNyL2NhZW4vbWlzYy9jbGFzcy9tb2R1bGVzOi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvTGludXg6L3Vzci9zaGFyZS9tb2R1bGVmaWxlcy9Db3JlOi91c3Ivc2hhcmUvbG1vZC9sbW9kL21vZHVsZWZpbGVzL0NvcmU6L3Vzci9jYWVuL21pc2MvbW9kdWxlczovdXNyL2NhZW4vbWlzYy9jbGFzcy9tb2R1bGVzIiwKfQo="
 export _ModuleTable_Sz_="4"
 export __GL_SHADER_DISK_CACHE="0"
 export __LMOD_REF_COUNT_LM_LICENSE_FILE="license.dat:1;/usr/caen/FLEXlm/data/license.dat.synopsys:1"
 export __LMOD_REF_COUNT_MODULEPATH="/etc/scl/modulefiles:2;/etc/modulefiles:1;/usr/share/modulefiles:1;/usr/caen/misc/modules:2;/usr/caen/misc/class/modules:2;/usr/share/modulefiles/Linux:1;/usr/share/modulefiles/Core:1;/usr/share/lmod/lmod/modulefiles/Core:1"
-export __LMOD_REF_COUNT_PATH="/usr/caen/vcs-2023.12-SP2-1/bin:1;/usr/caen/verdi-2023.12-SP2-1/bin:1;/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/bin/remote-cli:1;/usr/local/bin:1;/usr/bin:1;/usr/local/sbin:1;/usr/sbin:1;/usr/um/bin:1;/usr/caen/bin:1;/home/jackberk/.vscode-server/extensions/ms-python.debugpy-2025.18.0/bundled/scripts/noConfigScripts:1;/home/jackberk/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:1"
-export sysc_uni_pwd="/home/jackberk/eecs570fp/softmax"
+export __LMOD_REF_COUNT_PATH="/usr/caen/vcs-2023.12-SP2-1/bin:1;/usr/caen/verdi-2023.12-SP2-1/bin:1;/home/jackberk/.vscode-server/cli/servers/Stable-848b80aeb52026648a8ff9f7c45a9b0a80641e2e/server/bin/remote-cli:1;/usr/local/bin:1;/usr/bin:1;/usr/local/sbin:1;/usr/sbin:1;/usr/um/bin:1;/usr/caen/bin:1;/home/jackberk/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:1"
+export sysc_uni_pwd="/home/jackberk/HFT/HFT_Modules"
 export which_declare="declare -f"
 unset VERDI_ADV_COMPILE
 if [ -z "${ELABCOM_DIAGTOOL_PREFIX}" ] && [ -z "${ELABCOM_DIAGTOOL_POSTFIX}" ];
 then
-    unset TURBO_LOG_DIR ;\rm -rf /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/elabcomLog ;/usr/caen/vcs-2023.12-SP2-1/linux64/bin/elabcom -logdir /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/elabcomLog  -simvdaidir /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir  -lib /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/work  -saveLevel  -elab /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/kdb -simflow -simdir /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/kdb_libs -topfile /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/.elabcomTopFile -ssv -ssy  -Lf work +disable_message+C00380+C00381 +disable_message+C00388+C00389  >& /dev/null  && echo Success >& /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/.elabcomReport || echo Fail >& /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/.elabcomReport; \rm -rf /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/work.lib++ /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/kdb_libs/ 
+    unset TURBO_LOG_DIR ;\rm -rf /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/elabcomLog ;/usr/caen/vcs-2023.12-SP2-1/linux64/bin/elabcom -logdir /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/elabcomLog  -simvdaidir /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir  -lib /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/work  -saveLevel  -elab /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/kdb -simflow -simdir /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/kdb_libs -topfile /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/.elabcomTopFile -ssv -ssy  -Lf work +disable_message+C00380+C00381 +disable_message+C00388+C00389  >& /dev/null  && echo Success >& /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/.elabcomReport || echo Fail >& /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/.elabcomReport; \rm -rf /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/work.lib++ /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/kdb_libs/ 
 else
-    unset TURBO_LOG_DIR ;\rm -rf /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/elabcomLog ; ${ELABCOM_DIAGTOOL_PREFIX} /usr/caen/vcs-2023.12-SP2-1/linux64/bin/elabcom -logdir /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/elabcomLog  -simvdaidir /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir  ${ELABCOM_DIAGTOOL_POSTFIX}  -lib /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/work  -saveLevel  -elab /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/kdb -simflow -simdir /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/kdb_libs -topfile /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/.elabcomTopFile -ssv -ssy  -Lf work +disable_message+C00380+C00381 +disable_message+C00388+C00389 
+    unset TURBO_LOG_DIR ;\rm -rf /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/elabcomLog ; ${ELABCOM_DIAGTOOL_PREFIX} /usr/caen/vcs-2023.12-SP2-1/linux64/bin/elabcom -logdir /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/elabcomLog  -simvdaidir /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir  ${ELABCOM_DIAGTOOL_POSTFIX}  -lib /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/work  -saveLevel  -elab /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/kdb -simflow -simdir /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/kdb_libs -topfile /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/.elabcomTopFile -ssv -ssy  -Lf work +disable_message+C00380+C00381 +disable_message+C00388+C00389 
     status=$?
     if [ "$status" == 0 ];
     then
-        echo Success >& /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/.elabcomReport
+        echo Success >& /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/.elabcomReport
     else
-        echo Fail >& /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/.elabcomReport
+        echo Fail >& /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/.elabcomReport
     fi
 
- \rm -rf /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/work.lib++ /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/kdb_libs/ 
+ \rm -rf /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/work.lib++ /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/kdb_libs/ 
 fi
 
 
-sed -i -e 's/^ELAB=FALSE$/ELAB=TRUE/' /home/jackberk/eecs570fp/softmax/build/softmax.simv.daidir/simv.kdb 
+sed -i -e 's/^ELAB=FALSE$/ELAB=TRUE/' /home/jackberk/HFT/HFT_Modules/build/softmax.simv.daidir/simv.kdb 

@@ -2,7 +2,7 @@
 # This file may be modified; VCS will not overwrite it unless -Mupdate is used
 
 # define default verilog source directory 
-VSRC=/home/jackberk/eecs570fp/softmax
+VSRC=/home/jackberk/HFT/HFT_Modules
 
 # Override TARGET_ARCH
 TARGET_ARCH=
