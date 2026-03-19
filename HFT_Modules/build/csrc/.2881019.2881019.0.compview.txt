@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1773685587.284216738, "rt":3.30, "ut":0.35, "st":0.30}}
+{"vcselab":{"timestamp_begin":1773685590.663286073, "rt":1.50, "ut":0.25, "st":0.15}}
+{"link":{"timestamp_begin":1773685592.281104502, "rt":1.26, "ut":0.21, "st":0.19}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1773685586.544871252}
+{"VCS_COMP_START_TIME": 1773685586.544871252}
+{"VCS_COMP_END_TIME": 1773685594.371595740}
+{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=15.0 test/softmax_tb.sv verilog/softmax.sv verilog/exponential.sv verilog/adder.sv verilog/multiplier.sv verilog/divider.sv -o build/softmax.simv"}
+{"vcs1": {"peak_mem": 465632}}
+{"vcselab": {"peak_mem": 174400}}

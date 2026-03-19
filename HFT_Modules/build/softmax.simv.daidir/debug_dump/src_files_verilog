@@ -1,0 +1,6 @@
+/home/jackberk/eecs570fp/softmax/test/softmax_tb.sv
+/home/jackberk/eecs570fp/softmax/verilog/adder.sv
+/home/jackberk/eecs570fp/softmax/verilog/divider.sv
+/home/jackberk/eecs570fp/softmax/verilog/exponential.sv
+/home/jackberk/eecs570fp/softmax/verilog/multiplier.sv
+/home/jackberk/eecs570fp/softmax/verilog/softmax.sv

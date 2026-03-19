@@ -1,0 +1,18 @@
+test/softmax_tb.sv:84 NO "Unsupported function call"  (87)
+test/softmax_tb.sv:84 NO "Unsupported function call"  (87)
+test/softmax_tb.sv:94 YES:SyncFF
+verilog/exponential.sv:125 YES:AsyncFF
+verilog/adder.sv:52 YES:AsyncFF
+verilog/multiplier.sv:44 YES:SyncFF
+verilog/divider.sv:48 YES:SyncFF
+verilog/softmax.sv:153 YES:AsyncFF
+==================================================
+Unified Inference Statistics
+Number of always_ff:                   0
+Number of always_latch:                0
+Number of always @*:                   0
+Number of always_comb :                4
+Number of always :                     8
+Number of flip-flop candidates:        7
+Number of synchronous flops inferred:  3
+Number of Asynchronous flops inferred: 3

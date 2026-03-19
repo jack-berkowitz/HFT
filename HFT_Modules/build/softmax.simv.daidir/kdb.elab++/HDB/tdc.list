@@ -1,0 +1,6 @@
+test/softmax_tb.sv
+verilog/adder.sv
+verilog/divider.sv
+verilog/exponential.sv
+verilog/multiplier.sv
+verilog/softmax.sv

@@ -1,0 +1,19 @@
+test/softmax_tb.sv:56 NO "a disabled 'break', 'continue', or 'return' statement" (57)
+test/softmax_tb.sv:78 NO "a disabled 'break', 'continue', or 'return' statement" (78)
+test/softmax_tb.sv:84 NO "a non-pure function call: state_name" (86)
+test/softmax_tb.sv:94 YES
+test/softmax_tb.sv:153 NO "a non-pure function call: state_name" (162)
+test/softmax_tb.sv:181 NO "a non-pure function call: state_name" (183)
+test/softmax_tb.sv:216 NO "an assignment to non-synthesizable object of 'real'" (220)
+test/softmax_tb.sv:222 NO "an assignment to non-synthesizable object of 'real'" (220)
+test/softmax_tb.sv:228 NO "a dynamic type expression" (229)
+verilog/exponential.sv:125 YES
+verilog/adder.sv:53 YES
+verilog/multiplier.sv:45 YES
+verilog/divider.sv:49 YES
+verilog/softmax.sv:153 NO "a loop with potential non-deterministic exit" (205)
+==================================================
+X P R O P   S T A T I S T I C S
+instrumentable assignments:    443
+instrumented assignments:      357
+instrumentation success rate:  80%
