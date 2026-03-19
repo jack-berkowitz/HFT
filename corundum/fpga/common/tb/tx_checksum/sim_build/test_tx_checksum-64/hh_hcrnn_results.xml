@@ -1,0 +1,13 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1773939899" />
+    <testcase name="run_test_001" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="2.006589889526367" sim_time_ns="45108.001" ratio_time="22479.930371146856" />
+    <testcase name="run_test_002" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="3.5962843894958496" sim_time_ns="155124.00100000002" ratio_time="43134.52002102267" />
+    <testcase name="run_test_003" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="3.6993491649627686" sim_time_ns="158988.00100000002" ratio_time="42977.289763779336" />
+    <testcase name="run_test_004" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="4.2125890254974365" sim_time_ns="173524.00099999993" ratio_time="41191.77065451089" />
+    <testcase name="run_test_offsets_001" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="4.859736680984497" sim_time_ns="109404.00100000005" ratio_time="22512.331054495884" />
+    <testcase name="run_test_offsets_002" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="9.226989984512329" sim_time_ns="378660.00100000005" ratio_time="41038.30194197542" />
+    <testcase name="run_test_offsets_003" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="9.19807505607605" sim_time_ns="378692.00099999993" ratio_time="41170.78831073945" />
+    <testcase name="run_test_offsets_004" classname="test_tx_checksum" file="/Users/jackberkowitz/Desktop/HFT/corundum_env/lib/python3.9/site-packages/cocotb/regression.py" lineno="727" time="10.211217880249023" sim_time_ns="378804.00099999993" ratio_time="37096.848333115966" />
+  </testsuite>
+</testsuites>
