@@ -63,33 +63,113 @@ module mdp3_chain_tb;
     // NOTE: Replace this block once your RTL modules exist.
     //       The port names here define the expected interface contract.
     // ----------------------------------------------------------------
-    /*
-    ipv4_udp_port_filter #(.FILTER_PORT(MDP3_PORT)) u_filter (
+    // ----------------------------------------------------------------
+    // Internal wires between the three stages
+    // Named clearly to show which module drives them
+    // ----------------------------------------------------------------
+
+    // filter → framer
+    logic [63:0]  filter_to_framer_tdata;
+    logic [7:0]   filter_to_framer_tkeep;
+    logic         filter_to_framer_tvalid;
+    logic         filter_to_framer_tlast;
+    logic         filter_to_framer_tready;  // driven by framer, consumed by filter
+
+    // framer → demux
+    logic [63:0]  framer_to_demux_tdata;
+    logic [7:0]   framer_to_demux_tkeep;
+    logic         framer_to_demux_tvalid;
+    logic         framer_to_demux_tlast;
+    logic         framer_to_demux_tready;  // driven by demux, consumed by framer
+
+    // ----------------------------------------------------------------
+    // Stage 1: IPv4/UDP Port Filter
+    // Inspects EtherType, IP protocol, and UDP dst port
+    // Suppresses tvalid on non-MDP3 packets
+    // ----------------------------------------------------------------
+    ipv4_udp_port_filter #(
+        .FILTER_PORT    (MDP3_PORT)       // 16'd14310
+    ) u_filter (
         .clk            (clk),
         .rst_n          (rst_n),
+
+        // Slave port — from Corundum MAC RX
         .s_axis_tdata   (s_axis_tdata),
         .s_axis_tkeep   (s_axis_tkeep),
         .s_axis_tvalid  (s_axis_tvalid),
         .s_axis_tlast   (s_axis_tlast),
-        .s_axis_tready  (s_axis_tready),
-        .m_axis_tdata   (framer_tdata),
-        ...
+        .s_axis_tready  (s_axis_tready),  // backpressure to MAC
+
+        // Master port — to framer (MDP3 packets only)
+        .m_axis_tdata   (filter_to_framer_tdata),
+        .m_axis_tkeep   (filter_to_framer_tkeep),
+        .m_axis_tvalid  (filter_to_framer_tvalid),
+        .m_axis_tlast   (filter_to_framer_tlast),
+        .m_axis_tready  (filter_to_framer_tready)
     );
-    mdp3_packet_framer u_framer ( ... );
-    sbe_template_demux u_demux (
-        ...
+
+    // ----------------------------------------------------------------
+    // Stage 2: MDP3 Packet Framer
+    // Strips 46-byte network header (Eth+IPv4+UDP+MDP3 seq)
+    // Handles split beat at header/payload boundary
+    // Outputs clean SBE byte stream starting at byte 0
+    // ----------------------------------------------------------------
+    mdp3_packet_framer #(
+        .HEADER_BYTES   (46)              // 14+20+8+4
+    ) u_framer (
+        .clk            (clk),
+        .rst_n          (rst_n),
+
+        // Slave port — from filter
+        .s_axis_tdata   (filter_to_framer_tdata),
+        .s_axis_tkeep   (filter_to_framer_tkeep),
+        .s_axis_tvalid  (filter_to_framer_tvalid),
+        .s_axis_tlast   (filter_to_framer_tlast),
+        .s_axis_tready  (filter_to_framer_tready),  // backpressure to filter
+
+        // Master port — to demux (pure SBE payload)
+        .m_axis_tdata   (framer_to_demux_tdata),
+        .m_axis_tkeep   (framer_to_demux_tkeep),
+        .m_axis_tvalid  (framer_to_demux_tvalid),
+        .m_axis_tlast   (framer_to_demux_tlast),
+        .m_axis_tready  (framer_to_demux_tready)
+    );
+
+    // ----------------------------------------------------------------
+    // Stage 3: SBE Template Demux
+    // Reads template_id from SBE message header bytes 2-3
+    // Routes payload to correct parser (Add/Mod/Del)
+    // Outputs flat decoded trading fields
+    // ----------------------------------------------------------------
+    sbe_template_demux #(
+        .TMPL_ADD       (16'd38),         // MDIncrementalRefreshBook Add
+        .TMPL_MOD       (16'd39),         // MDIncrementalRefreshBook Modify
+        .TMPL_DEL       (16'd40)          // MDIncrementalRefreshBook Delete
+    ) u_demux (
+        .clk            (clk),
+        .rst_n          (rst_n),
+
+        // Slave port — from framer (pure SBE payload)
+        .s_axis_tdata   (framer_to_demux_tdata),
+        .s_axis_tkeep   (framer_to_demux_tkeep),
+        .s_axis_tvalid  (framer_to_demux_tvalid),
+        .s_axis_tlast   (framer_to_demux_tlast),
+        .s_axis_tready  (framer_to_demux_tready),  // backpressure to framer
+
+        // Flat decoded outputs — to Team B KV lookup
         .out_valid       (out_valid),
         .out_template_id (out_template_id),
         .out_order_id    (out_order_id),
         .out_price       (out_price),
         .out_qty         (out_qty),
         .out_side        (out_side),
-        .out_security_id (out_security_id)
-    );
-    */
+        .out_security_id (out_security_id),
 
-    // Stub: tie tready high until RTL exists
-    assign s_axis_tready = 1'b1;
+        // Parser enable routing (optional — only needed if parsers are separate modules)
+        .enable_add      (enable_add),
+        .enable_mod      (enable_mod),
+        .enable_del      (enable_del)
+    );
 
     // ----------------------------------------------------------------
     // Clock: 250 MHz (standard Corundum user logic clock)
