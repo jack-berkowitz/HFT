@@ -236,6 +236,7 @@ module mdp3_chain_tb;
 
         // --- Ethernet header (14 bytes, indices 0-13) ---
         // Dst MAC: 01:00:5e:00:00:01  (multicast)
+        //BEAT 1
         pkt_write_byte(0,  8'h01);
         pkt_write_byte(1,  8'h00);
         pkt_write_byte(2,  8'h5e);
@@ -245,6 +246,7 @@ module mdp3_chain_tb;
         // Src MAC: de:ad:be:ef:ca:fe
         pkt_write_byte(6,  8'hde);
         pkt_write_byte(7,  8'had);
+        //BEAT 2
         pkt_write_byte(8,  8'hbe);
         pkt_write_byte(9,  8'hef);
         pkt_write_byte(10, 8'hca);
@@ -256,6 +258,7 @@ module mdp3_chain_tb;
         // --- IPv4 header (20 bytes, indices 14-33) ---
         pkt_write_byte(14, 8'h45);           // version=4, IHL=5
         pkt_write_byte(15, 8'h00);           // DSCP/ECN
+        //BEAT 3
         pkt_write_byte(16, ip_total_len[15:8]);  // total length MSB
         pkt_write_byte(17, ip_total_len[7:0]);   // total length LSB
         pkt_write_byte(18, 8'h00);           // ID
@@ -264,6 +267,7 @@ module mdp3_chain_tb;
         pkt_write_byte(21, 8'h00);
         pkt_write_byte(22, 8'h40);           // TTL = 64
         pkt_write_byte(23, 8'h11);           // protocol = UDP
+        //BEAT 4
         pkt_write_byte(24, 8'h00);           // checksum (zeroed for sim)
         pkt_write_byte(25, 8'h00);
         pkt_write_byte(26, 8'hef);           // src IP: 239.1.1.1
@@ -274,7 +278,7 @@ module mdp3_chain_tb;
         pkt_write_byte(31, 8'h01);
         pkt_write_byte(32, 8'h01);
         pkt_write_byte(33, 8'h01);
-
+        //BEAT 5
         // --- UDP header (8 bytes, indices 34-41) ---
         pkt_write_byte(34, 8'h37);           // src port MSB (arbitrary)
         pkt_write_byte(35, 8'ha1);           // src port LSB
