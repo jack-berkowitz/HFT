@@ -1,0 +1,47 @@
+Info: [VCS_SAVE_RESTORE_INFO] ASLR (Address Space Layout Randomization) is detected on the machine. To enable $save functionality, ASLR will be switched off and simv re-executed.
+Please use '-no_save' simv switch to avoid re-execution or '-suppress=ASLR_DETECTED_INFO' to suppress this message.
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version V-2023.12-SP2-1_Full64; Runtime version V-2023.12-SP2-1_Full64;  Mar 20 17:29 2026
+
+=== TEST 1: Normal packet (33B payload, back-to-back) ===
+  tlast received: YES
+  @@@ Passed
+
+=== TEST 2: Normal packet (33B payload, idle gaps) ===
+  tlast received: YES
+  @@@ Passed
+
+=== TEST 3: Runt packet (32 bytes, expect drop) ===
+  No spurious output: GOOD
+  @@@ Passed
+
+=== TEST 4: Minimum payload (2 bytes in boundary) ===
+  tlast received: YES
+  @@@ Passed
+
+=== TEST 5: Two consecutive packets ===
+  @@@ Passed
+
+=== TEST 6: No-extra-beat payload (6 bytes) ===
+  tlast received: YES
+  @@@ Passed
+
+=== TEST 7: Downstream backpressure ===
+  tlast received: YES
+  @@@ Passed
+
+=== TEST 8: Large payload (128 bytes) ===
+  tlast received: YES
+  @@@ Passed
+
+========================================
+  All tests complete.
+========================================
+
+$finish called from file "test/mdp3_packet_framer_tb.sv", line 499.
+$finish at simulation time               766000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 766000 ps
+CPU Time:      0.240 seconds;       Data structure size:   0.0Mb
+Fri Mar 20 17:29:43 2026

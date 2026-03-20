@@ -1,6 +1,6 @@
 `include "sys_defs.svh"
 module ipv4_udp_port_filter #(
-    parameter [15:0] FILTER_PORT = `MDP3_PORT
+    parameter [15:0] FILTER_PORT = `MDP3_PORT  
 )(
     input  logic                 clk,
     input  logic                 rst_n,
@@ -10,7 +10,7 @@ module ipv4_udp_port_filter #(
     input  AXI_TKEEP             s_axis_tkeep,
     input  logic                 s_axis_tvalid,
     input  logic                 s_axis_tlast,
-    output logic                 s_axis_tready,
+    output logic                 s_axis_tready,  
 
     // Master AXI-Stream output
     output AXI_TDATA            m_axis_tdata,
@@ -21,22 +21,23 @@ module ipv4_udp_port_filter #(
 );
     // ----------------------------------------------------------------
     // Constants — byte positions within the 64-bit beat
-    // Beat 2 = bytes 8-15  → EtherType at bytes 12-13 → beat-local offset 4-5
-    // Beat 3 = bytes 16-23 → IP proto  at byte  23    → beat-local offset 7
-    // Beat 5 = bytes 32-39 → UDP dport at bytes 36-37 → beat-local offset 4-5
+    // Beat 1 = bytes  8-15 → EtherType at bytes 12-13 → beat-local offset 4-5
+    // Beat 2 = bytes 16-23 → IP proto  at byte  23    → beat-local offset 7
+    // Beat 4 = bytes 32-39 → UDP dport at bytes 36-37 → beat-local offset 4-5
+    // All beat indices are 0-indexed (beat 0 is consumed in IDLE)
     // ----------------------------------------------------------------
-    localparam BEAT_ETHERTYPE = 3'd1;   // beat index where EtherType lives (0-indexed)
-    localparam BEAT_IP_PROTO  = 3'd2;   // same beat as EtherType (byte 23 is beat 2 bytes 16-23)
-    localparam BEAT_UDP_DPORT = 3'd4;   // beat index where UDP dst port lives
+    localparam BEAT_ETHERTYPE = 3'd1;
+    localparam BEAT_IP_PROTO  = 3'd2;
+    localparam BEAT_UDP_DPORT = 3'd4;
 
     // ----------------------------------------------------------------
     // FSM states
     // ----------------------------------------------------------------
     typedef enum logic [1:0] {
-        IDLE     = 2'd0,   // waiting for first beat of a new packet
-        INSPECT  = 2'd1,   // receiving beats, checking header fields
-        PASS     = 2'd2,   // all checks passed, forward remaining beats
-        DROP     = 2'd3    // a check failed, suppress remaining beats
+        IDLE     = 2'd0,
+        INSPECT  = 2'd1,
+        PASS     = 2'd2,
+        DROP     = 2'd3
     } state_t;
 
     state_t state, state_next;
@@ -44,44 +45,54 @@ module ipv4_udp_port_filter #(
     // ----------------------------------------------------------------
     // Internal signals
     // ----------------------------------------------------------------
-    logic [2:0]  beat_count;        // which beat we are on (0-indexed)
+    logic [2:0]  beat_count;
     logic [2:0]  beat_count_next;
 
-    // Latched header fields
-    logic [15:0] ethertype;         // latched from beat 1
-    logic [7:0]  ip_proto;          // latched from beat 2
-    logic [15:0] udp_dport;         // latched from beat 4
+    // Registered header fields (latched as each header beat arrives)
+    logic [15:0] ethertype;
+    logic [7:0]  ip_proto;
+    logic [15:0] udp_dport;
 
-    // Check results
+    // Check results (driven from combinational wires below)
     logic ethertype_ok;
     logic ip_proto_ok;
     logic udp_dport_ok;
 
-    logic beat_transferred;         // true when a beat actually moves (tvalid & tready)
-
-    // ----------------------------------------------------------------
-    // Combinational checks against latched values
-    // ----------------------------------------------------------------
-    assign ethertype_ok = (ethertype == 16'h0800);
-    assign ip_proto_ok  = (ip_proto  ==  8'h11  );
-    assign udp_dport_ok = (udp_dport == FILTER_PORT);
-
-    // A beat transfers only when both sides are ready
+    logic beat_transferred;
     assign beat_transferred = s_axis_tvalid & s_axis_tready;
 
     // ----------------------------------------------------------------
     // Pass-through datapath
-    // Data/keep/last are always wired through — tvalid is gated by state
     // ----------------------------------------------------------------
-    assign m_axis_tdata = s_axis_tdata;
-    assign m_axis_tkeep = s_axis_tkeep;
-    assign m_axis_tlast = s_axis_tlast;
-
-    // Only forward tvalid downstream when in PASS state
+    assign m_axis_tdata  = s_axis_tdata;
+    assign m_axis_tkeep  = s_axis_tkeep;
+    assign m_axis_tlast  = s_axis_tlast;
     assign m_axis_tvalid = s_axis_tvalid & (state == PASS);
-
-    // Absorb backpressure from downstream during PASS, always ready during DROP/INSPECT
     assign s_axis_tready = (state == PASS) ? m_axis_tready : 1'b1;
+
+    logic [15:0] ethertype_now;
+    logic [7:0]  ip_proto_now;
+    logic [15:0] udp_dport_now;
+
+    always_comb begin
+        // Default: use the previously registered values
+        ethertype_now = ethertype;
+        ip_proto_now  = ip_proto;
+        udp_dport_now = udp_dport;
+        // Override with live beat data when we are on the relevant beat
+        if (beat_transferred) begin
+            case (beat_count)
+                3'd1: ethertype_now = {s_axis_tdata[39:32], s_axis_tdata[47:40]};
+                3'd2: ip_proto_now  =  s_axis_tdata[63:56];   
+                3'd4: udp_dport_now = {s_axis_tdata[39:32], s_axis_tdata[47:40]};
+                default: ;
+            endcase
+        end
+    end
+
+    assign ethertype_ok = (ethertype_now == 16'h0800);
+    assign ip_proto_ok  = (ip_proto_now  ==  8'h11  );
+    assign udp_dport_ok = (udp_dport_now == FILTER_PORT);
 
     // ----------------------------------------------------------------
     // Beat counter
@@ -90,15 +101,15 @@ module ipv4_udp_port_filter #(
         beat_count_next = beat_count;
         if (beat_transferred) begin
             if (s_axis_tlast)
-                beat_count_next = '0;           // reset on end of packet
+                beat_count_next = '0;
             else
                 beat_count_next = beat_count + 3'd1;
         end
     end
 
     // ----------------------------------------------------------------
-    // Header field extraction
-    // Called combinationally on the relevant beat
+    // Header field latch (registered copy — still useful for any logic
+    // that needs the value in cycles after the header beat)
     // ----------------------------------------------------------------
     always_ff @(posedge clk) begin
         if (!rst_n) begin
@@ -107,9 +118,9 @@ module ipv4_udp_port_filter #(
             udp_dport <= '0;
         end else if (beat_transferred) begin
             case (beat_count)
-                3'd1: ethertype <= {s_axis_tdata[47:40], s_axis_tdata[39:32]}; // bytes 13:12
-                3'd2: ip_proto  <=  s_axis_tdata[63:56];                        // byte 23
-                3'd4: udp_dport <= {s_axis_tdata[47:40], s_axis_tdata[39:32]}; // bytes 37:36
+                3'd1: ethertype <= {s_axis_tdata[39:32], s_axis_tdata[47:40]};
+                3'd2: ip_proto  <=  s_axis_tdata[63:56];
+                3'd4: udp_dport <= {s_axis_tdata[39:32], s_axis_tdata[47:40]};
                 default: ;
             endcase
         end
@@ -128,8 +139,13 @@ module ipv4_udp_port_filter #(
 
             INSPECT: begin
                 if (beat_transferred) begin
-                    // Once we have seen the UDP dst port beat we can decide
-                    if (beat_count == BEAT_UDP_DPORT) begin
+                    // Early DROP paths: fail as soon as a bad field is seen
+                    if (beat_count == BEAT_ETHERTYPE && !ethertype_ok)
+                        state_next = DROP;
+                    else if (beat_count == BEAT_IP_PROTO && !ip_proto_ok)
+                        state_next = DROP;
+                    // All three checks use *_now so udp_dport is live on this beat
+                    else if (beat_count == BEAT_UDP_DPORT) begin
                         if (ethertype_ok && ip_proto_ok && udp_dport_ok)
                             state_next = PASS;
                         else
@@ -139,13 +155,11 @@ module ipv4_udp_port_filter #(
             end
 
             PASS: begin
-                // Stay in PASS until end of packet
                 if (beat_transferred && s_axis_tlast)
                     state_next = IDLE;
             end
 
             DROP: begin
-                // Stay in DROP until end of packet, then go back to IDLE
                 if (beat_transferred && s_axis_tlast)
                     state_next = IDLE;
             end

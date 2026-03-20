@@ -1,13 +1,11 @@
-test/ipv4_udp_port_filter_tb.sv:257 YES:SyncFF
-verilog/ipv4_udp_port_filter.sv:103 YES:SyncFF
-verilog/ipv4_udp_port_filter.sv:158 YES:SyncFF
+verilog/mdp3_packet_framer.sv:206 YES:AsyncFF
 ==================================================
 Unified Inference Statistics
-Number of always_ff:                   2
+Number of always_ff:                   1
 Number of always_latch:                0
 Number of always @*:                   0
-Number of always_comb :                2
-Number of always :                     2
-Number of flip-flop candidates:        3
-Number of synchronous flops inferred:  3
-Number of Asynchronous flops inferred: 0
+Number of always_comb :                3
+Number of always :                     1
+Number of flip-flop candidates:        1
+Number of synchronous flops inferred:  0
+Number of Asynchronous flops inferred: 1

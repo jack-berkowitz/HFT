@@ -276,9 +276,9 @@ module mdp3_chain_tb;
         pkt_write_byte(29, 8'h01);
         pkt_write_byte(30, 8'hef);           // dst IP: 239.1.1.1
         pkt_write_byte(31, 8'h01);
+        //BEAT 5
         pkt_write_byte(32, 8'h01);
         pkt_write_byte(33, 8'h01);
-        //BEAT 5
         // --- UDP header (8 bytes, indices 34-41) ---
         pkt_write_byte(34, 8'h37);           // src port MSB (arbitrary)
         pkt_write_byte(35, 8'ha1);           // src port LSB
@@ -286,6 +286,7 @@ module mdp3_chain_tb;
         pkt_write_byte(37, dst_port[7:0]);   // dst port LSB
         pkt_write_byte(38, udp_total_len[15:8]);
         pkt_write_byte(39, udp_total_len[7:0]);
+        //BEAT 6
         pkt_write_byte(40, 8'h00);           // checksum (zeroed)
         pkt_write_byte(41, 8'h00);
     endtask
@@ -306,7 +307,9 @@ module mdp3_chain_tb;
         input logic [15:0]   template_id;
         input logic [15:0]   block_length;
         pkt_write_u32_le(42, seq_num);
+        // NEED EVERYTHING AFTER THIS
         pkt_write_u16_le(46, block_length);
+        //BEAT 7
         pkt_write_u16_le(48, template_id);
         pkt_write_u16_le(50, 16'd1);    // schema_id
         pkt_write_u16_le(52, 16'd8);    // version

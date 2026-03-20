@@ -1,7 +1,0 @@
-Command exited with non-zero status 255
-{"vcs1":{"timestamp_begin":1774033611.231855472, "rt":1.99, "ut":0.09, "st":0.15}}
-{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1774033610.274879808}
-{"VCS_COMP_START_TIME": 1774033610.274879808}
-{"VCS_COMP_END_TIME": 1774033613.367439080}
-{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=15.0 test/ipv4_udp_port_filter_tb.sv verilog/ipv4_udp_port_filter.sv -o build/ipv4_udp_port_filter.simv"}
-{"vcs1": {"peak_mem": 465088}}

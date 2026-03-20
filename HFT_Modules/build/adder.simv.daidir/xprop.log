@@ -1,6 +1,0 @@
-verilog/adder.sv:45 NO "an edge-triggered block not inferred as a flop" (45)
-==================================================
-X P R O P   S T A T I S T I C S
-instrumentable assignments:    115
-instrumented assignments:      0
-instrumentation success rate:  0%

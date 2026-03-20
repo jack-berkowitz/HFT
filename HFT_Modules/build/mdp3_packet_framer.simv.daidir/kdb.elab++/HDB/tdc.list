@@ -1,0 +1,3 @@
+test/mdp3_packet_framer_tb.sv
+verilog/mdp3_packet_framer.sv
+verilog/sys_defs.svh
