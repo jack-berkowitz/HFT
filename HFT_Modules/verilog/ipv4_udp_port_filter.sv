@@ -1,19 +1,20 @@
+`include "sys_defs.svh"
 module ipv4_udp_port_filter #(
-    parameter [15:0] FILTER_PORT = `MDP3_PORT,
+    parameter [15:0] FILTER_PORT = `MDP3_PORT
 )(
     input  logic                 clk,
     input  logic                 rst_n,
 
     // Slave AXI-Stream input
     input  AXI_TDATA             s_axis_tdata,
-    input  AXI_KTEEP             s_axis_tkeep,
+    input  AXI_TKEEP             s_axis_tkeep,
     input  logic                 s_axis_tvalid,
     input  logic                 s_axis_tlast,
-    output logic                 s_axis_tready
+    output logic                 s_axis_tready,
 
     // Master AXI-Stream output
     output AXI_TDATA            m_axis_tdata,
-    output AXI_KTEEP            m_axis_tkeep,
+    output AXI_TKEEP            m_axis_tkeep,
     output logic                m_axis_tvalid,
     output logic                m_axis_tlast,
     input  logic                m_axis_tready
