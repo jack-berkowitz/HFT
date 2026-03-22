@@ -1,1 +1,1 @@
-simv.daidir = mdp3_packet_framer.simv.daidir
+simv.daidir = XDP_packet_framer.simv.daidir

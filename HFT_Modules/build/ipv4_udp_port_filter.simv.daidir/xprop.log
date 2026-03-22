@@ -1,0 +1,11 @@
+test/ipv4_udp_port_filter_tb.sv:206 NO "a non-instrumentable statement" (208)
+test/ipv4_udp_port_filter_tb.sv:245 YES
+verilog/ipv4_udp_port_filter.sv:108 YES
+verilog/ipv4_udp_port_filter.sv:137 YES
+verilog/ipv4_udp_port_filter.sv:157 YES
+verilog/ipv4_udp_port_filter.sv:194 YES
+==================================================
+X P R O P   S T A T I S T I C S
+instrumentable assignments:    21
+instrumented assignments:      20
+instrumentation success rate:  95%

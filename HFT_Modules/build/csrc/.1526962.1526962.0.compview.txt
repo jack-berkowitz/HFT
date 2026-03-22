@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1774203491.757428960, "rt":3.34, "ut":0.32, "st":0.34}}
+{"vcselab":{"timestamp_begin":1774203495.213938611, "rt":1.41, "ut":0.23, "st":0.15}}
+{"link":{"timestamp_begin":1774203496.708347168, "rt":0.97, "ut":0.21, "st":0.17}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1774203490.645024363}
+{"VCS_COMP_START_TIME": 1774203490.645024363}
+{"VCS_COMP_END_TIME": 1774203498.462946904}
+{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=4.0 +incdir+verilog test/ipv4_udp_port_filter_tb.sv verilog/ipv4_udp_port_filter.sv -o build/ipv4_udp_port_filter.simv"}
+{"vcs1": {"peak_mem": 466728}}
+{"vcselab": {"peak_mem": 182560}}

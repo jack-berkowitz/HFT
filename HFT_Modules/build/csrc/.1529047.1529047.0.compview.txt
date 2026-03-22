@@ -1,0 +1,7 @@
+Command exited with non-zero status 255
+{"vcs1":{"timestamp_begin":1774203531.847226148, "rt":0.45, "ut":0.09, "st":0.07}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1774203530.832993460}
+{"VCS_COMP_START_TIME": 1774203530.832993460}
+{"VCS_COMP_END_TIME": 1774203532.421634560}
+{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=4.0 +incdir+verilog test/XDP_packet_framer_tb.sv verilog/XDP_packet_framer.sv -o build/XDP_packet_framer.simv"}
+{"vcs1": {"peak_mem": 465928}}

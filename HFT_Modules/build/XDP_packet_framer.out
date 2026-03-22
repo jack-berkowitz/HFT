@@ -1,0 +1,30 @@
+Info: [VCS_SAVE_RESTORE_INFO] ASLR (Address Space Layout Randomization) is detected on the machine. To enable $save functionality, ASLR will be switched off and simv re-executed.
+Please use '-no_save' simv switch to avoid re-execution or '-suppress=ASLR_DETECTED_INFO' to suppress this message.
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version V-2023.12-SP2-1_Full64; Runtime version V-2023.12-SP2-1_Full64;  Mar 22 14:26 2026
+
+=== TEST 1: 39-byte payload (back-to-back) ===
+  Output: 39 bytes, 5 beats, last=1
+PASS t1: all 39 payload bytes correct
+
+=== TEST 2: 39-byte payload with idle gaps ===
+PASS t2: payload correct with idle gaps
+
+=== TEST 3: 6-byte payload (boundary beat only) ===
+PASS t3: 6-byte payload correct
+
+=== TEST 4: Two consecutive packets ===
+PASS t4a: first packet ok (25 bytes)
+PASS t4b: second packet ok (39 bytes)
+
+========================================
+@@@ Passed
+========================================
+
+$finish called from file "test/XDP_packet_framer_tb.sv", line 288.
+$finish at simulation time              1046000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 1046000 ps
+CPU Time:      0.280 seconds;       Data structure size:   0.0Mb
+Sun Mar 22 14:26:35 2026

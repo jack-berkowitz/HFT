@@ -1,20 +1,28 @@
 ##########################
 # ---- Introduction ---- #
 ##########################
-# HFT Pipeline Makefile
-# Usage:
-#   make ipv4_udp_port_filter.out   <- compile and run testbench
-#   make mdp3_packet_framer.out     <- compile and run testbench
-#   make sbe_template_demux.out     <- compile and run testbench
+# HFT Pipeline Makefile (NYSE XDP/Pillar)
+#
+# Single-module targets:
+#   make ipv4_udp_port_filter.out   <- compile & run filter testbench
+#   make xdp_packet_framer.out      <- compile & run framer testbench
+#   make xdp_msg_demux.out          <- compile & run demux testbench
+#
+# Chain (integration) target:
+#   make xdp_chain.out              <- compile & run full pipeline TB
+#                                      (filter → framer → demux)
+#
+# Other targets:
 #   make <module>.verdi             <- open waveforms in Verdi
+#   make <module>.pass              <- grep for @@@ Passed / Failed
 #   make clean                      <- remove build files
 #
-# Directory layout expected:
+# Directory layout:
 #   verilog/sys_defs.svh            <- shared defines and typedefs
 #   verilog/<module>.sv             <- RTL implementation
 #   test/<module>_tb.sv             <- testbench
 
-.DEFAULT_GOAL = ipv4_udp_port_filter.out
+.DEFAULT_GOAL = xdp_chain.pass
 
 ######################################################
 # ---- Compilation Commands and Other Variables ---- #
@@ -28,7 +36,7 @@ VCS = module load vcs/2023.12-SP2-1 && \
           -debug_access+all+reverse \
           $(VCS_BAD_WARNINGS) \
           +define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
-          +incdir+verilog                        # `include "sys_defs.svh" resolves here
+          +incdir+verilog
 
 VCS_BAD_WARNINGS = +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED
 
@@ -36,68 +44,91 @@ RUN_VERDI = -gui=verdi -verdi_opts "-ultra"
 
 SHELL := $(SHELL) -o pipefail
 
+GREP = grep -E --color=auto
+
 ################################
 # ---- Module Definitions ---- #
 ################################
-# Add new modules here as the project grows
-# Each module needs:
-#   verilog/<module>.sv      - RTL implementation
-#   test/<module>_tb.sv      - testbench
-
+# Individual modules (each has its own testbench)
 MODULES = ipv4_udp_port_filter \
-          mdp3_packet_framer   \
-          sbe_template_demux
+          xdp_packet_framer    \
+          xdp_msg_demux
 
-# ---- Per-module source file lists ---- #
-# Add dependencies here if a module includes other .sv files
+# Chain (integration) targets — testbench compiles multiple RTL files
+CHAIN_MODULES = xdp_chain
+
+# All targets that can be built and run
+ALL_TARGETS = $(MODULES) $(CHAIN_MODULES)
+
+# ---- Per-module RTL dependencies ---- #
+# These list every .sv file needed to compile each target
 
 ipv4_udp_port_filter_DEPS = verilog/ipv4_udp_port_filter.sv
-mdp3_packet_framer_DEPS   = verilog/mdp3_packet_framer.sv
-sbe_template_demux_DEPS   = verilog/sbe_template_demux.sv
+
+xdp_packet_framer_DEPS    = verilog/xdp_packet_framer.sv
+
+xdp_msg_demux_DEPS        = verilog/xdp_msg_demux.sv
+
+# Chain TB needs all three RTL modules
+xdp_chain_DEPS            = verilog/ipv4_udp_port_filter.sv \
+                             verilog/xdp_packet_framer.sv    \
+                             verilog/xdp_msg_demux.sv
 
 ###############################
 # ---- Compile Targets ---- #
 ###############################
 
-# Compile rule: test/<module>_tb.sv + verilog deps -> build/<module>.simv
 build/ipv4_udp_port_filter.simv: test/ipv4_udp_port_filter_tb.sv $(ipv4_udp_port_filter_DEPS) | build
 	@$(call PRINT_COLOR, 5, compiling ipv4_udp_port_filter...)
 	$(VCS) $^ -o $@
-	@$(call PRINT_COLOR, 6, done compiling ipv4_udp_port_filter)
+	@$(call PRINT_COLOR, 6, done)
 
-build/mdp3_packet_framer.simv: test/mdp3_packet_framer_tb.sv $(mdp3_packet_framer_DEPS) | build
-	@$(call PRINT_COLOR, 5, compiling mdp3_packet_framer...)
+build/xdp_packet_framer.simv: test/xdp_packet_framer_tb.sv $(xdp_packet_framer_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling xdp_packet_framer...)
 	$(VCS) $^ -o $@
-	@$(call PRINT_COLOR, 6, done compiling mdp3_packet_framer)
+	@$(call PRINT_COLOR, 6, done)
 
-build/sbe_template_demux.simv: test/sbe_template_demux_tb.sv $(sbe_template_demux_DEPS) | build
-	@$(call PRINT_COLOR, 5, compiling sbe_template_demux...)
+build/xdp_msg_demux.simv: test/xdp_msg_demux_tb.sv $(xdp_msg_demux_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling xdp_msg_demux...)
 	$(VCS) $^ -o $@
-	@$(call PRINT_COLOR, 6, done compiling sbe_template_demux)
+	@$(call PRINT_COLOR, 6, done)
+
+# ---- Chain (integration) testbench ---- #
+# Compiles the chain TB together with all three RTL modules
+build/xdp_chain.simv: test/xdp_chain_tb.sv $(xdp_chain_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling xdp_chain (filter + framer + demux)...)
+	$(VCS) $^ -o $@
+	@$(call PRINT_COLOR, 6, done)
 
 #####################
-# ---- Run Targets ---- #
+# ---- Running ---- #
 #####################
 
-# build/module.out — compile then run, save output to build/module.out
-$(MODULES:%=build/%.out): build/%.out: build/%.simv
+# Compile then run, save output to build/<target>.out
+$(ALL_TARGETS:%=build/%.out): build/%.out: build/%.simv
 	@$(call PRINT_COLOR, 5, running $<)
 	cd build && ./$(<F) | tee $(@F)
 
-# module.out — shorthand alias for build/module.out
-# This is what lets you type: make ipv4_udp_port_filter.out
-$(MODULES:%=%.out): %.out: build/%.out
-	@$(call PRINT_COLOR, 2, output saved to: build/$@)
-.PHONY: $(MODULES:%=%.out)
+# Shorthand: make <target>.out  →  make build/<target>.out
+$(ALL_TARGETS:%=%.out): %.out: build/%.out
+	@$(call PRINT_COLOR, 2, output saved to: build/$*.out)
+.PHONY: $(ALL_TARGETS:%=%.out)
+
+# Grep for @@@ Passed / @@@ Failed
+$(ALL_TARGETS:%=%.pass): %.pass: build/%.out
+	@$(call PRINT_COLOR, 6, grepping for pass/fail in build/$*.out:)
+	@GREP_COLOR="01;31" $(GREP) -i '@@@ ?Failed' build/$*.out || \
+	 GREP_COLOR="01;32" $(GREP) -i '@@@ ?Passed' build/$*.out
+.PHONY: $(ALL_TARGETS:%=%.pass)
 
 #####################
 # ---- Verdi ---- #
 #####################
 
-$(MODULES:%=%.verdi): %.verdi: build/%.simv
+$(ALL_TARGETS:%=%.verdi): %.verdi: build/%.simv
 	@$(call PRINT_COLOR, 5, opening verdi for $*)
 	cd build && ./$(<F) $(RUN_VERDI)
-.PHONY: $(MODULES:%=%.verdi)
+.PHONY: $(ALL_TARGETS:%=%.verdi)
 
 ################################
 # ---- Output Directories ---- #
@@ -117,12 +148,11 @@ clean:
 	rm -rf vcdplus.vpd vc_hdrs.h
 	rm -rf unifiedInference.log xprop.log
 	rm -rf verdi* novas* *fsdb*
+	rm -rf *.vcd
 .PHONY: clean
 
 ######################
 # ---- Printing ---- #
 ######################
 
-# Usage: $(call PRINT_COLOR, <color_num>, <message>)
-# Colors: 0=black 1=red 2=green 3=yellow 4=blue 5=magenta 6=cyan 7=white
 PRINT_COLOR = if [ -t 1 ]; then tput setaf $(1); fi; echo $(2); if [ -t 1 ]; then tput sgr0; fi

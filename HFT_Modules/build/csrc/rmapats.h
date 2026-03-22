@@ -2833,26 +2833,20 @@ static inline U asm_bsf (U in)
 #ifdef __cplusplus
 extern "C" {
 #endif
-void  rmaPropagate0_p_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_f_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate0_r_mdp3_packet_framer_simv_daidir (UB  * pcode);
-void  rmaPropagate0_wn_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_p_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_f_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate1_r_mdp3_packet_framer_simv_daidir (UB  * pcode);
-void  rmaPropagate1_wn_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate2_p_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate2_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate2_f_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate2_r_mdp3_packet_framer_simv_daidir (UB  * pcode);
-void  rmaPropagate2_wn_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate3_p_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate3_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate3_f_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate3_r_mdp3_packet_framer_simv_daidir (UB  * pcode);
-void  rmaPropagate3_wn_mdp3_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate2_p_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate2_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate2_f_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate2_r_XDP_packet_framer_simv_daidir (UB  * pcode);
+void  rmaPropagate2_wn_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate3_p_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate3_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate3_f_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate3_r_XDP_packet_framer_simv_daidir (UB  * pcode);
+void  rmaPropagate3_wn_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate4_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate5_XDP_packet_framer_simv_daidir (UB  * pcode, scalar  val);
 void  schedNewEvent (struct dummyq_struct * I1460, EBLK  * I1455, U  I627);
 #ifdef __cplusplus
 }

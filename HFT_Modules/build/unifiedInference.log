@@ -1,11 +1,12 @@
-verilog/mdp3_packet_framer.sv:206 YES:AsyncFF
+test/XDP_packet_framer_tb.sv:123 YES:SyncFF
+verilog/XDP_packet_framer.sv:208 YES:SyncFF
 ==================================================
 Unified Inference Statistics
 Number of always_ff:                   1
 Number of always_latch:                0
 Number of always @*:                   0
-Number of always_comb :                3
-Number of always :                     1
-Number of flip-flop candidates:        1
-Number of synchronous flops inferred:  0
-Number of Asynchronous flops inferred: 1
+Number of always_comb :                2
+Number of always :                     2
+Number of flip-flop candidates:        2
+Number of synchronous flops inferred:  2
+Number of Asynchronous flops inferred: 0

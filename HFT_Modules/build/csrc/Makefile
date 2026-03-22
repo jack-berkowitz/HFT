@@ -2,13 +2,13 @@
 # This file may be modified; VCS will not overwrite it unless -Mupdate is used
 
 # define default verilog source directory 
-VSRC=/home/jackberk/HFT/HFT_Modules
+VSRC=/home/jackberk/HFT/HFT_MODULES
 
 # Override TARGET_ARCH
 TARGET_ARCH=
 
 # Choose name of executable 
-PRODUCTBASE=$(VSRC)/build/mdp3_packet_framer.simv
+PRODUCTBASE=$(VSRC)/build/XDP_packet_framer.simv
 
 PRODUCT=$(PRODUCTBASE)
 
@@ -39,7 +39,7 @@ STDLIB =
 STRIPFLAGS= 
 
 PRE_LDFLAGS= # Loader Flags
-LDFLAGS= -rdynamic  -Wl,-rpath='$$ORIGIN'/mdp3_packet_framer.simv.daidir -Wl,-rpath=./mdp3_packet_framer.simv.daidir -Wl,-rpath=/usr/caen/vcs-2023.12-SP2-1/linux64/lib -L/usr/caen/vcs-2023.12-SP2-1/linux64/lib 
+LDFLAGS= -rdynamic  -Wl,-rpath='$$ORIGIN'/XDP_packet_framer.simv.daidir -Wl,-rpath=./XDP_packet_framer.simv.daidir -Wl,-rpath=/usr/caen/vcs-2023.12-SP2-1/linux64/lib -L/usr/caen/vcs-2023.12-SP2-1/linux64/lib 
 # Picarchive Flags
 PICLDFLAGS= -Wl,-rpath-link=./ 
 PIC_LD=ld
