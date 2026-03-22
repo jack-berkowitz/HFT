@@ -52,7 +52,8 @@ GREP = grep -E --color=auto
 # Individual modules (each has its own testbench)
 MODULES = ipv4_udp_port_filter \
           xdp_packet_framer    \
-          xdp_msg_demux
+          xdp_msg_demux \
+		  skewed_hash_table 
 
 # Chain (integration) targets — testbench compiles multiple RTL files
 CHAIN_MODULES = xdp_chain
@@ -72,7 +73,8 @@ xdp_msg_demux_DEPS        = verilog/xdp_msg_demux.sv
 # Chain TB needs all three RTL modules
 xdp_chain_DEPS            = verilog/ipv4_udp_port_filter.sv \
                              verilog/xdp_packet_framer.sv    \
-                             verilog/xdp_msg_demux.sv
+                             verilog/xdp_msg_demux.sv \
+							 verilog/skewed_hash_table.sv
 
 ###############################
 # ---- Compile Targets ---- #
@@ -96,7 +98,7 @@ build/xdp_msg_demux.simv: test/xdp_msg_demux_tb.sv $(xdp_msg_demux_DEPS) | build
 # ---- Chain (integration) testbench ---- #
 # Compiles the chain TB together with all three RTL modules
 build/xdp_chain.simv: test/xdp_chain_tb.sv $(xdp_chain_DEPS) | build
-	@$(call PRINT_COLOR, 5, compiling xdp_chain (filter + framer + demux)...)
+	@$(call PRINT_COLOR, 5, compiling xdp_chain - filter + framer + demux...)
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)
 

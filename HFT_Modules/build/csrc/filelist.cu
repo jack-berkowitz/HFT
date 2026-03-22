@@ -4,20 +4,20 @@ ifeq ($(LDVERSION), 0)
 endif
 
 ARCHIVE_OBJS=
-ARCHIVE_OBJS += _1535531_archive_1.so
-_1535531_archive_1.so : archive.2/_1535531_archive_1.a
+ARCHIVE_OBJS += _1565538_archive_1.so
+_1565538_archive_1.so : archive.5/_1565538_archive_1.a
 	@$(AR) -s $<
-	@$(PIC_LD) -shared  -Bsymbolic $(LD_NORELAX_FLAG)  -o .//../XDP_packet_framer.simv.daidir//_1535531_archive_1.so --whole-archive $< --no-whole-archive
+	@$(PIC_LD) -shared  -Bsymbolic $(LD_NORELAX_FLAG)  -o .//../xdp_chain.simv.daidir//_1565538_archive_1.so --whole-archive $< --no-whole-archive
 	@rm -f $@
-	@ln -sf .//../XDP_packet_framer.simv.daidir//_1535531_archive_1.so $@
+	@ln -sf .//../xdp_chain.simv.daidir//_1565538_archive_1.so $@
 
 
 ARCHIVE_OBJS += _prev_archive_1.so
-_prev_archive_1.so : archive.2/_prev_archive_1.a
+_prev_archive_1.so : archive.5/_prev_archive_1.a
 	@$(AR) -s $<
-	@$(PIC_LD) -shared  -Bsymbolic $(LD_NORELAX_FLAG)  -o .//../XDP_packet_framer.simv.daidir//_prev_archive_1.so --whole-archive $< --no-whole-archive
+	@$(PIC_LD) -shared  -Bsymbolic $(LD_NORELAX_FLAG)  -o .//../xdp_chain.simv.daidir//_prev_archive_1.so --whole-archive $< --no-whole-archive
 	@rm -f $@
-	@ln -sf .//../XDP_packet_framer.simv.daidir//_prev_archive_1.so $@
+	@ln -sf .//../xdp_chain.simv.daidir//_prev_archive_1.so $@
 
 
 

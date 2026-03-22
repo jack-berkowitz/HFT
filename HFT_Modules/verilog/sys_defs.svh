@@ -32,6 +32,11 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 // Number of full beats to skip before boundary beat (58 / 8 = 7 full + 2 rem)
 `define XDP_HDR_BEATS 7
 
+// When the framer sits behind the port filter, the filter consumes
+// beats 0–5 (48 bytes) during INSPECT.  The framer only needs to
+// strip the remaining header bytes: 58 - 48 = 10.
+`define XDP_CHAIN_FRAMER_HDR 10
+
 // XDP Packet Header size (bytes)
 `define XDP_PKT_HDR_SZ 16
 

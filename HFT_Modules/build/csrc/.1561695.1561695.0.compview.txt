@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1774207303.163141857, "rt":3.32, "ut":0.40, "st":0.36}}
+{"vcselab":{"timestamp_begin":1774207306.579279909, "rt":1.34, "ut":0.24, "st":0.14}}
+{"link":{"timestamp_begin":1774207308.017554725, "rt":1.21, "ut":0.21, "st":0.17}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1774207302.174304629}
+{"VCS_COMP_START_TIME": 1774207302.174304629}
+{"VCS_COMP_END_TIME": 1774207309.899355013}
+{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=4.0 +incdir+verilog test/xdp_chain_tb.sv verilog/ipv4_udp_port_filter.sv verilog/xdp_packet_framer.sv verilog/xdp_msg_demux.sv -o build/xdp_chain.simv"}
+{"vcs1": {"peak_mem": 466208}}
+{"vcselab": {"peak_mem": 182604}}
