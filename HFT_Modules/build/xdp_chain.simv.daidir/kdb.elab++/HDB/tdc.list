@@ -1,5 +1,0 @@
-test/xdp_chain_tb.sv
-verilog/ipv4_udp_port_filter.sv
-verilog/sys_defs.svh
-verilog/xdp_msg_demux.sv
-verilog/xdp_packet_framer.sv

@@ -111,6 +111,22 @@ module skewed_hash_table_tb;
     integer test_num;
 
     // ----------------------------------------------------------------
+    // Lookup result capture FIFO (for back-to-back tests)
+    // Runs continuously; reset cap_wr before each batch.
+    // ----------------------------------------------------------------
+    logic               cap_hits   [0:31];
+    logic [VALUE_W-1:0] cap_values [0:31];
+    integer             cap_wr;
+
+    always @(posedge clk) begin
+        if (lookup_result_valid) begin
+            cap_hits[cap_wr]   <= lookup_hit;
+            cap_values[cap_wr] <= lookup_value;
+            cap_wr             <= cap_wr + 1;
+        end
+    end
+
+    // ----------------------------------------------------------------
     // Helper tasks
     // ----------------------------------------------------------------
 
@@ -268,6 +284,7 @@ module skewed_hash_table_tb;
     initial begin
         fail_count   = 0;
         test_num     = 0;
+        cap_wr       = 0;
 
         // Default signal states
         lookup_valid = 1'b0;
@@ -427,24 +444,25 @@ module skewed_hash_table_tb;
         // ============================================================
         // TEST 8: Back-to-back lookups (pipeline throughput)
         //   Issue lookups on consecutive cycles, verify all results
-        //   arrive in order with correct hit/miss.
+        //   arrive in order via the capture FIFO (always block).
         // ============================================================
         test_num = 8;
         $display("\n=== TEST %0d: Back-to-back lookups ===", test_num);
         begin
-            // We'll look up keys 0,1,3,4,5 (key 2 was deleted)
-            // Issue all lookups on consecutive cycles
             logic [KEY_W-1:0]   bb_keys [0:4];
             logic               bb_exp_hit [0:4];
             logic [VALUE_W-1:0] bb_exp_val [0:4];
             integer bb_idx;
-            integer bb_result_cnt;
+            integer bb_base;
 
             bb_keys[0] = test_keys[0]; bb_exp_hit[0] = 1'b1; bb_exp_val[0] = 64'hFE00_DEAD_BEEF_CAFE;
             bb_keys[1] = test_keys[1]; bb_exp_hit[1] = 1'b1; bb_exp_val[1] = test_values[1];
             bb_keys[2] = test_keys[2]; bb_exp_hit[2] = 1'b0; bb_exp_val[2] = '0;  // deleted
             bb_keys[3] = test_keys[3]; bb_exp_hit[3] = 1'b1; bb_exp_val[3] = test_values[3];
             bb_keys[4] = test_keys[4]; bb_exp_hit[4] = 1'b1; bb_exp_val[4] = test_values[4];
+
+            // Record capture FIFO position before issuing
+            bb_base = cap_wr;
 
             // Issue lookups on consecutive rising edges
             for (bb_idx = 0; bb_idx < 5; bb_idx = bb_idx + 1) begin
@@ -455,36 +473,32 @@ module skewed_hash_table_tb;
             @(posedge clk); #1;
             lookup_valid <= 1'b0;
 
-            // Collect results — they arrive 2 cycles after issue
-            bb_result_cnt = 0;
-            repeat (10) begin
-                @(posedge clk); #1;
-                if (lookup_result_valid) begin
-                    if (bb_result_cnt < 5) begin
-                        if (lookup_hit !== bb_exp_hit[bb_result_cnt]) begin
-                            $display("  FAIL: bb[%0d] key=%h hit=%0b expected=%0b",
-                                bb_result_cnt, bb_keys[bb_result_cnt],
-                                lookup_hit, bb_exp_hit[bb_result_cnt]);
-                            fail_count = fail_count + 1;
-                        end else if (bb_exp_hit[bb_result_cnt] &&
-                                    lookup_value !== bb_exp_val[bb_result_cnt]) begin
-                            $display("  FAIL: bb[%0d] key=%h value=%h expected=%h",
-                                bb_result_cnt, bb_keys[bb_result_cnt],
-                                lookup_value, bb_exp_val[bb_result_cnt]);
-                            fail_count = fail_count + 1;
-                        end else begin
-                            $display("  PASS: bb[%0d] key=%h hit=%0b value=%h",
-                                bb_result_cnt, bb_keys[bb_result_cnt],
-                                lookup_hit, lookup_value);
-                        end
-                    end
-                    bb_result_cnt = bb_result_cnt + 1;
-                end
-            end
+            // Wait for pipeline to drain (2-cycle latency after last issue)
+            repeat (4) @(posedge clk); #1;
 
-            if (bb_result_cnt < 5) begin
-                $display("  FAIL: only %0d/5 lookup results received", bb_result_cnt);
+            // Verify captured results
+            if ((cap_wr - bb_base) < 5) begin
+                $display("  FAIL: only %0d/5 lookup results captured", cap_wr - bb_base);
                 fail_count = fail_count + 1;
+            end else begin
+                for (bb_idx = 0; bb_idx < 5; bb_idx = bb_idx + 1) begin
+                    if (cap_hits[bb_base + bb_idx] !== bb_exp_hit[bb_idx]) begin
+                        $display("  FAIL: bb[%0d] key=%h hit=%0b expected=%0b",
+                            bb_idx, bb_keys[bb_idx],
+                            cap_hits[bb_base + bb_idx], bb_exp_hit[bb_idx]);
+                        fail_count = fail_count + 1;
+                    end else if (bb_exp_hit[bb_idx] &&
+                                cap_values[bb_base + bb_idx] !== bb_exp_val[bb_idx]) begin
+                        $display("  FAIL: bb[%0d] key=%h value=%h expected=%h",
+                            bb_idx, bb_keys[bb_idx],
+                            cap_values[bb_base + bb_idx], bb_exp_val[bb_idx]);
+                        fail_count = fail_count + 1;
+                    end else begin
+                        $display("  PASS: bb[%0d] key=%h hit=%0b value=%h",
+                            bb_idx, bb_keys[bb_idx],
+                            cap_hits[bb_base + bb_idx], cap_values[bb_base + bb_idx]);
+                    end
+                end
             end
         end
 

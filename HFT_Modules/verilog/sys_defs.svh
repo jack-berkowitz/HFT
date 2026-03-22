@@ -95,6 +95,25 @@ typedef struct packed {
     logic [7:0]  printable;   // 0 or 1 (Exec only, else 0)
 } pillar_msg_t;
 
+typedef struct packed {
+    logic [31:0] bidprice; //BEST BID PRICE
+    logic [31:0] bidquant;//BEST BID Q
+    logic [31:0] askprice;//BEST ASK PRICE
+    logic [31:0] askquant;//BEST ASK Q
+} orderbook_t;
+
+typedef struct packed {
+    logic        req_valid;
+    pillar_msg_t pillar_msg;
+
+    // result of hash-table lookup on order_id
+    logic        found;
+    logic        old_valid;
+    logic [31:0] old_price;
+    logic [31:0] old_qty;
+    logic [7:0]  old_side;
+} order_lookup_out_t;
+
 // ----------------------------------------------------------------
 // Timescale
 // ----------------------------------------------------------------

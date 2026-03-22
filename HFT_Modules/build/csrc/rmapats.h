@@ -2833,37 +2833,30 @@ static inline U asm_bsf (U in)
 #ifdef __cplusplus
 extern "C" {
 #endif
-void  rmaPropagate0_p_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_f_xdp_chain_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate0_r_xdp_chain_simv_daidir (UB  * pcode);
-void  rmaPropagate0_wn_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_p_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_f_xdp_chain_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate1_r_xdp_chain_simv_daidir (UB  * pcode);
-void  rmaPropagate1_wn_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate2_p_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate2_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate2_f_xdp_chain_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate2_r_xdp_chain_simv_daidir (UB  * pcode);
-void  rmaPropagate2_wn_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate3_p_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate3_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate3_f_xdp_chain_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate3_r_xdp_chain_simv_daidir (UB  * pcode);
-void  rmaPropagate3_wn_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate4_p_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate4_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate4_f_xdp_chain_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate4_r_xdp_chain_simv_daidir (UB  * pcode);
-void  rmaPropagate4_wn_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate5_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate6_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate7_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate8_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate9_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate10_xdp_chain_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_p_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_f_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate0_r_skewed_hash_table_simv_daidir (UB  * pcode);
+void  rmaPropagate0_wn_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_p_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_f_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate1_r_skewed_hash_table_simv_daidir (UB  * pcode);
+void  rmaPropagate1_wn_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate2_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate3_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate4_p_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate4_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate4_f_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate4_r_skewed_hash_table_simv_daidir (UB  * pcode);
+void  rmaPropagate4_wn_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate5_p_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate5_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate5_f_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate5_r_skewed_hash_table_simv_daidir (UB  * pcode);
+void  rmaPropagate5_wn_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate6_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate7_skewed_hash_table_simv_daidir (UB  * pcode, scalar  val);
 void  schedNewEvent (struct dummyq_struct * I1460, EBLK  * I1455, U  I627);
 #ifdef __cplusplus
 }

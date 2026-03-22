@@ -1,3 +1,0 @@
-test/ipv4_udp_port_filter_tb.sv
-verilog/ipv4_udp_port_filter.sv
-verilog/sys_defs.svh

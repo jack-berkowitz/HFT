@@ -306,7 +306,7 @@ module skewed_hash_table #(
                 end
             end
 
-            ST_READ: begin
+            ST_READ, ST_WAIT, ST_COMPARE: begin
                 for (int w = 0; w < N_WAYS; w++)
                     bram_addr_b[w] = hash_fn(op_key_r, w);
             end
@@ -319,7 +319,7 @@ module skewed_hash_table #(
                 bram_wen_b[sel_way_r]   = 1'b1;
             end
 
-            ST_EVICT_READ: begin
+            ST_EVICT_READ, ST_EVICT_WAIT: begin
                 bram_addr_b[evict_dst_way_r] = evict_dst_idx_r;
             end
 
