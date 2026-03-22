@@ -43,12 +43,20 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 // XDP Message Header size (bytes): MsgSize(2) + MsgType(2)
 `define XDP_MSG_HDR_SZ  4
 
-// XDP Message Types — NYSE Integrated Feed (order book relevant)
+// XDP Message Types — raw 16-bit wire values (NYSE Integrated Feed)
 `define XDP_MSG_ADD_ORDER    16'd100
 `define XDP_MSG_MOD_ORDER    16'd101
 `define XDP_MSG_DEL_ORDER    16'd102
 `define XDP_MSG_EXEC_ORDER   16'd103
 `define XDP_MSG_REPLACE      16'd104
+
+// Encoded 3-bit message types (used inside pillar_msg_t after demux)
+//   Compressed from 16-bit wire values to save register/BRAM width
+`define MSG_ADD    3'd0
+`define MSG_MOD    3'd1
+`define MSG_DEL    3'd2
+`define MSG_EXEC   3'd3
+`define MSG_REPL   3'd4
 
 // XDP message sizes (bytes, including 4-byte msg header)
 `define XDP_ADD_ORDER_SZ     39
@@ -58,6 +66,14 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 `define XDP_REPLACE_SZ       42
 
 // ----------------------------------------------------------------
+// Side encoding
+//   Wire: ASCII 'B' (0x42) = Buy, 'S' (0x53) = Sell
+//   Internal: 1-bit  0 = Buy, 1 = Sell
+// ----------------------------------------------------------------
+`define SIDE_BUY   1'b0
+`define SIDE_SELL  1'b1
+
+// ----------------------------------------------------------------
 // Pillar decoded message struct
 //
 // Single superset struct carrying every field that any of the five
@@ -65,22 +81,20 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 // zeroed for a given msg_type.
 //
 //   valid          — pulses high for exactly one cycle per message
-//   msg_type       — 100/101/102/103/104
+//   msg_type       — 3-bit encoded: 0=Add, 1=Mod, 2=Del, 3=Exec, 4=Repl
 //   symbol_index   — SymbolIndex from Symbol Index Mapping (all types)
 //   symbol_seq_num — per-symbol sequence number (all types)
 //   order_id       — 8-byte matching-engine order ID (all types)
-//   new_order_id   — replacement order ID (104 Replace only)
+//   new_order_id   — replacement order ID (Replace only)
 //   price          — integer price, use PriceScaleCode to interpret
-//                    (100 Add, 101 Mod, 103 Exec, 104 Replace)
 //   qty            — share volume
-//                    (100 Add, 101 Mod, 103 Exec, 104 Replace)
-//   trade_id       — execution ID (103 Exec only)
-//   side           — ASCII 'B'=Buy / 'S'=Sell (100 Add only)
-//   printable      — SIP print flag (103 Exec only)
+//   trade_id       — execution ID (Exec only)
+//   side           — 0=Buy, 1=Sell (Add only, else 0)
+//   printable      — SIP print flag (Exec only)
 // ----------------------------------------------------------------
 typedef struct packed {
     logic        valid;
-    logic [15:0] msg_type;
+    logic [2:0]  msg_type;
     logic [31:0] symbol_index;
     logic [31:0] symbol_seq_num;
 
@@ -91,28 +105,49 @@ typedef struct packed {
     logic [31:0] qty;
     logic [31:0] trade_id;
 
-    logic [7:0]  side;        // 'B' / 'S' (Add only, else 0)
+    logic        side;        // 0=Buy, 1=Sell (Add only, else 0)
     logic [7:0]  printable;   // 0 or 1 (Exec only, else 0)
 } pillar_msg_t;
 
+// ----------------------------------------------------------------
+// Top-of-book state per symbol (N=1)
+// ----------------------------------------------------------------
 typedef struct packed {
-    logic [31:0] bidprice; //BEST BID PRICE
-    logic [31:0] bidquant;//BEST BID Q
-    logic [31:0] askprice;//BEST ASK PRICE
-    logic [31:0] askquant;//BEST ASK Q
+    logic [31:0] bidprice;
+    logic [31:0] bidquant;
+    logic [31:0] askprice;
+    logic [31:0] askquant;
 } orderbook_t;
 
+// ----------------------------------------------------------------
+// Output of the order hash lookup stage
+// Carries the original decoded message alongside the hash result
+// ----------------------------------------------------------------
 typedef struct packed {
-    logic        req_valid;
+    logic        valid;
     pillar_msg_t pillar_msg;
 
     // result of hash-table lookup on order_id
-    logic        found;
-    logic        old_valid;
+    logic [31:0] symbol_idx;
     logic [31:0] old_price;
     logic [31:0] old_qty;
-    logic [7:0]  old_side;
+    logic        old_side;
+
+    logic [2:0]  msg_type;
 } order_lookup_out_t;
+
+// ----------------------------------------------------------------
+// Order hash table entry (stored in BRAM)
+//   key:   order_id (64-bit, used externally for hash addressing)
+//   value: price + qty + side = 65 bits per entry
+// ----------------------------------------------------------------
+typedef struct packed {
+    logic [63:0] order_id;
+
+    logic [31:0] price;
+    logic [31:0] qty;
+    logic        side;      // 0=Buy, 1=Sell
+} hash_entry_t;
 
 // ----------------------------------------------------------------
 // Timescale

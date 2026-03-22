@@ -1,9 +1,0 @@
-{"vcs1":{"timestamp_begin":1774208698.657616235, "rt":2.84, "ut":0.42, "st":0.30}}
-{"vcselab":{"timestamp_begin":1774208701.606061106, "rt":1.20, "ut":0.25, "st":0.14}}
-{"link":{"timestamp_begin":1774208702.899894512, "rt":0.92, "ut":0.19, "st":0.14}}
-{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1774208697.779064706}
-{"VCS_COMP_START_TIME": 1774208697.779064706}
-{"VCS_COMP_END_TIME": 1774208704.558876041}
-{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=4.0 +incdir+verilog test/skewed_hash_table_tb.sv verilog/skewed_hash_table.sv -o build/skewed_hash_table.simv"}
-{"vcs1": {"peak_mem": 465604}}
-{"vcselab": {"peak_mem": 182580}}

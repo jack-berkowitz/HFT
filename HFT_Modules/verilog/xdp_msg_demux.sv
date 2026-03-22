@@ -9,10 +9,16 @@
 // Output: single pillar_msg_t struct.  out_msg.valid pulses
 // for exactly one cycle per decoded message.
 //
-// Design: zero-buffer, beat-by-beat extraction.
-// Fields are latched directly from each incoming beat as it
-// arrives, using the msg_type (known from beat 0) to decide
-// which byte lanes map to which output fields.
+// Encoding at beat 0:
+//   Wire 16'd100 → msg_type 3'd0 (MSG_ADD)
+//   Wire 16'd101 → msg_type 3'd1 (MSG_MOD)
+//   Wire 16'd102 → msg_type 3'd2 (MSG_DEL)
+//   Wire 16'd103 → msg_type 3'd3 (MSG_EXEC)
+//   Wire 16'd104 → msg_type 3'd4 (MSG_REPL)
+//
+// Side encoding at beat 4 (Add only):
+//   Wire ASCII 'S' (0x53) → side = 1 (SIDE_SELL)
+//   Anything else          → side = 0 (SIDE_BUY)
 //
 // Beat layout (64-bit LE bus, after framing):
 //   Beat 0 [bytes  0- 7]: MsgSize(2) MsgType(2) SourceTimeNS(4)
@@ -21,18 +27,6 @@
 //   Beat 3 [bytes 24-31]: type-specific
 //   Beat 4 [bytes 32-39]: type-specific
 //   Beat 5 [bytes 40-41]: type-specific (Exec/Replace tail)
-//
-// Beat 3 field map:
-//   Add/Mod:  Price(4) Volume(4)
-//   Delete:   NumParitySplits(1) — message ends here
-//   Exec:     TradeID(4) Price(4)
-//   Replace:  NewOrderID(8)
-//
-// Beat 4 field map:
-//   Add:      Side(1) FirmID(5) NumParitySplits(1)
-//   Modify:   PositionChange(1) PrevPPS(1) NewPPS(1)
-//   Exec:     Volume(4) PrintableFlag(1) NumParitySplits(1) DBExecID(4)
-//   Replace:  Price(4) Volume(4)
 // ============================================================
 module xdp_msg_demux (
     input  logic        clk,
@@ -74,7 +68,7 @@ module xdp_msg_demux (
     // ----------------------------------------------------------------
     // Internal registered fields (build up across beats)
     // ----------------------------------------------------------------
-    logic [15:0] msg_type_r;
+    logic [2:0]  msg_type_r;
     logic [31:0] symbol_index_r;
     logic [31:0] symbol_seq_num_r;
     logic [63:0] order_id_r;
@@ -82,7 +76,7 @@ module xdp_msg_demux (
     logic [31:0] price_r;
     logic [31:0] qty_r;
     logic [31:0] trade_id_r;
-    logic [7:0]  side_r;
+    logic        side_r;
     logic [7:0]  printable_r;
 
     // ----------------------------------------------------------------
@@ -146,16 +140,23 @@ module xdp_msg_demux (
                 S_IDLE: begin
                     beat_cnt_r <= '0;
                     if (s_axis_tvalid) begin
-                        // Beat 0 arrives — extract msg header
-                        beat_cnt_r       <= 3'd1;
-                        msg_type_r       <= s_axis_tdata[31:16];   // bytes 2-3
+                        // Beat 0 arrives — encode 16-bit wire msg_type to 3-bit
+                        beat_cnt_r <= 3'd1;
+                        case (s_axis_tdata[31:16])
+                            `XDP_MSG_ADD_ORDER:  msg_type_r <= `MSG_ADD;
+                            `XDP_MSG_MOD_ORDER:  msg_type_r <= `MSG_MOD;
+                            `XDP_MSG_DEL_ORDER:  msg_type_r <= `MSG_DEL;
+                            `XDP_MSG_EXEC_ORDER: msg_type_r <= `MSG_EXEC;
+                            `XDP_MSG_REPLACE:    msg_type_r <= `MSG_REPL;
+                            default:             msg_type_r <= '0;
+                        endcase
 
                         // Clear type-specific fields for clean output
                         new_order_id_r   <= '0;
                         price_r          <= '0;
                         qty_r            <= '0;
                         trade_id_r       <= '0;
-                        side_r           <= '0;
+                        side_r           <= `SIDE_BUY;
                         printable_r      <= '0;
                     end
                 end
@@ -167,59 +168,59 @@ module xdp_msg_demux (
                         case (beat_cnt_r)
                             // ---- Beat 1: SymbolIndex + SymbolSeqNum ----
                             3'd1: begin
-                                symbol_index_r   <= s_axis_tdata[31:0];   // bytes 8-11
-                                symbol_seq_num_r <= s_axis_tdata[63:32];  // bytes 12-15
+                                symbol_index_r   <= s_axis_tdata[31:0];
+                                symbol_seq_num_r <= s_axis_tdata[63:32];
                             end
 
                             // ---- Beat 2: OrderID (full 64 bits) ----
                             3'd2: begin
-                                order_id_r <= s_axis_tdata[63:0];         // bytes 16-23
+                                order_id_r <= s_axis_tdata[63:0];
                             end
 
                             // ---- Beat 3: type-specific (bytes 24-31) ----
                             3'd3: begin
                                 case (msg_type_r)
-                                    `XDP_MSG_ADD_ORDER,
-                                    `XDP_MSG_MOD_ORDER: begin
-                                        price_r <= s_axis_tdata[31:0];    // bytes 24-27
-                                        qty_r   <= s_axis_tdata[63:32];   // bytes 28-31
+                                    `MSG_ADD,
+                                    `MSG_MOD: begin
+                                        price_r <= s_axis_tdata[31:0];
+                                        qty_r   <= s_axis_tdata[63:32];
                                     end
-                                    `XDP_MSG_EXEC_ORDER: begin
-                                        trade_id_r <= s_axis_tdata[31:0]; // bytes 24-27
-                                        price_r    <= s_axis_tdata[63:32];// bytes 28-31
+                                    `MSG_EXEC: begin
+                                        trade_id_r <= s_axis_tdata[31:0];
+                                        price_r    <= s_axis_tdata[63:32];
                                     end
-                                    `XDP_MSG_REPLACE: begin
-                                        new_order_id_r <= s_axis_tdata[63:0]; // bytes 24-31
+                                    `MSG_REPL: begin
+                                        new_order_id_r <= s_axis_tdata[63:0];
                                     end
-                                    default: ; // Delete: byte 24 = NumParitySplits, ignored
+                                    default: ; // Delete: NumParitySplits, ignored
                                 endcase
                             end
 
                             // ---- Beat 4: type-specific (bytes 32-39) ----
                             3'd4: begin
                                 case (msg_type_r)
-                                    `XDP_MSG_ADD_ORDER: begin
-                                        side_r <= s_axis_tdata[7:0];      // byte 32
+                                    `MSG_ADD: begin
+                                        side_r <= (s_axis_tdata[7:0] == "S") ?
+                                                  `SIDE_SELL : `SIDE_BUY;
                                     end
-                                    `XDP_MSG_EXEC_ORDER: begin
-                                        qty_r       <= s_axis_tdata[31:0];   // bytes 32-35
-                                        printable_r <= s_axis_tdata[39:32];  // byte 36
+                                    `MSG_EXEC: begin
+                                        qty_r       <= s_axis_tdata[31:0];
+                                        printable_r <= s_axis_tdata[39:32];
                                     end
-                                    `XDP_MSG_REPLACE: begin
-                                        price_r <= s_axis_tdata[31:0];    // bytes 32-35
-                                        qty_r   <= s_axis_tdata[63:32];   // bytes 36-39
+                                    `MSG_REPL: begin
+                                        price_r <= s_axis_tdata[31:0];
+                                        qty_r   <= s_axis_tdata[63:32];
                                     end
-                                    default: ; // Mod: PositionChange — not needed for book
+                                    default: ; // Mod: PositionChange — not needed
                                 endcase
                             end
 
-                            default: ; // Beats 5+ — tail bytes, nothing we need
+                            default: ;
                         endcase
                     end
                 end
 
                 S_OUTPUT: begin
-                    // Valid pulse lasts one cycle, then return to idle
                     beat_cnt_r <= '0;
                 end
             endcase

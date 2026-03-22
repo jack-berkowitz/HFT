@@ -7,11 +7,8 @@
 //   ipv4_udp_port_filter → xdp_packet_framer → xdp_msg_demux
 //
 // Output: pillar_msg_t struct (sys_defs.svh)
-//
-// Pretty-prints:
-//   - INPUT:  what was injected into the pipeline
-//   - OUTPUT: what the demux decoded (pillar_msg_t fields)
-//   - RESULT: per-field pass/fail, then overall PASS/FAIL
+//   msg_type: 3-bit encoded (0=Add, 1=Mod, 2=Del, 3=Exec, 4=Repl)
+//   side:     1-bit (0=Buy, 1=Sell)
 // ============================================================
 module xdp_chain_tb;
 
@@ -96,7 +93,20 @@ module xdp_chain_tb;
     //  PRETTY PRINT HELPERS
     // ================================================================
 
-    function string msg_type_name(input [15:0] t);
+    // Encoded 3-bit msg_type → human-readable name
+    function string msg_type_name(input [2:0] t);
+        case (t)
+            `MSG_ADD:  return "ADD ORDER";
+            `MSG_MOD:  return "MODIFY ORDER";
+            `MSG_DEL:  return "DELETE ORDER";
+            `MSG_EXEC: return "ORDER EXECUTION";
+            `MSG_REPL: return "REPLACE ORDER";
+            default:   return "UNKNOWN";
+        endcase
+    endfunction
+
+    // Wire 16-bit msg_type → human-readable (for INPUT display)
+    function string wire_msg_type_name(input [15:0] t);
         case (t)
             16'd100: return "ADD ORDER";
             16'd101: return "MODIFY ORDER";
@@ -107,7 +117,13 @@ module xdp_chain_tb;
         endcase
     endfunction
 
-    function string side_str(input [7:0] s);
+    // 1-bit side → string
+    function string side_str(input logic s);
+        return s ? "SELL" : "BUY";
+    endfunction
+
+    // ASCII side → string (for INPUT display)
+    function string wire_side_str(input [7:0] s);
         case (s)
             "B":     return "BUY";
             "S":     return "SELL";
@@ -115,7 +131,7 @@ module xdp_chain_tb;
         endcase
     endfunction
 
-    // Print what we injected
+    // Print what we injected (shows wire-format values)
     task print_input(
         input string     test_name,
         input [15:0]     msg_type,
@@ -131,8 +147,8 @@ module xdp_chain_tb;
         $display("  ┌─────────────────────────────────────────────────────────────┐");
         $display("  │ %s", test_name);
         $display("  ├─────────────────────────────────────────────────────────────┤");
-        $display("  │ INPUT (injected into AXI-Stream)                           │");
-        $display("  │   msg_type      : %0d (%s)", msg_type, msg_type_name(msg_type));
+        $display("  │ INPUT (wire format)                                        │");
+        $display("  │   msg_type      : %0d (%s)", msg_type, wire_msg_type_name(msg_type));
         $display("  │   symbol_index  : %0d", sym_idx);
         $display("  │   order_id      : 0x%016h", order_id);
         if (msg_type == 16'd104)
@@ -144,30 +160,30 @@ module xdp_chain_tb;
         $display("  │   qty           : %0d", qty);
         end
         if (msg_type == 16'd100)
-        $display("  │   side          : %s", side_str(side));
+        $display("  │   side          : %s (wire: 0x%02h)", wire_side_str(side), side);
         $display("  ├─────────────────────────────────────────────────────────────┤");
     endtask
 
-    // Print what the demux decoded
+    // Print what the demux decoded (shows encoded values)
     task print_output();
-        $display("  │ OUTPUT (pillar_msg_t from demux)                           │");
+        $display("  │ OUTPUT (pillar_msg_t — encoded)                            │");
         $display("  │   .valid         : %0d", decoded.valid);
         $display("  │   .msg_type      : %0d (%s)", decoded.msg_type, msg_type_name(decoded.msg_type));
         $display("  │   .symbol_index  : %0d", decoded.symbol_index);
         $display("  │   .symbol_seq_num: %0d", decoded.symbol_seq_num);
         $display("  │   .order_id      : 0x%016h", decoded.order_id);
-        if (decoded.msg_type == 16'd104)
+        if (decoded.msg_type == `MSG_REPL)
         $display("  │   .new_order_id  : 0x%016h", decoded.new_order_id);
-        if (decoded.msg_type == 16'd103) begin
+        if (decoded.msg_type == `MSG_EXEC) begin
         $display("  │   .trade_id      : %0d", decoded.trade_id);
         $display("  │   .printable     : %0d", decoded.printable);
         end
-        if (decoded.msg_type != 16'd102) begin
+        if (decoded.msg_type != `MSG_DEL) begin
         $display("  │   .price         : %0d", decoded.price);
         $display("  │   .qty           : %0d", decoded.qty);
         end
-        if (decoded.msg_type == 16'd100)
-        $display("  │   .side          : 0x%02h (%s)", decoded.side, side_str(decoded.side));
+        if (decoded.msg_type == `MSG_ADD)
+        $display("  │   .side          : %0d (%s)", decoded.side, side_str(decoded.side));
         $display("  ├─────────────────────────────────────────────────────────────┤");
     endtask
 
@@ -337,11 +353,14 @@ module xdp_chain_tb;
     endtask
 
     // ----------------------------------------------------------------
-    // Scoreboard — returns number of field errors
+    // Scoreboard
     // ----------------------------------------------------------------
     integer fail_count, msg_count, field_errs;
 
-    task check_u16(input string nm, input [15:0] got, exp);
+    task check_3(input string nm, input [2:0] got, exp);
+        if (got !== exp) begin $display("  │   ** MISMATCH %s: got %0d, expected %0d", nm, got, exp); field_errs++; fail_count++; end
+    endtask
+    task check_1(input string nm, input logic got, exp);
         if (got !== exp) begin $display("  │   ** MISMATCH %s: got %0d, expected %0d", nm, got, exp); field_errs++; fail_count++; end
     endtask
     task check_u32(input string nm, input [31:0] got, exp);
@@ -351,7 +370,7 @@ module xdp_chain_tb;
         if (got !== exp) begin $display("  │   ** MISMATCH %s: got 0x%016h, expected 0x%016h", nm, got, exp); field_errs++; fail_count++; end
     endtask
     task check_u8(input string nm, input [7:0] got, exp);
-        if (got !== exp) begin $display("  │   ** MISMATCH %s: got 0x%02h, expected 0x%02h", nm, got, exp); field_errs++; fail_count++; end
+        if (got !== exp) begin $display("  │   ** MISMATCH %s: got %0d, expected %0d", nm, got, exp); field_errs++; fail_count++; end
     endtask
 
     // ----------------------------------------------------------------
@@ -377,13 +396,14 @@ module xdp_chain_tb;
         $display("  ╔═════════════════════════════════════════════════════════════╗");
         $display("  ║  NYSE XDP/Pillar Pipeline Integration Test                 ║");
         $display("  ║  filter -> framer -> demux                                 ║");
+        $display("  ║  msg_type: 3-bit encoded   side: 1-bit encoded             ║");
         $display("  ╚═════════════════════════════════════════════════════════════╝");
 
         rst_n = 0; repeat(4) @(posedge clk); #1;
         rst_n = 1; repeat(2) @(posedge clk); #1;
 
         // ============================================================
-        // TEST 1: Add Order (100)
+        // TEST 1: Add Order (wire 100 → encoded 0)
         // ============================================================
         field_errs = 0;
         build_add_order(32'd1001, 64'hDEAD_0000_0000_0001,
@@ -391,21 +411,21 @@ module xdp_chain_tb;
         print_input("TEST 1: Add Order", 16'd100, 32'd12345,
                     64'hDEAD_0000_0000_0001, 32'd98750, 32'd100, "B", '0, '0);
         axis_send(0); wait_decoded(timed_out);
-        if (timed_out) begin $display("  │ OUTPUT: TIMEOUT — demux never pulsed valid"); fail_count++; end
+        if (timed_out) begin $display("  │ OUTPUT: TIMEOUT"); fail_count++; end
         else begin
             msg_count++; print_output();
-            check_u16("msg_type",   decoded.msg_type,     16'd100);
+            check_3  ("msg_type",   decoded.msg_type,     `MSG_ADD);
             check_u32("symbol_idx", decoded.symbol_index, 32'd12345);
             check_u64("order_id",   decoded.order_id,     64'hDEAD_0000_0000_0001);
             check_u32("price",      decoded.price,        32'd98750);
             check_u32("qty",        decoded.qty,          32'd100);
-            check_u8 ("side",       decoded.side,         "B");
+            check_1  ("side",       decoded.side,         `SIDE_BUY);
         end
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
         // ============================================================
-        // TEST 2: Modify Order (101)
+        // TEST 2: Modify Order (wire 101 → encoded 1)
         // ============================================================
         field_errs = 0;
         build_mod_order(32'd1002, 64'hBEEF_0000_0000_0002,
@@ -416,7 +436,7 @@ module xdp_chain_tb;
         if (timed_out) begin $display("  │ OUTPUT: TIMEOUT"); fail_count++; end
         else begin
             msg_count++; print_output();
-            check_u16("msg_type",   decoded.msg_type,     16'd101);
+            check_3  ("msg_type",   decoded.msg_type,     `MSG_MOD);
             check_u32("symbol_idx", decoded.symbol_index, 32'd12345);
             check_u64("order_id",   decoded.order_id,     64'hBEEF_0000_0000_0002);
             check_u32("price",      decoded.price,        32'd100500);
@@ -426,7 +446,7 @@ module xdp_chain_tb;
         repeat(4) @(posedge clk); #1;
 
         // ============================================================
-        // TEST 3: Delete Order (102)
+        // TEST 3: Delete Order (wire 102 → encoded 2)
         // ============================================================
         field_errs = 0;
         build_del_order(32'd1003, 64'hCAFE_DEAD_BEEF_0003, 32'd42);
@@ -436,7 +456,7 @@ module xdp_chain_tb;
         if (timed_out) begin $display("  │ OUTPUT: TIMEOUT"); fail_count++; end
         else begin
             msg_count++; print_output();
-            check_u16("msg_type",   decoded.msg_type,     16'd102);
+            check_3  ("msg_type",   decoded.msg_type,     `MSG_DEL);
             check_u32("symbol_idx", decoded.symbol_index, 32'd42);
             check_u64("order_id",   decoded.order_id,     64'hCAFE_DEAD_BEEF_0003);
             check_u32("price",      decoded.price,        32'd0);
@@ -446,7 +466,7 @@ module xdp_chain_tb;
         repeat(4) @(posedge clk); #1;
 
         // ============================================================
-        // TEST 4: Order Execution (103)
+        // TEST 4: Order Execution (wire 103 → encoded 3)
         // ============================================================
         field_errs = 0;
         build_exec_order(32'd1004, 64'h1111_2222_3333_4444,
@@ -457,7 +477,7 @@ module xdp_chain_tb;
         if (timed_out) begin $display("  │ OUTPUT: TIMEOUT"); fail_count++; end
         else begin
             msg_count++; print_output();
-            check_u16("msg_type",   decoded.msg_type,     16'd103);
+            check_3  ("msg_type",   decoded.msg_type,     `MSG_EXEC);
             check_u32("symbol_idx", decoded.symbol_index, 32'd9999);
             check_u64("order_id",   decoded.order_id,     64'h1111_2222_3333_4444);
             check_u32("trade_id",   decoded.trade_id,     32'd77777);
@@ -469,7 +489,7 @@ module xdp_chain_tb;
         repeat(4) @(posedge clk); #1;
 
         // ============================================================
-        // TEST 5: Replace Order (104)
+        // TEST 5: Replace Order (wire 104 → encoded 4)
         // ============================================================
         field_errs = 0;
         build_replace_order(32'd1005, 64'hAAAA_BBBB_CCCC_DDDD,
@@ -482,7 +502,7 @@ module xdp_chain_tb;
         if (timed_out) begin $display("  │ OUTPUT: TIMEOUT"); fail_count++; end
         else begin
             msg_count++; print_output();
-            check_u16("msg_type",    decoded.msg_type,      16'd104);
+            check_3  ("msg_type",    decoded.msg_type,      `MSG_REPL);
             check_u32("symbol_idx",  decoded.symbol_index,  32'd5555);
             check_u64("order_id",    decoded.order_id,      64'hAAAA_BBBB_CCCC_DDDD);
             check_u64("new_order_id",decoded.new_order_id,  64'hEEEE_FFFF_0000_1111);
@@ -509,22 +529,22 @@ module xdp_chain_tb;
         repeat(4) @(posedge clk); #1;
 
         // ============================================================
-        // TEST 7: Add Order with idle gaps
+        // TEST 7: Add Order with idle gaps (side = SELL)
         // ============================================================
         field_errs = 0;
         build_add_order(32'd1007, 64'h7777_8888_9999_AAAA,
                         32'd123456, 32'd75, 32'd321, "S");
-        print_input("TEST 7: Add Order (idle gaps between beats)", 16'd100, 32'd321,
+        print_input("TEST 7: Add Order - idle gaps, side=SELL", 16'd100, 32'd321,
                     64'h7777_8888_9999_AAAA, 32'd123456, 32'd75, "S", '0, '0);
         axis_send(2); wait_decoded(timed_out);
         if (timed_out) begin $display("  │ OUTPUT: TIMEOUT"); fail_count++; end
         else begin
             msg_count++; print_output();
-            check_u16("msg_type", decoded.msg_type, 16'd100);
+            check_3  ("msg_type", decoded.msg_type, `MSG_ADD);
             check_u64("order_id", decoded.order_id, 64'h7777_8888_9999_AAAA);
             check_u32("price",    decoded.price,    32'd123456);
             check_u32("qty",      decoded.qty,      32'd75);
-            check_u8 ("side",     decoded.side,     "S");
+            check_1  ("side",     decoded.side,     `SIDE_SELL);
         end
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
@@ -534,29 +554,31 @@ module xdp_chain_tb;
         // ============================================================
         $display("");
         $display("  ┌─────────────────────────────────────────────────────────────┐");
-        $display("  │ TEST 8: Back-to-back Add -> Delete (pipeline throughput)    │");
+        $display("  │ TEST 8: Back-to-back Add -> Delete                         │");
         $display("  ├─────────────────────────────────────────────────────────────┤");
         field_errs = 0;
 
         build_add_order(32'd2001, 64'hA0A0_B0B0_C0C0_D0D0, 32'd50000, 32'd10, 32'd100, "B");
         axis_send(0); wait_decoded(timed_out);
-        if (timed_out) begin $display("  │ pkt A (Add): TIMEOUT"); fail_count++; end
+        if (timed_out) begin $display("  │ pkt A: TIMEOUT"); fail_count++; end
         else begin
             msg_count++;
-            $display("  │ pkt A decoded: type=%0d oid=0x%016h price=%0d qty=%0d",
-                     decoded.msg_type, decoded.order_id, decoded.price, decoded.qty);
-            check_u16("A_type", decoded.msg_type, 16'd100);
+            $display("  │ pkt A: type=%0d (%s) oid=0x%016h price=%0d",
+                     decoded.msg_type, msg_type_name(decoded.msg_type),
+                     decoded.order_id, decoded.price);
+            check_3  ("A_type", decoded.msg_type, `MSG_ADD);
             check_u64("A_oid",  decoded.order_id, 64'hA0A0_B0B0_C0C0_D0D0);
         end
 
         build_del_order(32'd2002, 64'hA0A0_B0B0_C0C0_D0D0, 32'd100);
         axis_send(0); wait_decoded(timed_out);
-        if (timed_out) begin $display("  │ pkt B (Del): TIMEOUT"); fail_count++; end
+        if (timed_out) begin $display("  │ pkt B: TIMEOUT"); fail_count++; end
         else begin
             msg_count++;
-            $display("  │ pkt B decoded: type=%0d oid=0x%016h",
-                     decoded.msg_type, decoded.order_id);
-            check_u16("B_type", decoded.msg_type, 16'd102);
+            $display("  │ pkt B: type=%0d (%s) oid=0x%016h",
+                     decoded.msg_type, msg_type_name(decoded.msg_type),
+                     decoded.order_id);
+            check_3  ("B_type", decoded.msg_type, `MSG_DEL);
             check_u64("B_oid",  decoded.order_id, 64'hA0A0_B0B0_C0C0_D0D0);
         end
         print_result(field_errs);
@@ -573,7 +595,6 @@ module xdp_chain_tb;
         $display("  ├─────────────────────────────────────────────────────────────┤");
         field_errs = 0;
 
-        // Add: 500 shares @ 25000, Buy
         build_add_order(32'd3001, 64'hFACE_0000_0000_0001, 32'd25000, 32'd500, 32'd777, "B");
         axis_send(0); wait_decoded(timed_out);
         if (timed_out) begin $display("  │ 1. Add:  TIMEOUT"); fail_count++; end
@@ -581,12 +602,12 @@ module xdp_chain_tb;
             msg_count++;
             $display("  │ 1. Add:     price=%0d  qty=%0d  side=%s",
                      decoded.price, decoded.qty, side_str(decoded.side));
-            check_u16("add_type", decoded.msg_type, 16'd100);
+            check_3  ("add_type",  decoded.msg_type, `MSG_ADD);
             check_u32("add_price", decoded.price, 32'd25000);
-            check_u32("add_qty", decoded.qty, 32'd500);
+            check_u32("add_qty",   decoded.qty, 32'd500);
+            check_1  ("add_side",  decoded.side, `SIDE_BUY);
         end
 
-        // Modify: reprice to 25100, reduce to 400
         build_mod_order(32'd3002, 64'hFACE_0000_0000_0001, 32'd25100, 32'd400, 32'd777);
         axis_send(0); wait_decoded(timed_out);
         if (timed_out) begin $display("  │ 2. Mod:  TIMEOUT"); fail_count++; end
@@ -594,12 +615,11 @@ module xdp_chain_tb;
             msg_count++;
             $display("  │ 2. Modify: price=%0d  qty=%0d  (was 25000/500)",
                      decoded.price, decoded.qty);
-            check_u16("mod_type", decoded.msg_type, 16'd101);
+            check_3  ("mod_type",  decoded.msg_type, `MSG_MOD);
             check_u32("mod_price", decoded.price, 32'd25100);
-            check_u32("mod_qty", decoded.qty, 32'd400);
+            check_u32("mod_qty",   decoded.qty, 32'd400);
         end
 
-        // Exec: fill 100 of 400 @ 25100
         build_exec_order(32'd3003, 64'hFACE_0000_0000_0001,
                          32'd88888, 32'd25100, 32'd100, 32'd777);
         axis_send(0); wait_decoded(timed_out);
@@ -608,20 +628,19 @@ module xdp_chain_tb;
             msg_count++;
             $display("  │ 3. Exec:   trade=%0d  price=%0d  qty=%0d  (300 remaining)",
                      decoded.trade_id, decoded.price, decoded.qty);
-            check_u16("exec_type", decoded.msg_type, 16'd103);
-            check_u32("exec_tid", decoded.trade_id, 32'd88888);
+            check_3  ("exec_type",  decoded.msg_type, `MSG_EXEC);
+            check_u32("exec_tid",   decoded.trade_id, 32'd88888);
             check_u32("exec_price", decoded.price, 32'd25100);
-            check_u32("exec_qty", decoded.qty, 32'd100);
+            check_u32("exec_qty",   decoded.qty, 32'd100);
         end
 
-        // Delete remaining
         build_del_order(32'd3004, 64'hFACE_0000_0000_0001, 32'd777);
         axis_send(0); wait_decoded(timed_out);
         if (timed_out) begin $display("  │ 4. Del:  TIMEOUT"); fail_count++; end
         else begin
             msg_count++;
             $display("  │ 4. Delete: oid=0x%016h  (order removed)", decoded.order_id);
-            check_u16("del_type", decoded.msg_type, 16'd102);
+            check_3  ("del_type", decoded.msg_type, `MSG_DEL);
         end
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
@@ -644,7 +663,8 @@ module xdp_chain_tb;
             msg_count++;
             $display("  │ 1. Add:     oid=0x%016h  price=%0d  qty=%0d  side=%s",
                      decoded.order_id, decoded.price, decoded.qty, side_str(decoded.side));
-            check_u16("type", decoded.msg_type, 16'd100);
+            check_3("type", decoded.msg_type, `MSG_ADD);
+            check_1("side", decoded.side, `SIDE_SELL);
         end
 
         build_replace_order(32'd4002, 64'hAAAA_0000_0000_0001,
@@ -658,7 +678,7 @@ module xdp_chain_tb;
                      decoded.order_id, decoded.new_order_id);
             $display("  │             price=%0d  qty=%0d  (was 30000/1000)",
                      decoded.price, decoded.qty);
-            check_u16("type",    decoded.msg_type,     16'd104);
+            check_3  ("type",    decoded.msg_type,     `MSG_REPL);
             check_u64("old_oid", decoded.order_id,     64'hAAAA_0000_0000_0001);
             check_u64("new_oid", decoded.new_order_id, 64'hBBBB_0000_0000_0002);
             check_u32("price",   decoded.price,        32'd30500);
@@ -672,7 +692,7 @@ module xdp_chain_tb;
             msg_count++;
             $display("  │ 3. Delete:  oid=0x%016h  (replacement removed)",
                      decoded.order_id);
-            check_u16("type", decoded.msg_type, 16'd102);
+            check_3  ("type", decoded.msg_type, `MSG_DEL);
             check_u64("oid",  decoded.order_id, 64'hBBBB_0000_0000_0002);
         end
         print_result(field_errs);
