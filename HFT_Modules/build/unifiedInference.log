@@ -1,0 +1,12 @@
+verilog/top_of_book.sv:245 YES:SyncFF
+verilog/top_of_book.sv:271 YES:SyncFF
+==================================================
+Unified Inference Statistics
+Number of always_ff:                   2
+Number of always_latch:                0
+Number of always @*:                   0
+Number of always_comb :                5
+Number of always :                     1
+Number of flip-flop candidates:        2
+Number of synchronous flops inferred:  2
+Number of Asynchronous flops inferred: 0

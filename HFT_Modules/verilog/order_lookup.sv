@@ -5,7 +5,7 @@
 //
 // Assumes `include "sys_defs.svh" provides:
 //   pillar_msg_t, order_lookup_out_t, hash_entry_t
-//   `XDP_MSG_ADD_ORDER_COMP  .. `XDP_MSG_REPLACE_COMP
+//   `MSG_ADD  .. `MSG_REPL
 //
 // Instantiates a skewed_hash_table with:
 //   Key   = order_id           (64 bits)
@@ -214,7 +214,7 @@ module order_lookup #(
                         msg_r          <= msg_in;
                         repl_pending_r <= 1'b0;
 
-                        if (msg_in.msg_type == `XDP_MSG_ADD_ORDER_COMP) begin
+                        if (msg_in.msg_type == `MSG_ADD) begin
                             wr_key_r   <= msg_in.order_id;
                             wr_val_r   <= pack_val(msg_in.price,
                                                    msg_in.qty,
@@ -249,7 +249,7 @@ module order_lookup #(
 
                     case (msg_r.msg_type)
                         // -----------------------------------------
-                        `XDP_MSG_MOD_ORDER_COMP: begin
+                        `MSG_MOD: begin
                             if (ht_lu_hit) begin
                                 wr_key_r <= msg_r.order_id;
                                 wr_val_r <= pack_val(
@@ -264,7 +264,7 @@ module order_lookup #(
                         end
 
                         // -----------------------------------------
-                        `XDP_MSG_DEL_ORDER_COMP: begin
+                        `MSG_DEL: begin
                             if (ht_lu_hit) begin
                                 wr_key_r <= msg_r.order_id;
                                 state_r  <= ST_DELETE;
@@ -274,7 +274,7 @@ module order_lookup #(
                         end
 
                         // -----------------------------------------
-                        `XDP_MSG_EXEC_ORDER_COMP: begin
+                        `MSG_EXEC: begin
                             if (ht_lu_hit) begin
                                 if (exec_remaining == 32'd0) begin
                                     wr_key_r <= msg_r.order_id;
@@ -294,7 +294,7 @@ module order_lookup #(
                         end
 
                         // -----------------------------------------
-                        `XDP_MSG_REPLACE_COMP: begin
+                        `MSG_REPL: begin
                             if (ht_lu_hit) begin
                                 wr_key_r       <= msg_r.order_id;
                                 repl_pending_r <= 1'b1;

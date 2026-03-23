@@ -1,0 +1,16 @@
+test/top_of_book_tb.sv:130 YES
+test/top_of_book_tb.sv:138 YES
+test/top_of_book_tb.sv:152 YES
+test/top_of_book_tb.sv:159 YES
+test/top_of_book_tb.sv:167 NO "a dynamic type expression" (168)
+verilog/top_of_book.sv:79 YES
+verilog/top_of_book.sv:149 YES
+verilog/top_of_book.sv:194 YES
+verilog/top_of_book.sv:210 YES
+verilog/top_of_book.sv:245 YES
+verilog/top_of_book.sv:271 YES
+==================================================
+X P R O P   S T A T I S T I C S
+instrumentable assignments:    85
+instrumented assignments:      85
+instrumentation success rate:  100%

@@ -22,43 +22,30 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 // NYSE XDP Protocol Constants
 // ----------------------------------------------------------------
 
-// Default XDP multicast port (varies by channel — override per-instance)
 `define XDP_PORT 16'd11101
 
-// Network + XDP Packet Header overhead (bytes before first XDP message)
-//   Ethernet 14 + IPv4 20 + UDP 8 + XDP Packet Header 16 = 58
 `define XDP_HDR_BYTES 58
-
-// Number of full beats to skip before boundary beat (58 / 8 = 7 full + 2 rem)
 `define XDP_HDR_BEATS 7
-
-// When the framer sits behind the port filter, the filter consumes
-// beats 0–5 (48 bytes) during INSPECT.  The framer only needs to
-// strip the remaining header bytes: 58 - 48 = 10.
 `define XDP_CHAIN_FRAMER_HDR 10
 
-// XDP Packet Header size (bytes)
 `define XDP_PKT_HDR_SZ 16
-
-// XDP Message Header size (bytes): MsgSize(2) + MsgType(2)
 `define XDP_MSG_HDR_SZ  4
 
-// XDP Message Types — raw 16-bit wire values (NYSE Integrated Feed)
+// XDP Message Types — raw 16-bit wire values
 `define XDP_MSG_ADD_ORDER    16'd100
 `define XDP_MSG_MOD_ORDER    16'd101
 `define XDP_MSG_DEL_ORDER    16'd102
 `define XDP_MSG_EXEC_ORDER   16'd103
 `define XDP_MSG_REPLACE      16'd104
 
-// Encoded 3-bit message types (used inside pillar_msg_t after demux)
-//   Compressed from 16-bit wire values to save register/BRAM width
+// Encoded 3-bit message types (after demux)
 `define MSG_ADD    3'd0
 `define MSG_MOD    3'd1
 `define MSG_DEL    3'd2
 `define MSG_EXEC   3'd3
 `define MSG_REPL   3'd4
 
-// XDP message sizes (bytes, including 4-byte msg header)
+// XDP message sizes (bytes)
 `define XDP_ADD_ORDER_SZ     39
 `define XDP_MOD_ORDER_SZ     35
 `define XDP_DEL_ORDER_SZ     25
@@ -66,31 +53,20 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 `define XDP_REPLACE_SZ       42
 
 // ----------------------------------------------------------------
-// Side encoding
-//   Wire: ASCII 'B' (0x42) = Buy, 'S' (0x53) = Sell
-//   Internal: 1-bit  0 = Buy, 1 = Sell
+// Side encoding:  0 = Buy (bid),  1 = Sell (ask)
 // ----------------------------------------------------------------
 `define SIDE_BUY   1'b0
 `define SIDE_SELL  1'b1
 
 // ----------------------------------------------------------------
-// Pillar decoded message struct
-//
-// Single superset struct carrying every field that any of the five
-// order message types (100-104) can produce.  Unused fields are
-// zeroed for a given msg_type.
-//
-//   valid          — pulses high for exactly one cycle per message
-//   msg_type       — 3-bit encoded: 0=Add, 1=Mod, 2=Del, 3=Exec, 4=Repl
-//   symbol_index   — SymbolIndex from Symbol Index Mapping (all types)
-//   symbol_seq_num — per-symbol sequence number (all types)
-//   order_id       — 8-byte matching-engine order ID (all types)
-//   new_order_id   — replacement order ID (Replace only)
-//   price          — integer price, use PriceScaleCode to interpret
-//   qty            — share volume
-//   trade_id       — execution ID (Exec only)
-//   side           — 0=Buy, 1=Sell (Add only, else 0)
-//   printable      — SIP print flag (Exec only)
+// Top-of-book parameters
+// ----------------------------------------------------------------
+`define TOB_LEVELS  3        // price levels tracked per side per symbol
+`define TOB_SYMBOLS 500      // max symbols tracked
+`define SYM_IDX_W   $clog2(`TOB_SYMBOLS)
+
+// ----------------------------------------------------------------
+// Pillar decoded message struct (output of xdp_msg_demux)
 // ----------------------------------------------------------------
 typedef struct packed {
     logic        valid;
@@ -105,23 +81,33 @@ typedef struct packed {
     logic [31:0] qty;
     logic [31:0] trade_id;
 
-    logic        side;        // 0=Buy, 1=Sell (Add only, else 0)
-    logic [7:0]  printable;   // 0 or 1 (Exec only, else 0)
+    logic        side;        // 0=Buy, 1=Sell
+    logic [7:0]  printable;
 } pillar_msg_t;
 
 // ----------------------------------------------------------------
-// Top-of-book state per symbol (N=1)
+// Price level — one entry in the sorted TOB array
+//   qty == 0  means the slot is empty
 // ----------------------------------------------------------------
 typedef struct packed {
-    logic [31:0] bidprice;
-    logic [31:0] bidquant;
-    logic [31:0] askprice;
-    logic [31:0] askquant;
-} orderbook_t;
+    logic [31:0] price;
+    logic [31:0] qty;
+} price_level_t;
+
+// ----------------------------------------------------------------
+// Top-of-book output snapshot
+// ----------------------------------------------------------------
+typedef struct packed {
+    logic                     valid;
+    logic [`SYM_IDX_W-1:0]   symbol_idx;
+    price_level_t             best_bid;
+    price_level_t             best_ask;
+} tob_out_t;
 
 // ----------------------------------------------------------------
 // Output of the order hash lookup stage
-// Carries the original decoded message alongside the hash result
+// Carries the decoded message alongside the hash-table result
+// so the book engine has both wire fields and old-order context.
 // ----------------------------------------------------------------
 typedef struct packed {
     logic        valid;
@@ -138,15 +124,12 @@ typedef struct packed {
 
 // ----------------------------------------------------------------
 // Order hash table entry (stored in BRAM)
-//   key:   order_id (64-bit, used externally for hash addressing)
-//   value: price + qty + side = 65 bits per entry
 // ----------------------------------------------------------------
 typedef struct packed {
     logic [63:0] order_id;
-
     logic [31:0] price;
     logic [31:0] qty;
-    logic        side;      // 0=Buy, 1=Sell
+    logic        side;
 } hash_entry_t;
 
 // ----------------------------------------------------------------

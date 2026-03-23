@@ -7,6 +7,8 @@
 #   make ipv4_udp_port_filter.out   <- compile & run filter testbench
 #   make xdp_packet_framer.out      <- compile & run framer testbench
 #   make xdp_msg_demux.out          <- compile & run demux testbench
+#   make skewed_hash_table.out      <- compile & run hash table testbench
+#   make order_lookup.out           <- compile & run order lookup testbench
 #
 # Chain (integration) target:
 #   make xdp_chain.out              <- compile & run full pipeline TB
@@ -52,8 +54,10 @@ GREP = grep -E --color=auto
 # Individual modules (each has its own testbench)
 MODULES = ipv4_udp_port_filter \
           xdp_packet_framer    \
-          xdp_msg_demux \
-		  skewed_hash_table 
+          xdp_msg_demux        \
+          skewed_hash_table    \
+          order_lookup			\
+		  top_of_book
 
 # Chain (integration) targets — testbench compiles multiple RTL files
 CHAIN_MODULES = xdp_chain
@@ -70,13 +74,18 @@ xdp_packet_framer_DEPS    = verilog/xdp_packet_framer.sv
 
 xdp_msg_demux_DEPS        = verilog/xdp_msg_demux.sv
 
-skewed_hash_table_DEPS        = verilog/skewed_hash_table.sv
+skewed_hash_table_DEPS    = verilog/skewed_hash_table.sv
+
+order_lookup_DEPS         = verilog/order_lookup.sv \
+                            verilog/skewed_hash_table.sv
+
+top_of_book_DEPS		  = verilog/top_of_book.sv
 
 # Chain TB needs all three RTL modules
 xdp_chain_DEPS            = verilog/ipv4_udp_port_filter.sv \
                              verilog/xdp_packet_framer.sv    \
-                             verilog/xdp_msg_demux.sv \
-							 verilog/skewed_hash_table.sv
+                             verilog/xdp_msg_demux.sv        \
+                             verilog/skewed_hash_table.sv
 
 ###############################
 # ---- Compile Targets ---- #
@@ -99,6 +108,16 @@ build/xdp_msg_demux.simv: test/xdp_msg_demux_tb.sv $(xdp_msg_demux_DEPS) | build
 
 build/skewed_hash_table.simv: test/skewed_hash_table_tb.sv $(skewed_hash_table_DEPS) | build
 	@$(call PRINT_COLOR, 5, compiling skewed_hash_table...)
+	$(VCS) $^ -o $@
+	@$(call PRINT_COLOR, 6, done)
+
+build/order_lookup.simv: test/order_lookup_tb.sv $(order_lookup_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling order_lookup...)
+	$(VCS) $^ -o $@
+	@$(call PRINT_COLOR, 6, done)
+
+build/top_of_book.simv: test/top_of_book_tb.sv $(top_of_book_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling order_lookup...)
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)
 
