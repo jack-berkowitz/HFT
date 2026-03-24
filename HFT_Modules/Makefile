@@ -57,7 +57,8 @@ MODULES = ipv4_udp_port_filter \
           xdp_msg_demux        \
           skewed_hash_table    \
           order_lookup			\
-		  top_of_book
+		  top_of_book			\
+		  index_arb_engine
 
 # Chain (integration) targets — testbench compiles multiple RTL files
 CHAIN_MODULES = xdp_chain
@@ -80,6 +81,8 @@ order_lookup_DEPS         = verilog/order_lookup.sv \
                             verilog/skewed_hash_table.sv
 
 top_of_book_DEPS		  = verilog/top_of_book.sv
+
+index_arb_engine_DEPS	  = verilog/index_arb_engine.sv
 
 # Chain TB needs all three RTL modules
 xdp_chain_DEPS            = verilog/ipv4_udp_port_filter.sv \
@@ -117,6 +120,11 @@ build/order_lookup.simv: test/order_lookup_tb.sv $(order_lookup_DEPS) | build
 	@$(call PRINT_COLOR, 6, done)
 
 build/top_of_book.simv: test/top_of_book_tb.sv $(top_of_book_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling order_lookup...)
+	$(VCS) $^ -o $@
+	@$(call PRINT_COLOR, 6, done)
+
+build/index_arb_engine.simv: test/index_arb_engine_tb.sv $(index_arb_engine_DEPS) | build
 	@$(call PRINT_COLOR, 5, compiling order_lookup...)
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)

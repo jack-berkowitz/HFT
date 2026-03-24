@@ -61,9 +61,22 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 // ----------------------------------------------------------------
 // Top-of-book parameters
 // ----------------------------------------------------------------
-`define TOB_LEVELS  3        // price levels tracked per side per symbol
-`define TOB_SYMBOLS 500      // max symbols tracked
-`define SYM_IDX_W   $clog2(`TOB_SYMBOLS)
+`define TOB_LEVELS  3       // price levels tracked per side per symbol
+`define TOB_SYMBOLS 501     // S&P 500 components (0-499) + index tracker (500)
+`define SYM_IDX_W   9       // ceil(log2(501)) = 9 bits
+
+// The symbol index assigned to the actual index instrument (SPY/ES)
+`define IDX_SYMBOL  9'd500
+
+// ----------------------------------------------------------------
+// Fixed-point arithmetic for index calculation
+//   Weights are Q12.20:  12 integer bits, 20 fractional bits
+//   All weights sum to 1.0  (= 1 << 20 = 1_048_576)
+//   Accumulator is Q44.20:  64 bits total
+// ----------------------------------------------------------------
+`define WEIGHT_FRAC_BITS  20
+`define WEIGHT_W          32
+`define ACCUM_W           64
 
 // ----------------------------------------------------------------
 // Pillar decoded message struct (output of xdp_msg_demux)
@@ -103,6 +116,17 @@ typedef struct packed {
     price_level_t             best_bid;
     price_level_t             best_ask;
 } tob_out_t;
+
+// ----------------------------------------------------------------
+// Index arbitrage trade signal
+// ----------------------------------------------------------------
+typedef struct packed {
+    logic                    valid;      // pulses when spread crosses threshold
+    logic                    direction;  // 0=BUY index (computed < actual), 1=SELL index
+    logic signed [`ACCUM_W-1:0] spread; // signed spread in Q44.20 fixed-point
+    logic [`ACCUM_W-1:0]    computed_index;  // our fair-value estimate
+    logic [31:0]             actual_price;    // tracked index instrument mid-price
+} trade_signal_t;
 
 // ----------------------------------------------------------------
 // Output of the order hash lookup stage

@@ -2833,16 +2833,16 @@ static inline U asm_bsf (U in)
 #ifdef __cplusplus
 extern "C" {
 #endif
-void  rmaPropagate0_p_top_of_book_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_top_of_book_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_f_top_of_book_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate0_r_top_of_book_simv_daidir (UB  * pcode);
-void  rmaPropagate0_wn_top_of_book_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_p_top_of_book_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_top_of_book_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_f_top_of_book_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate1_r_top_of_book_simv_daidir (UB  * pcode);
-void  rmaPropagate1_wn_top_of_book_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_p_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_f_index_arb_engine_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate0_r_index_arb_engine_simv_daidir (UB  * pcode);
+void  rmaPropagate0_wn_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_p_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_f_index_arb_engine_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate1_r_index_arb_engine_simv_daidir (UB  * pcode);
+void  rmaPropagate1_wn_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
 void  schedNewEvent (struct dummyq_struct * I1460, EBLK  * I1455, U  I627);
 #ifdef __cplusplus
 }

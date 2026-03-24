@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1774378944.360041381, "rt":3.90, "ut":0.22, "st":0.23}}
+{"vcselab":{"timestamp_begin":1774378948.344351248, "rt":1.48, "ut":0.18, "st":0.10}}
+{"link":{"timestamp_begin":1774378949.924942475, "rt":1.20, "ut":0.14, "st":0.09}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1774378943.716319521}
+{"VCS_COMP_START_TIME": 1774378943.716319521}
+{"VCS_COMP_END_TIME": 1774378951.995421443}
+{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=4.0 +incdir+verilog test/index_arb_engine_tb.sv verilog/index_arb_engine.sv -o build/index_arb_engine.simv"}
+{"vcs1": {"peak_mem": 466204}}
+{"vcselab": {"peak_mem": 166144}}
