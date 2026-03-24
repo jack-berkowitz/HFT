@@ -9,10 +9,12 @@
 #   make xdp_msg_demux.out          <- compile & run demux testbench
 #   make skewed_hash_table.out      <- compile & run hash table testbench
 #   make order_lookup.out           <- compile & run order lookup testbench
+#   make order_gen_tx.out           <- compile & run TX path testbench
 #
-# Chain (integration) target:
-#   make xdp_chain.out              <- compile & run full pipeline TB
+# Chain (integration) targets:
+#   make xdp_chain.out              <- compile & run front-end chain TB
 #                                      (filter → framer → demux)
+#   make hft_pipeline.out           <- compile & run full 7-stage pipeline TB
 #
 # Other targets:
 #   make <module>.verdi             <- open waveforms in Verdi
@@ -58,10 +60,11 @@ MODULES = ipv4_udp_port_filter \
           skewed_hash_table    \
           order_lookup			\
 		  top_of_book			\
-		  index_arb_engine
+		  index_arb_engine	\
+		  order_gen_tx
 
 # Chain (integration) targets — testbench compiles multiple RTL files
-CHAIN_MODULES = xdp_chain
+CHAIN_MODULES = xdp_chain hft_pipeline
 
 # All targets that can be built and run
 ALL_TARGETS = $(MODULES) $(CHAIN_MODULES)
@@ -84,11 +87,23 @@ top_of_book_DEPS		  = verilog/top_of_book.sv
 
 index_arb_engine_DEPS	  = verilog/index_arb_engine.sv
 
-# Chain TB needs all three RTL modules
+order_gen_tx_DEPS         = verilog/order_gen_tx.sv
+
+# Front-end chain TB (filter + framer + demux)
 xdp_chain_DEPS            = verilog/ipv4_udp_port_filter.sv \
                              verilog/xdp_packet_framer.sv    \
                              verilog/xdp_msg_demux.sv        \
                              verilog/skewed_hash_table.sv
+
+# Full pipeline integration TB (all 7 stages)
+hft_pipeline_DEPS         = verilog/ipv4_udp_port_filter.sv \
+                             verilog/xdp_packet_framer.sv    \
+                             verilog/xdp_msg_demux.sv        \
+                             verilog/skewed_hash_table.sv    \
+                             verilog/order_lookup.sv          \
+                             verilog/top_of_book.sv           \
+                             verilog/index_arb_engine.sv      \
+                             verilog/order_gen_tx.sv
 
 ###############################
 # ---- Compile Targets ---- #
@@ -129,10 +144,19 @@ build/index_arb_engine.simv: test/index_arb_engine_tb.sv $(index_arb_engine_DEPS
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)
 
-# ---- Chain (integration) testbench ---- #
-# Compiles the chain TB together with all three RTL modules
+build/order_gen_tx.simv: test/order_gen_tx_tb.sv $(order_gen_tx_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling order_gen_tx...)
+	$(VCS) $^ -o $@
+	@$(call PRINT_COLOR, 6, done)
+
+# ---- Chain (integration) testbenches ---- #
 build/xdp_chain.simv: test/xdp_chain_tb.sv $(xdp_chain_DEPS) | build
 	@$(call PRINT_COLOR, 5, compiling xdp_chain - filter + framer + demux...)
+	$(VCS) $^ -o $@
+	@$(call PRINT_COLOR, 6, done)
+
+build/hft_pipeline.simv: test/hft_pipeline_tb.sv $(hft_pipeline_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling hft_pipeline - full 7-stage integration...)
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)
 
