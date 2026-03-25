@@ -1,680 +1,394 @@
 """
-hft_dashboard.py — Dark-themed HFT Pipeline Trading Dashboard
+hft_dashboard.py — Browser-based HFT Pipeline Trading Dashboard
 
-Professional trading terminal UI showing:
+Opens a dark-themed trading terminal in your default browser.
+Works from a background thread (no tkinter main-thread restriction).
+
+Panels:
   1. Live market feed (scrolling input messages)
-  2. S&P 500 index order book
-  3. Slideable order book viewer for any symbol
+  2. Order book viewer with symbol selector
+  3. S&P 500 index order book
   4. Trade signal output blotter
-  5. Pause / Play / Step controls
+  5. Pause / Play controls + status bar
 """
 
-import tkinter as tk
-from tkinter import ttk
+import http.server
+import json
 import queue
+import threading
+import webbrowser
 import time
-import math
-from typing import Dict, List, Optional
+import socket
 
-# ═══════════════════════════════════════════════════════════════════════
-# COLOUR PALETTE — dark trading terminal aesthetic
-# ═══════════════════════════════════════════════════════════════════════
-C = {
-    "bg_dark":     "#0a0e17",
-    "bg_panel":    "#111827",
-    "bg_card":     "#1a2332",
-    "bg_input":    "#0f1a2e",
-    "border":      "#2a3a52",
-    "border_lite": "#1e2d42",
-    "text":        "#e2e8f0",
-    "text_dim":    "#64748b",
-    "text_muted":  "#475569",
-    "bid_green":   "#22c55e",
-    "bid_bg":      "#052e16",
-    "bid_bar":     "#15803d",
-    "ask_red":     "#ef4444",
-    "ask_bg":      "#2a0a0a",
-    "ask_bar":     "#991b1b",
-    "accent":      "#3b82f6",
-    "accent_dim":  "#1e3a5f",
-    "warn":        "#f59e0b",
-    "header":      "#0f172a",
-    "sell_badge":  "#7f1d1d",
-    "buy_badge":   "#14532d",
+_state = {
+    "inputs": [],
+    "books": {},
+    "trades": [],
+    "status": {},
+    "history": [],
+    "stocks": [],
+}
+_state_lock = threading.Lock()
+_control_q = None
+
+MAX_HISTORY = 500
+
+HTML_PAGE = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HFT Pipeline — Trading Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg-dark: #0a0e17; --bg-panel: #111827; --bg-card: #1a2332;
+    --bg-input: #0d1520; --border: #2a3a52; --text: #e2e8f0;
+    --text-dim: #64748b; --text-muted: #475569;
+    --bid: #22c55e; --bid-bar: rgba(34,197,94,0.25);
+    --ask: #ef4444; --ask-bar: rgba(239,68,68,0.25);
+    --accent: #3b82f6; --accent-dim: #1e3a5f;
+    --warn: #f59e0b; --purple: #a78bfa;
+    --mono: 'JetBrains Mono', 'Consolas', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+  body { background: var(--bg-dark); color: var(--text); font-family: var(--sans); font-size: 13px; overflow: hidden; height: 100vh; }
+
+  .header { background: #0f172a; height: 52px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--border); gap: 24px; }
+  .header .logo { font-size: 15px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+  .header .logo span { color: var(--warn); }
+  .stat { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+  .stat b { color: var(--text); font-weight: 600; }
+  .stat.green b { color: var(--bid); }
+  .stat.amber b { color: var(--warn); }
+  .stat.red b { color: var(--ask); }
+  .controls { margin-left: auto; display: flex; gap: 8px; }
+  .btn { font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 6px 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text); cursor: pointer; transition: all 0.15s; }
+  .btn:hover { background: var(--accent-dim); border-color: var(--accent); }
+  .btn.play { color: var(--bid); }
+  .btn.pause { color: var(--warn); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1.4fr; grid-template-rows: 1fr 1fr; gap: 6px; padding: 6px; height: calc(100vh - 52px); }
+  .panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+  .panel-header { padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--accent); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .panel-header .icon { font-size: 15px; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 0; background: var(--bg-input); }
+  .panel-body::-webkit-scrollbar { width: 6px; }
+  .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .feed-line { font-family: var(--mono); font-size: 11px; padding: 2px 12px; white-space: nowrap; border-bottom: 1px solid rgba(42,58,82,0.3); }
+  .feed-line.buy { color: var(--bid); }
+  .feed-line.sell { color: var(--ask); }
+  .feed-line.mod { color: var(--warn); }
+  .feed-line.exec { color: var(--purple); }
+  .feed-line.del { color: var(--text-dim); }
+
+  .book-controls { padding: 8px 14px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .book-controls select { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-family: var(--mono); font-size: 11px; }
+  .book-controls input[type=range] { flex: 1; accent-color: var(--accent); }
+  .book-controls label { font-size: 11px; color: var(--text-dim); }
+  .book-controls .snap-label { font-family: var(--mono); font-size: 10px; color: var(--warn); min-width: 70px; text-align: right; }
+
+  .book-table { width: 100%; border-collapse: collapse; }
+  .book-table th { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg-input); }
+  .book-table th:nth-child(1), .book-table th:nth-child(2) { text-align: right; }
+  .book-table th:nth-child(4), .book-table th:nth-child(5) { text-align: left; }
+  .book-table th:nth-child(3) { text-align: center; }
+  .book-row td { font-family: var(--mono); font-size: 12px; padding: 5px 12px; }
+  .book-row .bid-price { color: var(--bid); text-align: right; font-weight: 600; }
+  .book-row .bid-qty { color: var(--text-dim); text-align: right; }
+  .book-row .spacer { width: 20px; }
+  .book-row .ask-price { color: var(--ask); text-align: left; font-weight: 600; }
+  .book-row .ask-qty { color: var(--text-dim); text-align: left; }
+  .mid-label { text-align: center; font-size: 10px; color: var(--text-muted); padding: 6px; font-family: var(--mono); }
+
+  .trade-header { font-family: var(--mono); font-size: 10px; color: var(--text-muted); padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--bg-input); position: sticky; top: 0; white-space: pre; }
+  .trade-line { font-family: var(--mono); font-size: 11px; padding: 3px 12px; border-bottom: 1px solid rgba(42,58,82,0.3); white-space: pre; }
+  .trade-line.sell { color: var(--ask); }
+  .trade-line.buy { color: var(--bid); }
+
+  .idx-stats { padding: 8px 14px; display: flex; gap: 24px; font-family: var(--mono); font-size: 13px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .idx-stats .computed { color: var(--bid); }
+  .idx-stats .actual { color: var(--text); }
+  .idx-stats .spread { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">&#9889; HFT PIPELINE <span>SIMULATOR</span></div>
+  <div class="stat" id="s-cycle">CYCLE <b>0</b></div>
+  <div class="stat" id="s-orders">ORDERS <b>0</b></div>
+  <div class="stat amber" id="s-trades">TRADES <b>0</b></div>
+  <div class="stat" id="s-pos">POS <b>0</b></div>
+  <div class="stat green" id="s-idx">IDX <b>$0.00</b></div>
+  <div class="controls">
+    <button class="btn play" onclick="sendCmd('play')">&#9654; Play</button>
+    <button class="btn pause" onclick="sendCmd('pause')">&#9208; Pause</button>
+  </div>
+</div>
+<div class="grid">
+  <div class="panel">
+    <div class="panel-header"><span class="icon">&#128202;</span> LIVE MARKET FEED</div>
+    <div class="panel-body" id="feed"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><span class="icon">&#128214;</span> ORDER BOOK VIEWER</div>
+    <div class="book-controls">
+      <label>Symbol:</label>
+      <select id="sym-select"></select>
+      <label>History:</label>
+      <input type="range" id="hist-slider" min="0" max="0" value="0" oninput="onHistSlide()">
+      <span class="snap-label" id="snap-label">LIVE</span>
+    </div>
+    <div class="panel-body" id="book-view"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><span class="icon">&#127919;</span> TRADE SIGNALS</div>
+    <div class="panel-body" id="trades">
+      <div class="trade-header">  #    DIR      SPREAD      COMPUTED      ACTUAL      CYCLE</div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><span class="icon">&#128200;</span> S&amp;P 500 INDEX BOOK</div>
+    <div class="idx-stats">
+      <span class="computed" id="idx-comp">Computed: --</span>
+      <span class="actual" id="idx-actual">Best bid: --</span>
+      <span class="spread" id="idx-spread">Best ask: --</span>
+    </div>
+    <div class="panel-body" id="idx-book"></div>
+  </div>
+</div>
+<script>
+const POLL_MS = 120;
+let allBooks = {}, historySnaps = [], selectedSym = 0, idxSym = 0, stockList = [];
+function $(id) { return document.getElementById(id); }
+
+async function poll() {
+  try {
+    const r = await fetch('/api/state');
+    const d = await r.json();
+    if (d.stocks && d.stocks.length && !stockList.length) {
+      stockList = d.stocks;
+      idxSym = d.stocks[d.stocks.length - 1].idx;
+      const sel = $('sym-select');
+      sel.innerHTML = '';
+      d.stocks.forEach(s => { const o = document.createElement('option'); o.value = s.idx; o.textContent = s.ticker + ' (' + s.idx + ')'; sel.appendChild(o); });
+      selectedSym = d.stocks[0].idx;
+      sel.onchange = function() { selectedSym = parseInt(this.value); renderBook(); };
+    }
+    if (d.inputs && d.inputs.length) {
+      const feed = $('feed');
+      d.inputs.forEach(ev => {
+        const div = document.createElement('div');
+        const tag = ev.type==='ADD' ? (ev.side==='BUY' ? 'buy' : 'sell') : ev.type==='MOD' ? 'mod' : ev.type==='EXEC' ? 'exec' : 'del';
+        div.className = 'feed-line ' + tag;
+        div.textContent = `${String(ev.cycle).padStart(7)}  ${ev.type.padEnd(5)} ${ev.ticker.padEnd(8)} ${ev.side==='BUY'?'B':'S'}  $${(ev.price/100).toFixed(2).padStart(9)} x ${String(ev.qty).padEnd(5)}`;
+        feed.appendChild(div);
+      });
+      while (feed.children.length > 400) feed.removeChild(feed.firstChild);
+      feed.scrollTop = feed.scrollHeight;
+    }
+    if (d.books && Object.keys(d.books).length) allBooks = d.books;
+    if (d.history && d.history.length) { historySnaps = d.history; $('hist-slider').max = Math.max(0, historySnaps.length - 1); }
+    if (d.trades && d.trades.length) {
+      const tc = $('trades');
+      d.trades.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'trade-line ' + t.direction.toLowerCase();
+        div.textContent = `${String(t.number).padStart(4)}   ${t.direction.padStart(4)}   $${t.spread_dollars.toFixed(2).padStart(10)}   $${t.computed_index.toFixed(2).padStart(10)}   $${(t.actual_price/100).toFixed(2).padStart(8)}   ${String(t.cycle).padStart(8)}`;
+        tc.appendChild(div);
+      });
+      tc.scrollTop = tc.scrollHeight;
+    }
+    if (d.status && d.status.cycle) {
+      const st = d.status;
+      $('s-cycle').innerHTML = 'CYCLE <b>' + st.cycle.toLocaleString() + '</b>';
+      $('s-orders').innerHTML = 'ORDERS <b>' + st.order_count + '</b>';
+      $('s-trades').innerHTML = 'TRADES <b>' + st.trades + '</b>';
+      const np = st.net_position;
+      $('s-pos').className = 'stat ' + (np>0?'green':np<0?'red':'');
+      $('s-pos').innerHTML = 'POS <b>' + (np>=0?'+':'') + np + '</b>';
+      $('s-idx').innerHTML = 'IDX <b>$' + st.computed_index.toFixed(2) + '</b>';
+    }
+    renderBook(); renderIdxBook();
+  } catch(e) {}
+  setTimeout(poll, POLL_MS);
 }
 
-FONT_MONO   = ("JetBrains Mono", "Consolas", "Menlo", "monospace")
-FONT_SANS   = ("Segoe UI", "SF Pro Display", "Helvetica Neue", "sans-serif")
-FONT_HEADER = ("Segoe UI Semibold", "SF Pro Display", "Helvetica Neue")
+function renderBookTable(container, bookData) {
+  if (!bookData) { container.innerHTML = '<div class="mid-label">No data</div>'; return; }
+  const bids = bookData.bids || [], asks = bookData.asks || [];
+  const n = Math.max(bids.length, asks.length, 1);
+  let html = '<table class="book-table"><thead><tr><th>Qty</th><th>Bid</th><th></th><th>Ask</th><th>Qty</th></tr></thead><tbody>';
+  for (let i = 0; i < n; i++) {
+    html += '<tr class="book-row">';
+    html += i < bids.length ? `<td class="bid-qty">${bids[i][1]}</td><td class="bid-price">$${(bids[i][0]/100).toFixed(2)}</td>` : '<td></td><td></td>';
+    html += '<td class="spacer"></td>';
+    html += i < asks.length ? `<td class="ask-price">$${(asks[i][0]/100).toFixed(2)}</td><td class="ask-qty">${asks[i][1]}</td>` : '<td></td><td></td>';
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  if (bids.length && asks.length) html += `<div class="mid-label">mid $${((bids[0][0]+asks[0][0])/200).toFixed(2)}  &middot;  spread $${((asks[0][0]-bids[0][0])/100).toFixed(2)}</div>`;
+  container.innerHTML = html;
+}
+
+function renderBook() {
+  const idx = parseInt($('hist-slider').value);
+  let bd;
+  if (idx < historySnaps.length - 1) { const s = historySnaps[idx]; $('snap-label').textContent = 'CYC ' + s[0]; bd = s[1][selectedSym]; }
+  else { $('snap-label').textContent = 'LIVE'; bd = allBooks[selectedSym]; }
+  renderBookTable($('book-view'), bd);
+}
+
+function renderIdxBook() {
+  const bd = allBooks[idxSym];
+  renderBookTable($('idx-book'), bd);
+  if (bd) {
+    if (bd.bids && bd.bids.length) $('idx-actual').textContent = 'Best bid: $' + (bd.bids[0][0]/100).toFixed(2);
+    if (bd.asks && bd.asks.length) $('idx-spread').textContent = 'Best ask: $' + (bd.asks[0][0]/100).toFixed(2);
+  }
+}
+
+function onHistSlide() { renderBook(); }
+async function sendCmd(cmd) { try { await fetch('/api/control?cmd='+cmd); } catch(e) {} }
+poll();
+</script>
+</body>
+</html>"""
 
 
-def _mono(size=11):
-    return (FONT_MONO[0], size)
+class DashboardHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args): pass
 
-def _sans(size=11, bold=False):
-    w = "bold" if bold else "normal"
-    return (FONT_SANS[0], size, w)
+    def do_GET(self):
+        if self.path == '/' or self.path == '/index.html':
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.end_headers()
+            self.wfile.write(HTML_PAGE.encode())
+        elif self.path == '/api/state':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Cache-Control', 'no-cache')
+            self.end_headers()
+            with _state_lock:
+                payload = {"inputs": list(_state["inputs"]), "books": dict(_state["books"]),
+                           "trades": list(_state["trades"]), "status": dict(_state["status"]),
+                           "history": list(_state["history"]), "stocks": _state["stocks"]}
+                _state["inputs"].clear()
+                _state["trades"].clear()
+            self.wfile.write(json.dumps(payload).encode())
+        elif self.path.startswith('/api/control'):
+            cmd = self.path.split('cmd=')[-1] if 'cmd=' in self.path else ''
+            if _control_q and cmd:
+                try: _control_q.put_nowait(cmd)
+                except queue.Full: pass
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'ok')
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+
+def _find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
 
 
 class HFTDashboard:
-    """Main dashboard window — call run() from a background thread."""
-
     def __init__(self, input_q, book_q, trade_q, status_q, control_q,
                  stocks, ticker_map, tracker):
-        self.input_q   = input_q
-        self.book_q    = book_q
-        self.trade_q   = trade_q
-        self.status_q  = status_q
+        global _control_q
+        self.input_q = input_q
+        self.book_q = book_q
+        self.trade_q = trade_q
+        self.status_q = status_q
         self.control_q = control_q
-        self.stocks    = stocks
-        self.ticker_map = ticker_map
-        self.tracker   = tracker
+        _control_q = control_q
+        self.tracker = tracker
+        self.port = _find_free_port()
+        self._running = True
+        with _state_lock:
+            _state["stocks"] = stocks
 
-        self.paused = False
-        self.current_books = {}
-        self.history_snaps = []
-        self.selected_sym = 0
-        self.idx_sym = max(s["idx"] for s in stocks)
+    def run(self):
+        server = http.server.HTTPServer(('127.0.0.1', self.port), DashboardHandler)
+        server.timeout = 0.1
+        srv_t = threading.Thread(target=self._serve, args=(server,), daemon=True)
+        srv_t.start()
+        url = f'http://127.0.0.1:{self.port}'
+        print(f"\n  ⚡ Dashboard: {url}\n")
+        webbrowser.open(url)
+        while self._running:
+            self._drain_queues()
+            time.sleep(0.05)
+        server.shutdown()
 
-        self.root = tk.Tk()
-        self.root.title("HFT Pipeline — Trading Dashboard")
-        self.root.configure(bg=C["bg_dark"])
-        self.root.geometry("1400x900")
-        self.root.minsize(1100, 700)
-        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+    def _serve(self, server):
+        while self._running:
+            server.handle_request()
 
-        self._setup_styles()
-        self._build_ui()
+    def stop(self):
+        self._running = False
 
-    # ══════════════════════════════════════════════════════════════════
-    # THEME & STYLES
-    # ══════════════════════════════════════════════════════════════════
-    def _setup_styles(self):
-        style = ttk.Style(self.root)
-        style.theme_use("clam")
-        style.configure(".", background=C["bg_dark"], foreground=C["text"],
-                         borderwidth=0, font=_sans(11))
-        style.configure("TFrame", background=C["bg_dark"])
-        style.configure("Card.TFrame", background=C["bg_panel"])
-        style.configure("TLabel", background=C["bg_dark"],
-                         foreground=C["text"], font=_sans(11))
-        style.configure("Header.TLabel", background=C["header"],
-                         foreground=C["text"], font=_sans(13, bold=True))
-        style.configure("Dim.TLabel", foreground=C["text_dim"], font=_sans(10))
-        style.configure("Stat.TLabel", foreground=C["accent"],
-                         font=_mono(13), background=C["header"])
-        style.configure("Title.TLabel", foreground=C["text"],
-                         font=_sans(12, bold=True), background=C["bg_panel"])
-        style.configure("TButton", background=C["bg_card"],
-                         foreground=C["text"], font=_sans(11, bold=True),
-                         padding=(12, 6))
-        style.map("TButton",
-                   background=[("active", C["accent_dim"])],
-                   foreground=[("active", C["text"])])
-        style.configure("Play.TButton", foreground=C["bid_green"])
-        style.configure("Pause.TButton", foreground=C["warn"])
-        style.configure("TCombobox", fieldbackground=C["bg_card"],
-                         background=C["bg_card"], foreground=C["text"],
-                         selectbackground=C["accent_dim"],
-                         font=_mono(11))
-        style.configure("Horizontal.TScale", background=C["bg_dark"],
-                         troughcolor=C["bg_card"])
-
-    # ══════════════════════════════════════════════════════════════════
-    # BUILD UI
-    # ══════════════════════════════════════════════════════════════════
-    def _build_ui(self):
-        # ── Header bar ──
-        hdr = tk.Frame(self.root, bg=C["header"], height=56)
-        hdr.pack(fill="x", side="top")
-        hdr.pack_propagate(False)
-
-        tk.Label(hdr, text="  \u26A1  HFT PIPELINE SIMULATOR",
-                 font=(FONT_HEADER[0], 15, "bold"),
-                 bg=C["header"], fg=C["accent"]).pack(side="left", padx=8)
-
-        # Status labels
-        self._lbl_cycle = tk.Label(hdr, text="CYCLE 0", font=_mono(11),
-                                    bg=C["header"], fg=C["text_dim"])
-        self._lbl_cycle.pack(side="left", padx=20)
-        self._lbl_orders = tk.Label(hdr, text="ORDERS 0", font=_mono(11),
-                                     bg=C["header"], fg=C["text_dim"])
-        self._lbl_orders.pack(side="left", padx=10)
-        self._lbl_trades = tk.Label(hdr, text="TRADES 0", font=_mono(11),
-                                     bg=C["header"], fg=C["warn"])
-        self._lbl_trades.pack(side="left", padx=10)
-        self._lbl_pos = tk.Label(hdr, text="POS 0", font=_mono(11),
-                                  bg=C["header"], fg=C["text_dim"])
-        self._lbl_pos.pack(side="left", padx=10)
-        self._lbl_index = tk.Label(hdr, text="IDX $0.00", font=_mono(11),
-                                    bg=C["header"], fg=C["bid_green"])
-        self._lbl_index.pack(side="left", padx=10)
-
-        # Controls
-        ctrl = tk.Frame(hdr, bg=C["header"])
-        ctrl.pack(side="right", padx=12)
-        self._btn_play = ttk.Button(ctrl, text="\u25B6  Play",
-                                     style="Play.TButton",
-                                     command=self._on_play)
-        self._btn_play.pack(side="left", padx=4)
-        self._btn_pause = ttk.Button(ctrl, text="\u23F8  Pause",
-                                      style="Pause.TButton",
-                                      command=self._on_pause)
-        self._btn_pause.pack(side="left", padx=4)
-        self._btn_step = ttk.Button(ctrl, text="\u23ED  Step",
-                                     command=self._on_step)
-        self._btn_step.pack(side="left", padx=4)
-
-        # ── Main body: 2×2 grid ──
-        body = tk.Frame(self.root, bg=C["bg_dark"])
-        body.pack(fill="both", expand=True, padx=8, pady=8)
-        body.columnconfigure(0, weight=2)
-        body.columnconfigure(1, weight=3)
-        body.rowconfigure(0, weight=1)
-        body.rowconfigure(1, weight=1)
-
-        # Panel 1: Live Inputs (top-left)
-        self._build_input_panel(body, 0, 0)
-        # Panel 2: Order Book Viewer (top-right)
-        self._build_book_panel(body, 0, 1)
-        # Panel 3: Trade Output (bottom-left)
-        self._build_trade_panel(body, 1, 0)
-        # Panel 4: S&P 500 Index Book (bottom-right)
-        self._build_index_panel(body, 1, 1)
-
-    # ── Panel builders ──
-
-    def _panel_frame(self, parent, row, col, title, icon=""):
-        outer = tk.Frame(parent, bg=C["bg_panel"], highlightbackground=C["border"],
-                          highlightthickness=1)
-        outer.grid(row=row, column=col, sticky="nsew", padx=4, pady=4)
-        outer.columnconfigure(0, weight=1)
-        outer.rowconfigure(1, weight=1)
-
-        hdr = tk.Frame(outer, bg=C["bg_panel"], height=32)
-        hdr.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
-        tk.Label(hdr, text=f"{icon}  {title}", font=_sans(12, bold=True),
-                 bg=C["bg_panel"], fg=C["accent"]).pack(side="left")
-        return outer, hdr
-
-    def _build_input_panel(self, parent, row, col):
-        frame, hdr = self._panel_frame(parent, row, col,
-                                         "LIVE MARKET FEED", "\U0001F4CA")
-        # Scrollable text
-        txt = tk.Text(frame, bg=C["bg_input"], fg=C["text"], font=_mono(10),
-                       wrap="none", bd=0, highlightthickness=0,
-                       insertbackground=C["text"], padx=8, pady=4,
-                       cursor="arrow", state="disabled")
-        sb = tk.Scrollbar(frame, command=txt.yview, bg=C["bg_card"],
-                           troughcolor=C["bg_dark"], width=8)
-        txt.configure(yscrollcommand=sb.set)
-        txt.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
-        sb.grid(row=1, column=1, sticky="ns", pady=(0, 8))
-        frame.columnconfigure(0, weight=1)
-
-        txt.tag_configure("buy", foreground=C["bid_green"])
-        txt.tag_configure("sell", foreground=C["ask_red"])
-        txt.tag_configure("time", foreground=C["text_muted"])
-        txt.tag_configure("mod", foreground=C["warn"])
-        txt.tag_configure("exec", foreground="#a78bfa")
-        txt.tag_configure("del", foreground=C["text_dim"])
-        self._input_txt = txt
-
-    def _build_book_panel(self, parent, row, col):
-        frame, hdr = self._panel_frame(parent, row, col,
-                                         "ORDER BOOK VIEWER", "\U0001F4D6")
-
-        # Symbol selector
-        sel_frame = tk.Frame(hdr, bg=C["bg_panel"])
-        sel_frame.pack(side="right")
-        tk.Label(sel_frame, text="Symbol:", font=_sans(10),
-                 bg=C["bg_panel"], fg=C["text_dim"]).pack(side="left", padx=4)
-
-        sym_options = [f"{s['ticker']} ({s['idx']})" for s in self.stocks]
-        self._sym_var = tk.StringVar(value=sym_options[0] if sym_options else "")
-        combo = ttk.Combobox(sel_frame, textvariable=self._sym_var,
-                              values=sym_options, state="readonly", width=18)
-        combo.pack(side="left", padx=4)
-        combo.bind("<<ComboboxSelected>>", self._on_sym_change)
-
-        # History slider
-        sl_frame = tk.Frame(frame, bg=C["bg_panel"])
-        sl_frame.grid(row=2, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 4))
-        tk.Label(sl_frame, text="History:", font=_sans(9),
-                 bg=C["bg_panel"], fg=C["text_muted"]).pack(side="left")
-        self._hist_slider = tk.Scale(sl_frame, from_=0, to=0,
-                                      orient="horizontal", bg=C["bg_panel"],
-                                      fg=C["text_dim"], troughcolor=C["bg_card"],
-                                      highlightthickness=0, bd=0,
-                                      sliderrelief="flat", font=_mono(8),
-                                      command=self._on_hist_slide)
-        self._hist_slider.pack(side="left", fill="x", expand=True, padx=8)
-        self._lbl_snap = tk.Label(sl_frame, text="LIVE", font=_mono(9),
-                                   bg=C["bg_panel"], fg=C["warn"])
-        self._lbl_snap.pack(side="right")
-
-        # Book canvas
-        self._book_canvas = tk.Canvas(frame, bg=C["bg_input"], bd=0,
-                                       highlightthickness=0)
-        self._book_canvas.grid(row=1, column=0, columnspan=2,
-                                sticky="nsew", padx=8, pady=4)
-        frame.columnconfigure(0, weight=1)
-
-    def _build_trade_panel(self, parent, row, col):
-        frame, hdr = self._panel_frame(parent, row, col,
-                                         "TRADE SIGNALS", "\U0001F3AF")
-        txt = tk.Text(frame, bg=C["bg_input"], fg=C["text"], font=_mono(10),
-                       wrap="none", bd=0, highlightthickness=0,
-                       padx=8, pady=4, cursor="arrow", state="disabled")
-        sb = tk.Scrollbar(frame, command=txt.yview, bg=C["bg_card"],
-                           troughcolor=C["bg_dark"], width=8)
-        txt.configure(yscrollcommand=sb.set)
-        txt.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
-        sb.grid(row=1, column=1, sticky="ns", pady=(0, 8))
-        frame.columnconfigure(0, weight=1)
-
-        txt.tag_configure("sell", foreground=C["ask_red"])
-        txt.tag_configure("buy", foreground=C["bid_green"])
-        txt.tag_configure("hdr", foreground=C["text_muted"])
-        txt.tag_configure("spread", foreground=C["warn"])
-
-        # Insert column header
-        txt.configure(state="normal")
-        txt.insert("end",
-            f" {'#':>4}  {'DIR':^5}  {'SPREAD':>12}  {'COMPUTED':>12}  "
-            f"{'ACTUAL':>10}  {'CYCLE':>8}\n", "hdr")
-        txt.insert("end", " " + "\u2500" * 68 + "\n", "hdr")
-        txt.configure(state="disabled")
-        self._trade_txt = txt
-
-    def _build_index_panel(self, parent, row, col):
-        frame, hdr = self._panel_frame(parent, row, col,
-                                         "S&P 500 INDEX BOOK", "\U0001F4C8")
-
-        # Index stats
-        stats = tk.Frame(frame, bg=C["bg_panel"])
-        stats.grid(row=1, column=0, sticky="ew", padx=12, pady=4)
-
-        self._lbl_comp = tk.Label(stats, text="Computed: --",
-                                   font=_mono(12), bg=C["bg_panel"],
-                                   fg=C["bid_green"])
-        self._lbl_comp.pack(side="left", padx=(0, 20))
-        self._lbl_actual = tk.Label(stats, text="Actual: --",
-                                     font=_mono(12), bg=C["bg_panel"],
-                                     fg=C["text"])
-        self._lbl_actual.pack(side="left", padx=(0, 20))
-        self._lbl_spread = tk.Label(stats, text="Spread: --",
-                                     font=_mono(12), bg=C["bg_panel"],
-                                     fg=C["warn"])
-        self._lbl_spread.pack(side="left")
-
-        # Index book canvas
-        self._idx_canvas = tk.Canvas(frame, bg=C["bg_input"], bd=0,
-                                      highlightthickness=0)
-        self._idx_canvas.grid(row=2, column=0, sticky="nsew",
-                               padx=8, pady=(4, 8))
-        frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(2, weight=1)
-
-    # ══════════════════════════════════════════════════════════════════
-    # ORDER BOOK RENDERING — price ladder with quantity bars
-    # ══════════════════════════════════════════════════════════════════
-    def _draw_book(self, canvas, book_data, title=""):
-        canvas.delete("all")
-        w = canvas.winfo_width()
-        h = canvas.winfo_height()
-        if w < 20 or h < 20:
-            return
-
-        bids = book_data.get("bids", [])
-        asks = book_data.get("asks", [])
-
-        mid_x = w // 2
-        row_h = 32
-        pad_y = 10
-        col_w = mid_x - 20
-
-        # Find max qty for bar scaling
-        all_qty = [q for _, q in bids] + [q for _, q in asks]
-        max_qty = max(all_qty) if all_qty else 1
-
-        # Column headers
-        canvas.create_text(mid_x - col_w // 2, pad_y,
-                            text="QTY        BID", font=_mono(9),
-                            fill=C["text_muted"], anchor="n")
-        canvas.create_text(mid_x + col_w // 2, pad_y,
-                            text="ASK        QTY", font=_mono(9),
-                            fill=C["text_muted"], anchor="n")
-
-        # Divider line
-        canvas.create_line(mid_x, pad_y + 4, mid_x, h - 4,
-                            fill=C["border"], width=1, dash=(2, 4))
-
-        y_start = pad_y + 22
-        n_rows = max(len(bids), len(asks), 1)
-
-        for i in range(n_rows):
-            y = y_start + i * row_h
-            if y + row_h > h:
-                break
-
-            # Bid side (left)
-            if i < len(bids):
-                bp, bq = bids[i]
-                bar_w = max(4, int((bq / max_qty) * (col_w - 90)))
-                # Bar (grows left from center)
-                canvas.create_rectangle(
-                    mid_x - 8 - bar_w, y + 4,
-                    mid_x - 8, y + row_h - 4,
-                    fill=C["bid_bg"], outline=""
-                )
-                canvas.create_rectangle(
-                    mid_x - 8 - bar_w, y + 4,
-                    mid_x - 8, y + row_h - 4,
-                    fill="", outline=C["bid_bar"], width=1
-                )
-                # Price
-                canvas.create_text(mid_x - 14, y + row_h // 2,
-                                    text=f"${bp/100:.2f}",
-                                    font=_mono(11), fill=C["bid_green"],
-                                    anchor="e")
-                # Qty
-                canvas.create_text(mid_x - 8 - bar_w - 6, y + row_h // 2,
-                                    text=str(bq), font=_mono(10),
-                                    fill=C["text_dim"], anchor="e")
-
-            # Ask side (right)
-            if i < len(asks):
-                ap, aq = asks[i]
-                bar_w = max(4, int((aq / max_qty) * (col_w - 90)))
-                canvas.create_rectangle(
-                    mid_x + 8, y + 4,
-                    mid_x + 8 + bar_w, y + row_h - 4,
-                    fill=C["ask_bg"], outline=""
-                )
-                canvas.create_rectangle(
-                    mid_x + 8, y + 4,
-                    mid_x + 8 + bar_w, y + row_h - 4,
-                    fill="", outline=C["ask_bar"], width=1
-                )
-                canvas.create_text(mid_x + 14, y + row_h // 2,
-                                    text=f"${ap/100:.2f}",
-                                    font=_mono(11), fill=C["ask_red"],
-                                    anchor="w")
-                canvas.create_text(mid_x + 8 + bar_w + 6, y + row_h // 2,
-                                    text=str(aq), font=_mono(10),
-                                    fill=C["text_dim"], anchor="w")
-
-        # Mid-price label
-        if bids and asks:
-            mid = (bids[0][0] + asks[0][0]) / 2
-            canvas.create_text(mid_x, h - 8,
-                                text=f"mid ${mid/100:.2f}",
-                                font=_mono(9), fill=C["text_muted"],
-                                anchor="s")
-
-    # ══════════════════════════════════════════════════════════════════
-    # CALLBACKS
-    # ══════════════════════════════════════════════════════════════════
-    def _on_play(self):
-        self.paused = False
-        self.control_q.put("play")
-
-    def _on_pause(self):
-        self.paused = True
-        self.control_q.put("pause")
-
-    def _on_step(self):
-        self.control_q.put("step")
-
-    def _on_close(self):
-        self.control_q.put("quit")
-        self.root.destroy()
-
-    def _on_sym_change(self, event=None):
-        val = self._sym_var.get()
-        try:
-            idx = int(val.split("(")[-1].rstrip(")"))
-            self.selected_sym = idx
-        except (ValueError, IndexError):
-            pass
-        self._refresh_book_display()
-
-    def _on_hist_slide(self, val):
-        idx = int(float(val))
-        if idx < len(self.history_snaps):
-            cyc, snap = self.history_snaps[idx]
-            self._lbl_snap.config(text=f"CYC {cyc}")
-            if self.selected_sym in snap:
-                self._draw_book(self._book_canvas, snap[self.selected_sym])
-        elif self.history_snaps:
-            self._lbl_snap.config(text="LIVE")
-            self._refresh_book_display()
-
-    def _refresh_book_display(self):
-        book = self.current_books.get(self.selected_sym,
-                                       {"bids": [], "asks": []})
-        self._draw_book(self._book_canvas, book)
-
-    # ══════════════════════════════════════════════════════════════════
-    # QUEUE POLLING — called every 40ms
-    # ══════════════════════════════════════════════════════════════════
-    def _poll(self):
-        # Process input events
-        count = 0
-        while count < 40:
-            try:
-                ev = self.input_q.get_nowait()
-                count += 1
-                self._append_input(ev)
-            except queue.Empty:
-                break
-
-        # Process book updates
+    def _drain_queues(self):
+        batch = []
+        for _ in range(50):
+            try: batch.append(self.input_q.get_nowait())
+            except queue.Empty: break
+        if batch:
+            with _state_lock: _state["inputs"].extend(batch)
         try:
             while True:
                 bk = self.book_q.get_nowait()
-                self.current_books = bk.get("books", {})
-                cyc = bk.get("cycle", 0)
-                self.history_snaps.append((cyc, dict(self.current_books)))
-                self._hist_slider.config(to=max(0, len(self.history_snaps) - 1))
-        except queue.Empty:
-            pass
-
-        # Process trade signals
+                with _state_lock:
+                    _state["books"] = bk.get("books", {})
+                    _state["history"].append((bk.get("cycle", 0), dict(_state["books"])))
+                    if len(_state["history"]) > MAX_HISTORY:
+                        _state["history"] = _state["history"][-MAX_HISTORY:]
+        except queue.Empty: pass
+        tb = []
         try:
-            while True:
-                tr = self.trade_q.get_nowait()
-                self._append_trade(tr)
-        except queue.Empty:
-            pass
-
-        # Process status
+            while True: tb.append(self.trade_q.get_nowait())
+        except queue.Empty: pass
+        if tb:
+            with _state_lock: _state["trades"].extend(tb)
         try:
             while True:
                 st = self.status_q.get_nowait()
-                self._update_status(st)
-        except queue.Empty:
-            pass
-
-        # Refresh book display
-        self._refresh_book_display()
-        self._refresh_index_display()
-
-        self.root.after(40, self._poll)
-
-    def _append_input(self, ev):
-        txt = self._input_txt
-        txt.configure(state="normal")
-
-        cyc = ev.get("cycle", 0)
-        mtype = ev.get("type", "?")
-        ticker = ev.get("ticker", "?")
-        price = ev.get("price", 0)
-        qty = ev.get("qty", 0)
-        side = ev.get("side", "?")
-
-        tag_map = {"ADD": "buy" if side == "BUY" else "sell",
-                   "MOD": "mod", "DEL": "del", "EXEC": "exec"}
-        tag = tag_map.get(mtype, "time")
-
-        line = (f" {cyc:>7}  {mtype:<5} {ticker:<8} "
-                f"{'B' if side == 'BUY' else 'S'} "
-                f"${price/100:>9.2f} x {qty:<5}\n")
-        txt.insert("end", line, tag)
-        txt.see("end")
-
-        # Keep buffer bounded
-        lines = int(txt.index("end-1c").split(".")[0])
-        if lines > 500:
-            txt.delete("1.0", f"{lines - 400}.0")
-
-        txt.configure(state="disabled")
-
-    def _append_trade(self, tr):
-        txt = self._trade_txt
-        txt.configure(state="normal")
-
-        num  = tr.get("number", 0)
-        dire = tr.get("direction", "?")
-        sprd = tr.get("spread_dollars", 0)
-        comp = tr.get("computed_index", 0)
-        act  = tr.get("actual_price", 0)
-        cyc  = tr.get("cycle", 0)
-        tag  = "sell" if dire == "SELL" else "buy"
-
-        line = (f" {num:>4}  {dire:^5}  ${sprd:>+10.2f}  "
-                f"${comp:>10.2f}  ${act/100:>8.2f}  {cyc:>8}\n")
-        txt.insert("end", line, tag)
-        txt.see("end")
-        txt.configure(state="disabled")
-
-    def _update_status(self, st):
-        cyc = st.get("cycle", 0)
-        oc  = st.get("order_count", 0)
-        np  = st.get("net_position", 0)
-        ci  = st.get("computed_index", 0)
-        tc  = st.get("trades", 0)
-
-        self._lbl_cycle.config(text=f"CYCLE {cyc:,}")
-        self._lbl_orders.config(text=f"ORDERS {oc}")
-        self._lbl_trades.config(text=f"TRADES {tc}")
-        pos_color = C["ask_red"] if np < 0 else C["bid_green"] if np > 0 else C["text_dim"]
-        self._lbl_pos.config(text=f"POS {np:+d}", fg=pos_color)
-        self._lbl_index.config(text=f"IDX ${ci:,.2f}")
-
-    def _refresh_index_display(self):
-        idx_book = self.current_books.get(self.idx_sym,
-                                           {"bids": [], "asks": []})
-        self._draw_book(self._idx_canvas, idx_book)
-
-        # Update index stats from latest status
-        bids = idx_book.get("bids", [])
-        asks = idx_book.get("asks", [])
-        if bids:
-            self._lbl_actual.config(text=f"Best bid: ${bids[0][0]/100:.2f}")
-        if asks:
-            self._lbl_spread.config(text=f"Best ask: ${asks[0][0]/100:.2f}")
-
-    # ══════════════════════════════════════════════════════════════════
-    # RUN — starts the tkinter main loop (call from thread)
-    # ══════════════════════════════════════════════════════════════════
-    def run(self):
-        # Delay first poll slightly so widgets are mapped
-        self.root.after(200, self._poll)
-        try:
-            self.root.mainloop()
-        except Exception:
-            pass
+                with _state_lock: _state["status"] = st
+        except queue.Empty: pass
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# STANDALONE MODE — run the GUI with fake data for UI testing
-# ═══════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
-    import threading, random, time as _time
+    import random as _rng
 
-    inp_q = queue.Queue(5000)
-    bk_q  = queue.Queue(5000)
-    tr_q  = queue.Queue(1000)
-    st_q  = queue.Queue(500)
-    ctl_q = queue.Queue(100)
-
-    # Fake stocks
-    fake_stocks = [
-        {"ticker": "AAPL", "idx": 0, "base_price": 19200},
-        {"ticker": "MSFT", "idx": 1, "base_price": 42500},
-        {"ticker": "AMZN", "idx": 2, "base_price": 18700},
-        {"ticker": "NVDA", "idx": 3, "base_price": 88000},
-        {"ticker": "GOOGL","idx": 4, "base_price": 17500},
-        {"ticker": "SPY",  "idx": 5, "base_price": 52500},
-    ]
-    ticker_map = {s["idx"]: s["ticker"] for s in fake_stocks}
-
+    inp_q, bk_q, tr_q, st_q, ctl_q = queue.Queue(5000), queue.Queue(5000), queue.Queue(1000), queue.Queue(500), queue.Queue(100)
+    fake_stocks = [{"ticker": "AAPL", "idx": 0, "base_price": 19200}, {"ticker": "MSFT", "idx": 1, "base_price": 42500},
+                   {"ticker": "AMZN", "idx": 2, "base_price": 18700}, {"ticker": "NVDA", "idx": 3, "base_price": 88000},
+                   {"ticker": "GOOGL", "idx": 4, "base_price": 17500}, {"ticker": "SPY", "idx": 5, "base_price": 52500}]
     class FakeTracker:
-        def all_symbols(self): return list(range(6))
-        def get_book(self, sym): return {"bids": [], "asks": []}
         history = []
-
-    def fake_data_pump():
-        rng = random.Random(99)
-        cyc = 0
-        trade_n = 0
+    def pump():
+        r = _rng.Random(99); cyc = 0; tn = 0
         while True:
-            _time.sleep(0.15)
-            cyc += 50
-            s = rng.choice(fake_stocks)
-            side = rng.choice(["BUY", "SELL"])
-            tp = rng.choice(["ADD", "MOD", "DEL", "EXEC"])
-            try:
-                inp_q.put_nowait({
-                    "cycle": cyc, "type": tp, "ticker": s["ticker"],
-                    "sym": s["idx"], "price": s["base_price"] + rng.randint(-200, 200),
-                    "qty": rng.choice([50, 100, 200]), "side": side,
-                })
-            except queue.Full:
-                pass
-
-            # Fake books
-            books = {}
-            for fs in fake_stocks:
-                bp = fs["base_price"]
-                books[fs["idx"]] = {
-                    "bids": [(bp - 50 - i*30, rng.randint(50, 400)) for i in range(3)],
-                    "asks": [(bp + 50 + i*30, rng.randint(50, 400)) for i in range(3)],
-                }
-            try:
-                bk_q.put_nowait({"cycle": cyc, "books": books})
-            except queue.Full:
-                pass
-
-            if rng.random() < 0.15:
-                trade_n += 1
-                d = rng.choice(["BUY", "SELL"])
-                try:
-                    tr_q.put_nowait({
-                        "number": trade_n, "direction": d,
-                        "spread_dollars": rng.uniform(-3, 3),
-                        "computed_index": 525.0 + rng.uniform(-5, 5),
-                        "actual_price": 52500 + rng.randint(-200, 200),
-                        "cycle": cyc,
-                    })
-                except queue.Full:
-                    pass
-
-            try:
-                st_q.put_nowait({
-                    "cycle": cyc, "order_count": cyc // 50,
-                    "net_position": rng.randint(-500, 500),
-                    "computed_index": 525.0 + rng.uniform(-2, 2),
-                    "trades": trade_n,
-                })
-            except queue.Full:
-                pass
-
-    pump = threading.Thread(target=fake_data_pump, daemon=True)
-    pump.start()
-
-    dash = HFTDashboard(inp_q, bk_q, tr_q, st_q, ctl_q,
-                         fake_stocks, ticker_map, FakeTracker())
+            time.sleep(0.2); cyc += 50; s = r.choice(fake_stocks)
+            try: inp_q.put_nowait({"cycle": cyc, "type": r.choice(["ADD","MOD","DEL","EXEC"]), "ticker": s["ticker"], "sym": s["idx"], "price": s["base_price"]+r.randint(-200,200), "qty": r.choice([50,100,200]), "side": r.choice(["BUY","SELL"])})
+            except queue.Full: pass
+            books = {fs["idx"]: {"bids": [(fs["base_price"]-50-i*30, r.randint(50,400)) for i in range(3)], "asks": [(fs["base_price"]+50+i*30, r.randint(50,400)) for i in range(3)]} for fs in fake_stocks}
+            try: bk_q.put_nowait({"cycle": cyc, "books": books})
+            except queue.Full: pass
+            if r.random() < 0.15:
+                tn += 1
+                try: tr_q.put_nowait({"number": tn, "direction": r.choice(["BUY","SELL"]), "spread_dollars": r.uniform(-3,3), "computed_index": 525+r.uniform(-5,5), "actual_price": 52500+r.randint(-200,200), "cycle": cyc})
+                except queue.Full: pass
+            try: st_q.put_nowait({"cycle": cyc, "order_count": cyc//50, "net_position": r.randint(-500,500), "computed_index": 525+r.uniform(-2,2), "trades": tn})
+            except queue.Full: pass
+    threading.Thread(target=pump, daemon=True).start()
+    dash = HFTDashboard(inp_q, bk_q, tr_q, st_q, ctl_q, fake_stocks, {}, FakeTracker())
     dash.run()

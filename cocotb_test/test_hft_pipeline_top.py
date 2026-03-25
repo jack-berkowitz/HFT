@@ -707,7 +707,7 @@ async def test_hft_pipeline(dut):
     # ------------------------------------------------------------------
     # 1. Start clock (250 MHz = 4 ns)
     # ------------------------------------------------------------------
-    cocotb.start_soon(Clock(dut.clk, 4, units="ns").start())
+    cocotb.start_soon(Clock(dut.clk, 4, unit="ns").start())
 
     # ------------------------------------------------------------------
     # 2. Start GUI in background thread
@@ -948,10 +948,9 @@ async def test_hft_pipeline(dut):
     logger.info(f"  Snapshots:    {len(tracker.history)}")
     logger.info("=" * 60)
 
-    # Keep GUI alive a bit
+    # Keep GUI alive — wait for user to close the window
     if gui_thread and gui_thread.is_alive():
-        logger.info("GUI still open — close window to finish")
-        for _ in range(500):
-            await ClockCycles(dut.clk, 100)
-            if not gui_thread.is_alive():
-                break
+        logger.info("GUI still open — close the window to finish simulation")
+        while gui_thread.is_alive():
+            await ClockCycles(dut.clk, 10000)
+        logger.info("GUI closed — exiting")
