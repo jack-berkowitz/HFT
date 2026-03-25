@@ -5,11 +5,11 @@ SIM          ?= icarus
 TOPLEVEL_LANG = verilog
 
 # RTL sources — path relative to this Makefile
-VDIR = ../verilog
+VDIR = ../HFT_modules/verilog
 
 VERILOG_SOURCES  = $(VDIR)/hft_pipeline_top.sv    \
                    $(VDIR)/ipv4_udp_port_filter.sv \
-                   $(VDIR)/xdp_packet_framer.sv    \
+                   $(VDIR)/XDP_packet_framer.sv    \
                    $(VDIR)/xdp_msg_demux.sv        \
                    $(VDIR)/skewed_hash_table.sv    \
                    $(VDIR)/order_lookup.sv          \
