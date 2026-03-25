@@ -15,6 +15,7 @@
 #   make xdp_chain.out              <- compile & run front-end chain TB
 #                                      (filter → framer → demux)
 #   make hft_pipeline.out           <- compile & run full 7-stage pipeline TB
+#   make hft_pipeline_top.out       <- compile & run top-level wrapper TB
 #
 # Other targets:
 #   make <module>.verdi             <- open waveforms in Verdi
@@ -60,11 +61,11 @@ MODULES = ipv4_udp_port_filter \
           skewed_hash_table    \
           order_lookup			\
 		  top_of_book			\
-		  index_arb_engine	\
+		  index_arb_engine		\
 		  order_gen_tx
 
 # Chain (integration) targets — testbench compiles multiple RTL files
-CHAIN_MODULES = xdp_chain hft_pipeline
+CHAIN_MODULES = xdp_chain hft_pipeline hft_pipeline_top
 
 # All targets that can be built and run
 ALL_TARGETS = $(MODULES) $(CHAIN_MODULES)
@@ -95,7 +96,7 @@ xdp_chain_DEPS            = verilog/ipv4_udp_port_filter.sv \
                              verilog/xdp_msg_demux.sv        \
                              verilog/skewed_hash_table.sv
 
-# Full pipeline integration TB (all 7 stages)
+# Full pipeline integration TB (all 7 stages, no top wrapper)
 hft_pipeline_DEPS         = verilog/ipv4_udp_port_filter.sv \
                              verilog/xdp_packet_framer.sv    \
                              verilog/xdp_msg_demux.sv        \
@@ -103,6 +104,17 @@ hft_pipeline_DEPS         = verilog/ipv4_udp_port_filter.sv \
                              verilog/order_lookup.sv          \
                              verilog/top_of_book.sv           \
                              verilog/index_arb_engine.sv      \
+                             verilog/order_gen_tx.sv
+
+# Top-level wrapper TB (hft_pipeline_top.sv + all sub-modules)
+hft_pipeline_top_DEPS     = verilog/hft_pipeline_top.sv      \
+                             verilog/ipv4_udp_port_filter.sv  \
+                             verilog/xdp_packet_framer.sv     \
+                             verilog/xdp_msg_demux.sv         \
+                             verilog/skewed_hash_table.sv     \
+                             verilog/order_lookup.sv           \
+                             verilog/top_of_book.sv            \
+                             verilog/index_arb_engine.sv       \
                              verilog/order_gen_tx.sv
 
 ###############################
@@ -135,12 +147,12 @@ build/order_lookup.simv: test/order_lookup_tb.sv $(order_lookup_DEPS) | build
 	@$(call PRINT_COLOR, 6, done)
 
 build/top_of_book.simv: test/top_of_book_tb.sv $(top_of_book_DEPS) | build
-	@$(call PRINT_COLOR, 5, compiling order_lookup...)
+	@$(call PRINT_COLOR, 5, compiling top_of_book...)
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)
 
 build/index_arb_engine.simv: test/index_arb_engine_tb.sv $(index_arb_engine_DEPS) | build
-	@$(call PRINT_COLOR, 5, compiling order_lookup...)
+	@$(call PRINT_COLOR, 5, compiling index_arb_engine...)
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)
 
@@ -157,6 +169,11 @@ build/xdp_chain.simv: test/xdp_chain_tb.sv $(xdp_chain_DEPS) | build
 
 build/hft_pipeline.simv: test/hft_pipeline_tb.sv $(hft_pipeline_DEPS) | build
 	@$(call PRINT_COLOR, 5, compiling hft_pipeline - full 7-stage integration...)
+	$(VCS) $^ -o $@
+	@$(call PRINT_COLOR, 6, done)
+
+build/hft_pipeline_top.simv: test/hft_pipeline_top_tb.sv $(hft_pipeline_top_DEPS) | build
+	@$(call PRINT_COLOR, 5, compiling hft_pipeline_top - top-level wrapper integration...)
 	$(VCS) $^ -o $@
 	@$(call PRINT_COLOR, 6, done)
 

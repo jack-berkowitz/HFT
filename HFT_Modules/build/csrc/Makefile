@@ -8,7 +8,7 @@ VSRC=/home/jackberk/HFT/HFT_Modules
 TARGET_ARCH=
 
 # Choose name of executable 
-PRODUCTBASE=$(VSRC)/build/index_arb_engine.simv
+PRODUCTBASE=$(VSRC)/build/hft_pipeline_top.simv
 
 PRODUCT=$(PRODUCTBASE)
 
@@ -39,7 +39,7 @@ STDLIB =
 STRIPFLAGS= 
 
 PRE_LDFLAGS= # Loader Flags
-LDFLAGS= -rdynamic  -Wl,-rpath='$$ORIGIN'/index_arb_engine.simv.daidir -Wl,-rpath=./index_arb_engine.simv.daidir -Wl,-rpath=/usr/caen/vcs-2023.12-SP2-1/linux64/lib -L/usr/caen/vcs-2023.12-SP2-1/linux64/lib 
+LDFLAGS= -rdynamic  -Wl,-rpath='$$ORIGIN'/hft_pipeline_top.simv.daidir -Wl,-rpath=./hft_pipeline_top.simv.daidir -Wl,-rpath=/usr/caen/vcs-2023.12-SP2-1/linux64/lib -L/usr/caen/vcs-2023.12-SP2-1/linux64/lib 
 # Picarchive Flags
 PICLDFLAGS= -Wl,-rpath-link=./ 
 PIC_LD=ld

@@ -1,0 +1,11 @@
+/home/jackberk/HFT/HFT_Modules/test/hft_pipeline_top_tb.sv
+/home/jackberk/HFT/HFT_Modules/verilog/hft_pipeline_top.sv
+/home/jackberk/HFT/HFT_Modules/verilog/index_arb_engine.sv
+/home/jackberk/HFT/HFT_Modules/verilog/ipv4_udp_port_filter.sv
+/home/jackberk/HFT/HFT_Modules/verilog/order_gen_tx.sv
+/home/jackberk/HFT/HFT_Modules/verilog/order_lookup.sv
+/home/jackberk/HFT/HFT_Modules/verilog/skewed_hash_table.sv
+/home/jackberk/HFT/HFT_Modules/verilog/sys_defs.svh
+/home/jackberk/HFT/HFT_Modules/verilog/top_of_book.sv
+/home/jackberk/HFT/HFT_Modules/verilog/xdp_msg_demux.sv
+/home/jackberk/HFT/HFT_Modules/verilog/xdp_packet_framer.sv

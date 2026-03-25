@@ -2833,16 +2833,46 @@ static inline U asm_bsf (U in)
 #ifdef __cplusplus
 extern "C" {
 #endif
-void  rmaPropagate0_p_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate0_f_index_arb_engine_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate0_r_index_arb_engine_simv_daidir (UB  * pcode);
-void  rmaPropagate0_wn_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_p_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
-void  rmaPropagate1_f_index_arb_engine_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
-void  rmaPropagate1_r_index_arb_engine_simv_daidir (UB  * pcode);
-void  rmaPropagate1_wn_index_arb_engine_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate0_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate1_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate2_p_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate2_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate2_f_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate2_r_hft_pipeline_top_simv_daidir (UB  * pcode);
+void  rmaPropagate2_wn_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate3_p_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate3_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate3_f_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate3_r_hft_pipeline_top_simv_daidir (UB  * pcode);
+void  rmaPropagate3_wn_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate4_p_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate4_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate4_f_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate4_r_hft_pipeline_top_simv_daidir (UB  * pcode);
+void  rmaPropagate4_wn_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate5_p_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate5_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate5_f_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate5_r_hft_pipeline_top_simv_daidir (UB  * pcode);
+void  rmaPropagate5_wn_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate6_p_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate6_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate6_f_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate6_r_hft_pipeline_top_simv_daidir (UB  * pcode);
+void  rmaPropagate6_wn_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate7_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate8_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate9_p_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate9_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate9_f_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate9_r_hft_pipeline_top_simv_daidir (UB  * pcode);
+void  rmaPropagate9_wn_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate10_p_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate10_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate10_f_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val, U  I620, scalar  * I1483, U  did);
+void  rmaPropagate10_r_hft_pipeline_top_simv_daidir (UB  * pcode);
+void  rmaPropagate10_wn_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
+void  rmaPropagate11_hft_pipeline_top_simv_daidir (UB  * pcode, scalar  val);
 void  schedNewEvent (struct dummyq_struct * I1460, EBLK  * I1455, U  I627);
 #ifdef __cplusplus
 }

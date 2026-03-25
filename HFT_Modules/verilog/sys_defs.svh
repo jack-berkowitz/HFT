@@ -62,7 +62,7 @@ typedef logic [`KEEP_W-1:0]  AXI_TKEEP;
 // Top-of-book parameters
 // ----------------------------------------------------------------
 `define TOB_LEVELS  3       // price levels tracked per side per symbol
-`define TOB_SYMBOLS 501     // S&P 500 components (0-499) + index tracker (500)
+`define TOB_SYMBOLS 500     // S&P 500 components (0-499) + index tracker (500)
 `define SYM_IDX_W   9       // ceil(log2(501)) = 9 bits
 
 // The symbol index assigned to the actual index instrument (SPY/ES)
