@@ -11,7 +11,7 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     , TOP{this, namep}
 {
     // Check resources
-    Verilated::stackCheck(1334);
+    Verilated::stackCheck(1314);
     // Setup sub module instances
     // Configure time unit / time precision
     _vm_contextp__->timeunit(-9);
@@ -233,7 +233,7 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     __Vscopep_hft_pipeline_top__u_framer->varInsert("OFFSET", const_cast<void*>(static_cast<const void*>(&(TOP.hft_pipeline_top__DOT__u_framer__DOT__OFFSET))), true, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_framer->varInsert("REMAIN", const_cast<void*>(static_cast<const void*>(&(TOP.hft_pipeline_top__DOT__u_framer__DOT__REMAIN))), true, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_framer->varInsert("SKIP_BEATS", const_cast<void*>(static_cast<const void*>(&(TOP.hft_pipeline_top__DOT__u_framer__DOT__SKIP_BEATS))), true, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,31,0);
-    __Vscopep_hft_pipeline_top__u_framer->varInsert("beat_cnt_r", &(TOP.hft_pipeline_top__DOT__u_framer__DOT__beat_cnt_r), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,3,0);
+    __Vscopep_hft_pipeline_top__u_framer->varInsert("beat_cnt_r", &(TOP.hft_pipeline_top__DOT__u_framer__DOT__beat_cnt_r), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,1,0);
     __Vscopep_hft_pipeline_top__u_framer->varInsert("clk", &(TOP.hft_pipeline_top__DOT__u_framer__DOT__clk), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_framer->varInsert("combined_data", &(TOP.hft_pipeline_top__DOT__u_framer__DOT__combined_data), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_framer->varInsert("combined_keep", &(TOP.hft_pipeline_top__DOT__u_framer__DOT__combined_keep), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 1 ,7,0);
@@ -267,7 +267,7 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("index_accum", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__index_accum), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("next_accum", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__next_accum), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("next_actual", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__next_actual), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,31,0);
-    __Vscopep_hft_pipeline_top__u_index_arb->varInsert("old_mid", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__old_mid), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,499 ,31,0);
+    __Vscopep_hft_pipeline_top__u_index_arb->varInsert("old_mid", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__old_mid), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,19 ,31,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("out_index", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__out_index), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("out_trade", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__out_trade), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,161,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("rst_n", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__rst_n), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
@@ -290,7 +290,7 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("threshold", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__threshold), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("trade_dir", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__trade_dir), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("trade_fire", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__trade_fire), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
-    __Vscopep_hft_pipeline_top__u_index_arb->varInsert("weight_tbl", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__weight_tbl), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,499 ,31,0);
+    __Vscopep_hft_pipeline_top__u_index_arb->varInsert("weight_tbl", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__weight_tbl), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,19 ,31,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("weighted_delta", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__weighted_delta), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("wt_wr_addr", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__wt_wr_addr), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,8,0);
     __Vscopep_hft_pipeline_top__u_index_arb->varInsert("wt_wr_data", &(TOP.hft_pipeline_top__DOT__u_index_arb__DOT__wt_wr_data), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,31,0);
@@ -355,25 +355,25 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("VAL_LO", const_cast<void*>(static_cast<const void*>(&(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__VAL_LO))), true, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("V_BIT", const_cast<void*>(static_cast<const void*>(&(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__V_BIT))), true, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("WAY_W", const_cast<void*>(static_cast<const void*>(&(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__WAY_W))), true, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_SIGNED, 0, 1 ,31,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_addr_a", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_addr_a), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,3 ,11,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_addr_b", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_addr_b), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,3 ,11,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_addr_a", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_addr_a), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,3 ,8,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_addr_b", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_addr_b), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,3 ,8,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_rdata_a", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_a), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,3 ,129,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_rdata_b", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,3 ,129,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_wdata_b", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_wdata_b), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,3 ,129,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("bram_wen_b", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_wen_b), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 1, 0 ,0,3);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("chain_cnt_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__chain_cnt_r), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,4,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("clear_addr_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__clear_addr_r), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,11,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("clear_addr_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__clear_addr_r), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,8,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("clk", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__clk), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("cmp_found_empty", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__cmp_found_empty), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("cmp_found_existing", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__cmp_found_existing), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("cmp_sel_idx", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__cmp_sel_idx), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,11,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("cmp_sel_idx", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__cmp_sel_idx), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,8,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("cmp_sel_way", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__cmp_sel_way), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,1,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("delete_done", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__delete_done), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("delete_key", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__delete_key), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("delete_not_found", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__delete_not_found), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("delete_ready", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__delete_ready), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("delete_valid", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__delete_valid), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("evict_dst_idx_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_dst_idx_r), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,11,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("evict_dst_idx_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_dst_idx_r), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,8,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("evict_dst_way_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_dst_way_r), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,1,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("evict_key_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_key_r), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("evict_slot_empty", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_slot_empty), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 0);
@@ -399,13 +399,13 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("s1_key", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__s1_key), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,63,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("s1_valid", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__s1_valid), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("s1_value", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__s1_value), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,64,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("sel_idx_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__sel_idx_r), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,11,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("sel_idx_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__sel_idx_r), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,8,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("sel_way_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__sel_way_r), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,1,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table->varInsert("state_r", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__state_r), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,3,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__0__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__0__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,4095 ,129,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__1__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__1__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,4095 ,129,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__2__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__2__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,4095 ,129,0);
-    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__3__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__3__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,4095 ,129,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__0__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__0__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,511 ,129,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__1__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__1__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,511 ,129,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__2__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__2__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,511 ,129,0);
+    __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__gen_bram__BRA__3__KET__->varInsert("mem", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__gen_bram__BRA__3__KET____DOT__mem), false, VLVT_WDATA, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,511 ,129,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__unnamedblk3->varInsert("w", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__unnamedblk3__DOT__w), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_DPI_CLAY|VLVF_SIGNED, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__unnamedblk4->varInsert("w", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__unnamedblk4__DOT__w), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_DPI_CLAY|VLVF_SIGNED, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_order_lookup__u_order_table__unnamedblk5->varInsert("w", &(TOP.hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__unnamedblk5__DOT__w), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_DPI_CLAY|VLVF_SIGNED, 0, 1 ,31,0);
@@ -422,9 +422,9 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     __Vscopep_hft_pipeline_top__u_tob->varInsert("add_qty", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__add_qty), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("after_add", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__after_add), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,2 ,63,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("after_rm", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__after_rm), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,2 ,63,0);
-    __Vscopep_hft_pipeline_top__u_tob->varInsert("ask_book", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__ask_book), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 2, 1 ,0,499 ,0,2 ,63,0);
+    __Vscopep_hft_pipeline_top__u_tob->varInsert("ask_book", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__ask_book), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 2, 1 ,0,21 ,0,2 ,63,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("better_than", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__better_than), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,2,0);
-    __Vscopep_hft_pipeline_top__u_tob->varInsert("bid_book", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__bid_book), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 2, 1 ,0,499 ,0,2 ,63,0);
+    __Vscopep_hft_pipeline_top__u_tob->varInsert("bid_book", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__bid_book), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 2, 1 ,0,21 ,0,2 ,63,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("clk", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__clk), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("cur", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__cur), false, VLVT_UINT64, VLVD_NODIR|VLVF_PUB_RW, 1, 1 ,0,2 ,63,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("do_add", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__do_add), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
@@ -438,7 +438,7 @@ Vtop__Syms::Vtop__Syms(VerilatedContext* contextp, const char* namep, Vtop* mode
     __Vscopep_hft_pipeline_top__u_tob->varInsert("rm_price", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__rm_price), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("rm_qty", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__rm_qty), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("rst_n", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__rst_n), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW, 0, 0);
-    __Vscopep_hft_pipeline_top__u_tob->varInsert("sym", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__sym), false, VLVT_UINT16, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 1 ,8,0);
+    __Vscopep_hft_pipeline_top__u_tob->varInsert("sym", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__sym), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 1 ,4,0);
     __Vscopep_hft_pipeline_top__u_tob->varInsert("sym_valid", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__sym_valid), false, VLVT_UINT8, VLVD_NODIR|VLVF_PUB_RW|VLVF_CONTINUOUSLY, 0, 0);
     __Vscopep_hft_pipeline_top__u_tob__unnamedblk1->varInsert("i", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__unnamedblk1__DOT__i), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_DPI_CLAY|VLVF_SIGNED, 0, 1 ,31,0);
     __Vscopep_hft_pipeline_top__u_tob__unnamedblk10->varInsert("s", &(TOP.hft_pipeline_top__DOT__u_tob__DOT__unnamedblk10__DOT__s), false, VLVT_UINT32, VLVD_NODIR|VLVF_PUB_RW|VLVF_DPI_CLAY|VLVF_SIGNED, 0, 1 ,31,0);

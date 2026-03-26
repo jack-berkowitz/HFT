@@ -24,7 +24,9 @@ module hft_pipeline_top #(
     parameter [15:0] FILTER_PORT    = `XDP_PORT,
 
     // ---- Framer ----
-    parameter        HEADER_BYTES   = `XDP_HDR_BYTES,
+    // Filter strips beats 0-5 (Eth+IP+UDP = 48 bytes). Framer sees
+    // only the residual: 58-48 = 10 bytes of XDP packet header.
+    parameter        HEADER_BYTES   = `XDP_CHAIN_FRAMER_HDR,
 
     // ---- Order lookup (hash table) ----
     parameter        HT_N_WAYS      = 4,

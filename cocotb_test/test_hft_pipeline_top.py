@@ -1,956 +1,489 @@
 """
 test_hft_pipeline_top.py — Cocotb testbench for hft_pipeline_top
 
-Drives realistic S&P 500 market data through the full 7-stage HFT pipeline,
-monitors all outputs, and feeds a live trading dashboard GUI.
+RTL parameters (IDX_SYM, N_COMPONENTS, etc.) are overridden at compile time
+via Verilator -G flags in the Makefile so they match this Python test.
 
-Usage:
-    make                          # default: 20 components, GUI on
-    make HFT_NUM_COMPONENTS=500   # full S&P 500
-    make HFT_GUI_ENABLE=0         # headless (no GUI)
+Fetches live stock prices from Yahoo Finance at startup.
 """
 
-import os
-import struct
-import random
-import threading
-import queue
-import time
-import math
-import logging
-from collections import defaultdict, OrderedDict
+import os, struct, random, threading, queue, time, logging
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, Timer, ClockCycles, FallingEdge
+from cocotb.triggers import RisingEdge, ClockCycles
 
-# ---------------------------------------------------------------------------
-# Configuration from environment
-# ---------------------------------------------------------------------------
-NUM_COMPONENTS  = int(os.environ.get("HFT_NUM_COMPONENTS", "20"))
-GUI_ENABLE      = os.environ.get("HFT_GUI_ENABLE", "1") == "1"
-IDX_SYMBOL      = NUM_COMPONENTS  # index instrument right after components
-TOB_SYMBOLS     = NUM_COMPONENTS + 2
-TOB_LEVELS      = 3
-XDP_PORT        = 11101
-FRAC_BITS       = 20
-Q_ONE           = 1 << FRAC_BITS  # 1.0 in Q12.20
+NUM_COMPONENTS = int(os.environ.get("HFT_NUM_COMPONENTS", "20"))
+GUI_ENABLE     = os.environ.get("HFT_GUI_ENABLE", "1") == "1"
+IDX_SYMBOL     = NUM_COMPONENTS  # Must match Makefile -GIDX_SYM
+TOB_LEVELS     = 3
+XDP_PORT       = 11101
+FRAC_BITS      = 20
+Q_ONE          = 1 << FRAC_BITS
+INTER_PKT_DELAY = float(os.environ.get("HFT_DELAY", "0.4"))
 
 logger = logging.getLogger("hft_tb")
 logger.setLevel(logging.INFO)
 
-# ---------------------------------------------------------------------------
-# Inter-thread queues  (cocotb ↔ GUI)
-# ---------------------------------------------------------------------------
 input_q   = queue.Queue(maxsize=5000)
 book_q    = queue.Queue(maxsize=5000)
 trade_q   = queue.Queue(maxsize=1000)
 status_q  = queue.Queue(maxsize=500)
 control_q = queue.Queue(maxsize=100)
-# control_q commands: "pause", "play", "step", "quit"
 
 # ===========================================================================
-#  S&P 500 STOCK DATA
+#  STOCK DATA — live Yahoo Finance prices with fallback
 # ===========================================================================
-_TOP_STOCKS = [
-    ("AAPL",  19200), ("MSFT",  42500), ("AMZN",  18700), ("NVDA",  88000),
-    ("GOOGL", 17500), ("META",  50500), ("BRK.B", 41000), ("TSLA",  25500),
-    ("UNH",   52800), ("JNJ",   15800), ("V",     27500), ("XOM",   11700),
-    ("JPM",   19800), ("PG",    16500), ("MA",    45200), ("HD",    36800),
-    ("CVX",   16200), ("MRK",   12500), ("ABBV",  17400), ("LLY",   78000),
-    ("PEP",   18200), ("KO",    6400),  ("AVGO",  17000), ("COST",  74000),
-    ("MCD",   29500), ("WMT",   17800), ("TMO",   55000), ("CSCO",  5200),
-    ("ACN",   33500), ("ABT",   11200), ("DHR",   25600), ("TXN",   17900),
-    ("NEE",   7900),  ("PM",    10500), ("UNP",   24800), ("RTX",   10200),
-    ("BMY",   5200),  ("INTC",  3100),  ("QCOM",  17500), ("AMGN",  28000),
-    ("HON",   20800), ("COP",   11600), ("LOW",   24500), ("INTU",  62000),
-    ("SPGI",  44500), ("BA",    19000), ("AMAT",  16000), ("GE",    16800),
-    ("CAT",   29500), ("IBM",   19000), ("NOW",   70000), ("ADP",   25500),
-    ("GS",    47500), ("BLK",   78000), ("SYK",   34500), ("MDLZ",  7600),
-    ("DE",    39000), ("LMT",   46000), ("ISRG",  40000), ("ADI",   22000),
-    ("GILD",  8600),  ("BKNG",  38000), ("SBUX",  10000), ("VRTX",  44000),
-    ("MMC",   20000), ("CI",    35000), ("ZTS",   18500), ("AXP",   22500),
-    ("PYPL",  7200),  ("PLD",   13000), ("REGN",  80000), ("CME",   21000),
-    ("SLB",   5400),  ("SO",    8500),  ("DUK",   10600), ("AON",   34000),
-    ("TMUS",  18000), ("WM",    20000), ("CL",    9100),  ("MO",    5100),
-    ("APD",   29000), ("GD",    28500), ("ICE",   14000), ("FDX",   28000),
-    ("PNC",   17500), ("NSC",   25000), ("FCX",   4500),  ("LRCX",  78000),
-    ("MET",   7800),  ("MCK",   58000), ("USB",   4800),  ("KLAC",  68000),
-    ("DG",    14000), ("PSA",   31000), ("EW",    7800),  ("PSX",   14000),
-    ("ORLY",  95000), ("GM",    4500),  ("AEP",   9800),  ("EMR",   11000),
-    ("SPY",   52500),  # Index instrument — last
+
+# Full S&P 500 tickers (top ~100 by weight, rest auto-generated)
+_TICKERS = [
+    "AAPL","MSFT","AMZN","NVDA","GOOGL","META","BRK-B","TSLA",
+    "UNH","JNJ","V","XOM","JPM","PG","MA","HD",
+    "CVX","MRK","ABBV","LLY","PEP","KO","AVGO","COST",
+    "MCD","WMT","TMO","CSCO","ACN","ABT","DHR","TXN",
+    "NEE","PM","UNP","RTX","BMY","INTC","QCOM","AMGN",
+    "HON","COP","LOW","INTU","SPGI","BA","AMAT","GE",
+    "CAT","IBM","NOW","ADP","GS","BLK","SYK","MDLZ",
+    "DE","LMT","ISRG","ADI","GILD","BKNG","SBUX","VRTX",
+    "MMC","CI","ZTS","AXP","PYPL","PLD","REGN","CME",
+    "SLB","SO","DUK","AON","TMUS","WM","CL","MO",
+    "APD","GD","ICE","FDX","PNC","NSC","FCX","LRCX",
+    "MET","MCK","USB","KLAC","DG","PSA","EW","PSX",
+    "ORLY","GM","AEP","EMR","SHW","SNPS","CDNS","CTAS",
+    "MAR","MSI","ECL","NXPI","CMG","ADSK","HCA","DXCM",
+    "LULU","MNST","IDXX","AJG","KDP","MCHP","ROP","A",
+    "PAYX","HSY","PCAR","AFL","TDG","BKR","MSCI","TFC",
+    "AIG","COF","STZ","WMB","SPG","O","KMB","HLT",
+    "CARR","GWW","SYY","FAST","OKE","CTSH","ALL","ED",
+    "AZO","CPRT","TEL","TRV","BDX","MTD","BIIB","VRSK",
+    "PRU","CBRE","RMD","DOW","DD","IQV","AME","FIS",
+    "FTNT","AWK","KEYS","WEC","DTE","TRGP","EXR","XEL",
+    "PPL","ODFL","DLTR","WBA","GPC","NUE","VICI","LEN",
+    "EFX","HPQ","CF","IFF","LYB","PKI","STE","HOLX",
+    "ETR","VMC","ALGN","MLM","BAX","FTV","CDW","MOH",
+    "NTRS","SWKS","WAT","PHM","EPAM","AVB","CNC","DGX",
+    "CAH","TYL","BR","CINF","ATO","TSCO","CLX","POOL",
+    "NDAQ","KEY","MKC","BRO","JBHT","IEX","FE","NVR",
+    "ESS","ARE","CPT","UDR","REG","KIM","HST","AIZ",
+    "TPR","RL","HWM","BEN","LKQ","GL","TECH","GNRC",
+    "LNT","EVRG","CMS","CNP","NI","AES","PNW","PEAK",
+    "BXP","VTR","OGN","DVA","BBWI","CTLT","SEE","AAL",
+    "ALK","WYNN","MHK","NWL","CZR","NWSA","DISH","FRT",
+    "BWA","HII","WHR","PNR","FFIV","LW","CE","TAP",
+    "IVZ","ZION","ALLE","HAS","XRAY","RHI","BIO",
 ]
 
-def build_stock_list(n_components: int) -> List[dict]:
-    """Build stock list: real tickers for top stocks, generated for the rest."""
-    stocks = []
-    rng = random.Random(42)
+# Fallback prices (cents) for top stocks if yfinance unavailable
+_FALLBACK = {
+    "AAPL":19200,"MSFT":42500,"AMZN":18700,"NVDA":88000,"GOOGL":17500,
+    "META":50500,"BRK-B":41000,"TSLA":25500,"UNH":52800,"JNJ":15800,
+    "V":27500,"XOM":11700,"JPM":19800,"PG":16500,"MA":45200,"HD":36800,
+    "CVX":16200,"MRK":12500,"ABBV":17400,"LLY":78000,"PEP":18200,"KO":6400,
+    "AVGO":17000,"COST":74000,"MCD":29500,"WMT":17800,"TMO":55000,"CSCO":5200,
+    "ACN":33500,"ABT":11200,"DHR":25600,"TXN":17900,"NEE":7900,"PM":10500,
+    "UNP":24800,"RTX":10200,"BMY":5200,"INTC":3100,"QCOM":17500,"AMGN":28000,
+    "HON":20800,"COP":11600,"LOW":24500,"INTU":62000,"SPGI":44500,"BA":19000,
+    "AMAT":16000,"GE":16800,"CAT":29500,"IBM":19000,"NOW":70000,"ADP":25500,
+    "GS":47500,"BLK":78000,"SYK":34500,"MDLZ":7600,"DE":39000,"LMT":46000,
+    "ISRG":40000,"ADI":22000,"GILD":8600,"BKNG":38000,"SBUX":10000,"VRTX":44000,
+    "MMC":20000,"CI":35000,"ZTS":18500,"AXP":22500,"PYPL":7200,"PLD":13000,
+    "REGN":80000,"CME":21000,"SLB":5400,"SO":8500,"DUK":10600,"AON":34000,
+    "TMUS":18000,"WM":20000,"CL":9100,"MO":5100,"APD":29000,"GD":28500,
+    "ICE":14000,"FDX":28000,"PNC":17500,"NSC":25000,"FCX":4500,"LRCX":78000,
+    "MET":7800,"MCK":58000,"USB":4800,"KLAC":68000,"DG":14000,"PSA":31000,
+    "EW":7800,"PSX":14000,"ORLY":95000,"GM":4500,"AEP":9800,"EMR":11000,
+}
 
-    for i in range(n_components):
-        if i < len(_TOP_STOCKS) - 1:  # -1 to skip SPY at the end
-            ticker, base = _TOP_STOCKS[i]
-        else:
-            ticker = f"SYM{i:03d}"
-            base = rng.randint(2000, 60000)  # $20-$600 in cents
-        stocks.append({"ticker": ticker, "idx": i, "base_price": base})
+def _fetch_live_prices(tickers):
+    try:
+        import yfinance as yf
+        logger.info(f"Fetching live prices for {len(tickers)+1} stocks...")
+        all_t = list(tickers) + ["SPY"]
+        data = yf.download(all_t, period="1d", interval="1d", progress=False, threads=True)
+        prices = {}
+        if 'Close' in data.columns or hasattr(data, 'columns'):
+            close = data['Close']
+            if hasattr(close, 'columns'):
+                for t in all_t:
+                    if t in close.columns:
+                        v = close[t].dropna()
+                        if len(v) > 0: prices[t] = int(float(v.iloc[-1]) * 100)
+            else:
+                v = close.dropna()
+                if len(v) > 0: prices[all_t[0]] = int(float(v.iloc[-1]) * 100)
+        logger.info(f"  Got {len(prices)} live prices")
+        return prices
+    except ImportError:
+        logger.warning("yfinance not installed — using fallback prices")
+        return {}
+    except Exception as e:
+        logger.warning(f"Yahoo Finance failed: {e}")
+        return {}
 
-    # Index instrument
-    spy_price = _TOP_STOCKS[-1][1]
-    stocks.append({"ticker": "SPY", "idx": IDX_SYMBOL, "base_price": spy_price})
+def build_stock_list(n):
+    live = _fetch_live_prices(_TICKERS[:n])
+    stocks = []; rng = random.Random(42)
+    for i in range(n):
+        t = _TICKERS[i] if i < len(_TICKERS) else f"SYM{i:03d}"
+        base = live.get(t, _FALLBACK.get(t, rng.randint(2000, 60000)))
+        stocks.append({"ticker": t.replace("-", "."), "idx": i, "base_price": base})
+    spy_p = live.get("SPY", 52500)
+    stocks.append({"ticker": "SPY", "idx": IDX_SYMBOL, "base_price": spy_p})
+    for s in stocks[:5]:
+        src = "LIVE" if s["ticker"].replace(".", "-") in live else "fallback"
+        logger.info(f"  {s['ticker']:>6} = ${s['base_price']/100:.2f} ({src})")
+    logger.info(f"  {'SPY':>6} = ${spy_p/100:.2f} (idx sym={IDX_SYMBOL})")
     return stocks
-
 
 STOCKS = build_stock_list(NUM_COMPONENTS)
 TICKER_MAP = {s["idx"]: s["ticker"] for s in STOCKS}
 
 # ===========================================================================
-#  PACKET BUILDER — constructs raw Ethernet/IP/UDP/XDP byte arrays
+#  PACKET BUILDER
 # ===========================================================================
-MSG_ADD  = 0
-MSG_MOD  = 1
-MSG_DEL  = 2
-MSG_EXEC = 3
-MSG_REPL = 4
+MSG_ADD=0; MSG_MOD=1; MSG_DEL=2; MSG_EXEC=3
+def _le16(v): return struct.pack("<H",v&0xFFFF)
+def _le32(v): return struct.pack("<I",v&0xFFFFFFFF)
+def _le64(v): return struct.pack("<Q",v&0xFFFFFFFFFFFFFFFF)
+def _be16(v): return struct.pack(">H",v&0xFFFF)
 
-XDP_WIRE_ADD  = 100
-XDP_WIRE_MOD  = 101
-XDP_WIRE_DEL  = 102
-XDP_WIRE_EXEC = 103
-XDP_WIRE_REPL = 104
+def build_net_hdr(udp_pl, port=XDP_PORT):
+    p=bytearray(42)
+    p[0:6]=bytes([1,0,0x5e,0,0,1]);p[6:12]=bytes([0xde,0xad,0xbe,0xef,0xca,0xfe])
+    p[12:14]=b'\x08\x00';p[14]=0x45;p[16:18]=_be16(20+8+udp_pl)
+    p[22]=0x40;p[23]=0x11;p[26:30]=bytes([0xef,1,1,1]);p[30:34]=bytes([0xef,1,1,1])
+    p[34:36]=_be16(0xCAFE);p[36:38]=_be16(port);p[38:40]=_be16(8+udp_pl)
+    return p
+def build_xdp_hdr(sz,nm,seq):
+    h=bytearray(16);h[0:2]=_le16(sz);h[2]=11;h[3]=nm&0xFF
+    h[4:8]=_le32(seq);h[8:12]=_le32(0x5F3759DF);h[12:16]=_le32(0x1234);return h
+def build_msg_cmn(msz,wtype,sym,ssn,oid):
+    b=bytearray(24);b[0:2]=_le16(msz);b[2:4]=_le16(wtype)
+    b[4:8]=_le32(0xAAAABBBB);b[8:12]=_le32(sym);b[12:16]=_le32(ssn);b[16:24]=_le64(oid);return b
 
-XDP_ADD_SZ  = 39
-XDP_MOD_SZ  = 35
-XDP_DEL_SZ  = 25
-XDP_EXEC_SZ = 42
-
-
-def _pack_le16(v): return struct.pack("<H", v & 0xFFFF)
-def _pack_le32(v): return struct.pack("<I", v & 0xFFFFFFFF)
-def _pack_le64(v): return struct.pack("<Q", v & 0xFFFFFFFFFFFFFFFF)
-def _pack_be16(v): return struct.pack(">H", v & 0xFFFF)
-
-
-def build_net_header(udp_payload_len: int, dst_port: int = XDP_PORT) -> bytearray:
-    """42-byte Ethernet + IPv4 + UDP header."""
-    ip_total = 20 + 8 + udp_payload_len
-    udp_total = 8 + udp_payload_len
-    pkt = bytearray(42)
-    # Dst MAC
-    pkt[0:6] = bytes([0x01, 0x00, 0x5e, 0x00, 0x00, 0x01])
-    # Src MAC
-    pkt[6:12] = bytes([0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe])
-    # EtherType = IPv4
-    pkt[12:14] = b'\x08\x00'
-    # IPv4 header
-    pkt[14] = 0x45; pkt[15] = 0x00
-    pkt[16:18] = _pack_be16(ip_total)
-    pkt[22] = 0x40; pkt[23] = 0x11  # TTL=64, proto=UDP
-    pkt[26:30] = bytes([0xef, 0x01, 0x01, 0x01])  # src IP
-    pkt[30:34] = bytes([0xef, 0x01, 0x01, 0x01])  # dst IP
-    # UDP
-    pkt[34:36] = _pack_be16(0xCAFE)  # src port
-    pkt[36:38] = _pack_be16(dst_port)
-    pkt[38:40] = _pack_be16(udp_total)
-    return pkt
-
-
-def build_xdp_pkt_header(pkt_size: int, num_msgs: int, seq_num: int) -> bytearray:
-    """16-byte XDP packet header at bytes 42-57."""
-    hdr = bytearray(16)
-    hdr[0:2] = _pack_le16(pkt_size)
-    hdr[2]   = 11  # DeliveryFlag
-    hdr[3]   = num_msgs & 0xFF
-    hdr[4:8] = _pack_le32(seq_num)
-    hdr[8:12]  = _pack_le32(0x5F3759DF)
-    hdr[12:16] = _pack_le32(0x00001234)
-    return hdr
-
-
-def build_msg_common(msg_size: int, msg_type_wire: int,
-                     sym: int, ssn: int, oid: int) -> bytearray:
-    """Common XDP message header: MsgSize(2) MsgType(2) SourceTimeNS(4)
-       SymbolIndex(4) SymbolSeqNum(4) OrderID(8) = 24 bytes."""
-    buf = bytearray(24)
-    buf[0:2]  = _pack_le16(msg_size)
-    buf[2:4]  = _pack_le16(msg_type_wire)
-    buf[4:8]  = _pack_le32(0xAAAABBBB)   # SourceTimeNS
-    buf[8:12] = _pack_le32(sym)
-    buf[12:16] = _pack_le32(ssn)
-    buf[16:24] = _pack_le64(oid)
-    return buf
-
-
-def build_add_packet(sym, ssn, oid, price, qty, side_buy, seq) -> bytearray:
-    udp_payload = 16 + XDP_ADD_SZ
-    pkt = build_net_header(udp_payload)
-    pkt += build_xdp_pkt_header(16 + XDP_ADD_SZ, 1, seq)
-    msg = build_msg_common(XDP_ADD_SZ, XDP_WIRE_ADD, sym, ssn, oid)
-    msg += _pack_le32(price)
-    msg += _pack_le32(qty)
-    msg += bytes([0x42 if side_buy else 0x53])  # 'B' or 'S'
-    msg += bytearray(XDP_ADD_SZ - len(msg))
-    pkt += msg
-    return pkt
-
-
-def build_mod_packet(sym, ssn, oid, price, qty, seq) -> bytearray:
-    udp_payload = 16 + XDP_MOD_SZ
-    pkt = build_net_header(udp_payload)
-    pkt += build_xdp_pkt_header(16 + XDP_MOD_SZ, 1, seq)
-    msg = build_msg_common(XDP_MOD_SZ, XDP_WIRE_MOD, sym, ssn, oid)
-    msg += _pack_le32(price)
-    msg += _pack_le32(qty)
-    msg += bytearray(XDP_MOD_SZ - len(msg))
-    pkt += msg
-    return pkt
-
-
-def build_del_packet(sym, ssn, oid, seq) -> bytearray:
-    udp_payload = 16 + XDP_DEL_SZ
-    pkt = build_net_header(udp_payload)
-    pkt += build_xdp_pkt_header(16 + XDP_DEL_SZ, 1, seq)
-    msg = build_msg_common(XDP_DEL_SZ, XDP_WIRE_DEL, sym, ssn, oid)
-    msg += bytearray(XDP_DEL_SZ - len(msg))
-    pkt += msg
-    return pkt
-
-
-def build_exec_packet(sym, ssn, oid, price, qty, seq) -> bytearray:
-    udp_payload = 16 + XDP_EXEC_SZ
-    pkt = build_net_header(udp_payload)
-    pkt += build_xdp_pkt_header(16 + XDP_EXEC_SZ, 1, seq)
-    msg = build_msg_common(XDP_EXEC_SZ, XDP_WIRE_EXEC, sym, ssn, oid)
-    msg += _pack_le32(0xDEAD0001)  # TradeID
-    msg += _pack_le32(price)
-    msg += _pack_le32(qty)
-    msg += bytes([0x59])  # Printable = 'Y'
-    msg += bytearray(XDP_EXEC_SZ - len(msg))
-    pkt += msg
-    return pkt
-
+def build_add(sym,ssn,oid,price,qty,buy,seq):
+    SZ=39;p=build_net_hdr(16+SZ);p+=build_xdp_hdr(16+SZ,1,seq)
+    m=build_msg_cmn(SZ,100,sym,ssn,oid);m+=_le32(price)+_le32(qty)+bytes([0x42 if buy else 0x53])
+    m+=bytearray(SZ-len(m));p+=m;return p
+def build_mod(sym,ssn,oid,price,qty,seq):
+    SZ=35;p=build_net_hdr(16+SZ);p+=build_xdp_hdr(16+SZ,1,seq)
+    m=build_msg_cmn(SZ,101,sym,ssn,oid);m+=_le32(price)+_le32(qty)
+    m+=bytearray(SZ-len(m));p+=m;return p
+def build_del(sym,ssn,oid,seq):
+    SZ=25;p=build_net_hdr(16+SZ);p+=build_xdp_hdr(16+SZ,1,seq)
+    m=build_msg_cmn(SZ,102,sym,ssn,oid);m+=bytearray(SZ-len(m));p+=m;return p
+def build_exec(sym,ssn,oid,price,qty,seq):
+    SZ=42;p=build_net_hdr(16+SZ);p+=build_xdp_hdr(16+SZ,1,seq)
+    m=build_msg_cmn(SZ,103,sym,ssn,oid);m+=_le32(0xDEAD0001)+_le32(price)+_le32(qty)+bytes([0x59])
+    m+=bytearray(SZ-len(m));p+=m;return p
 
 # ===========================================================================
-#  PYTHON-SIDE ORDER BOOK TRACKER (shadow of DUT state)
+#  BOOK TRACKER
 # ===========================================================================
 @dataclass
-class Order:
-    oid: int
-    symbol: int
-    price: int
-    qty: int
-    side: bool  # True = buy
+class BL:
+    price:int; qty:int
 
-@dataclass
-class BookLevel:
-    price: int
-    qty: int
-
-@dataclass
 class OrderBook:
-    bids: List[BookLevel] = field(default_factory=list)  # sorted desc by price
-    asks: List[BookLevel] = field(default_factory=list)  # sorted asc by price
+    def __init__(self): self.bids=[]; self.asks=[]
+    def add(self,price,qty,bid):
+        ls=self.bids if bid else self.asks
+        for l in ls:
+            if l.price==price: l.qty+=qty; return
+        ls.append(BL(price,qty))
+        if bid: ls.sort(key=lambda x:-x.price)
+        else: ls.sort(key=lambda x:x.price)
+        while len(ls)>TOB_LEVELS: ls.pop()
+    def remove(self,price,qty,bid):
+        ls=self.bids if bid else self.asks
+        for i,l in enumerate(ls):
+            if l.price==price: l.qty-=qty; (ls.pop(i) if l.qty<=0 else None); return
+    def snap(self):
+        return {"bids":[(l.price,l.qty) for l in self.bids],"asks":[(l.price,l.qty) for l in self.asks]}
 
-    def add(self, price, qty, is_bid):
-        levels = self.bids if is_bid else self.asks
-        for lv in levels:
-            if lv.price == price:
-                lv.qty += qty
-                return
-        levels.append(BookLevel(price, qty))
-        if is_bid:
-            levels.sort(key=lambda l: -l.price)
-        else:
-            levels.sort(key=lambda l: l.price)
-        while len(levels) > TOB_LEVELS:
-            levels.pop()
+class Tracker:
+    def __init__(self): self.orders={}; self.books=defaultdict(OrderBook)
+    def add(self,oid,sym,p,q,bid):
+        self.orders[oid]={"s":sym,"p":p,"q":q,"b":bid}; self.books[sym].add(p,q,bid)
+    def mod(self,oid,np,nq):
+        if oid not in self.orders: return
+        o=self.orders[oid]; self.books[o["s"]].remove(o["p"],o["q"],o["b"])
+        o["p"]=np; o["q"]=nq; self.books[o["s"]].add(np,nq,o["b"])
+    def delete(self,oid):
+        if oid not in self.orders: return
+        o=self.orders.pop(oid); self.books[o["s"]].remove(o["p"],o["q"],o["b"])
+    def exec(self,oid,eq):
+        if oid not in self.orders: return
+        o=self.orders[oid]; self.books[o["s"]].remove(o["p"],eq,o["b"])
+        o["q"]-=eq
+        if o["q"]<=0: del self.orders[oid]
+    def get(self,sym): return self.books[sym].snap() if sym in self.books else {"bids":[],"asks":[]}
+    def all(self): return {s:self.books[s].snap() for s in self.books}
 
-    def remove(self, price, qty, is_bid):
-        levels = self.bids if is_bid else self.asks
-        for i, lv in enumerate(levels):
-            if lv.price == price:
-                lv.qty -= qty
-                if lv.qty <= 0:
-                    levels.pop(i)
-                return
-
-    def snapshot(self) -> dict:
-        return {
-            "bids": [(l.price, l.qty) for l in self.bids[:TOB_LEVELS]],
-            "asks": [(l.price, l.qty) for l in self.asks[:TOB_LEVELS]],
-        }
-
-
-class BookTracker:
-    def __init__(self):
-        self.orders: Dict[int, Order] = {}
-        self.books: Dict[int, OrderBook] = defaultdict(OrderBook)
-        self.history: List[Tuple[int, Dict]] = []  # (cycle, {sym: snapshot})
-        self._snap_interval = 50
-
-    def apply_add(self, oid, sym, price, qty, is_bid):
-        self.orders[oid] = Order(oid, sym, price, qty, is_bid)
-        self.books[sym].add(price, qty, is_bid)
-
-    def apply_mod(self, oid, new_price, new_qty):
-        if oid in self.orders:
-            o = self.orders[oid]
-            self.books[o.symbol].remove(o.price, o.qty, o.side)
-            o.price = new_price
-            o.qty = new_qty
-            self.books[o.symbol].add(new_price, new_qty, o.side)
-
-    def apply_del(self, oid):
-        if oid in self.orders:
-            o = self.orders[oid]
-            self.books[o.symbol].remove(o.price, o.qty, o.side)
-            del self.orders[oid]
-
-    def apply_exec(self, oid, exec_qty):
-        if oid in self.orders:
-            o = self.orders[oid]
-            self.books[o.symbol].remove(o.price, exec_qty, o.side)
-            o.qty -= exec_qty
-            if o.qty <= 0:
-                del self.orders[oid]
-
-    def take_snapshot(self, cycle):
-        snap = {}
-        for sym, book in self.books.items():
-            snap[sym] = book.snapshot()
-        self.history.append((cycle, snap))
-
-    def get_book(self, sym) -> dict:
-        if sym in self.books:
-            return self.books[sym].snapshot()
-        return {"bids": [], "asks": []}
-
-    def all_symbols(self) -> list:
-        return sorted(self.books.keys())
-
-
-tracker = BookTracker()
+tracker = Tracker()
 
 # ===========================================================================
-#  MARKET DATA GENERATOR — realistic order flow for S&P 500
+#  MARKET DATA GEN
 # ===========================================================================
-class MarketDataGen:
-    """Generates a stream of realistic market events."""
+class MktGen:
+    def __init__(self,stocks,seed=12345):
+        self.stocks=stocks;self.rng=random.Random(seed)
+        self._oid=0x1000;self._seq=1;self._ssn=defaultdict(int);self.active={}
+        self._prices={s["idx"]:s["base_price"] for s in stocks}
+    def oid(self): self._oid+=1; return self._oid
+    def seq(self): self._seq+=1; return self._seq
+    def ssn(self,s): self._ssn[s]+=1; return self._ssn[s]
 
-    def __init__(self, stocks, rng_seed=12345):
-        self.stocks = stocks
-        self.rng = random.Random(rng_seed)
-        self.next_oid = 0x1000
-        self.seq = 1
-        self.ssn_per_sym = defaultdict(int)
-        self.active_oids: Dict[int, dict] = {}  # oid → {sym, price, qty, side}
-        self._prices = {}
-        for s in stocks:
-            self._prices[s["idx"]] = s["base_price"]
-
-    def _new_oid(self):
-        self.next_oid += 1
-        return self.next_oid
-
-    def _next_seq(self):
-        self.seq += 1
-        return self.seq
-
-    def _ssn(self, sym):
-        self.ssn_per_sym[sym] += 1
-        return self.ssn_per_sym[sym]
-
-    def gen_initial_book(self) -> List[dict]:
-        """Build initial 2-sided book for every stock: 3 bid + 3 ask levels."""
-        events = []
+    def init_book(self):
+        evs=[]
         for s in self.stocks:
-            sym = s["idx"]
-            base = s["base_price"]
-            spread = max(base // 200, 10)  # ~0.5% spread, min 10 cents
-
+            sym=s["idx"];base=s["base_price"];sp=max(base//200,10)
             for i in range(TOB_LEVELS):
-                bid_p = base - spread // 2 - i * spread
-                ask_p = base + spread // 2 + i * spread
-                bid_q = self.rng.randint(50, 500)
-                ask_q = self.rng.randint(50, 500)
+                for buy in [True,False]:
+                    o=self.oid();p=base+(-sp//2-i*sp if buy else sp//2+i*sp)
+                    q=self.rng.randint(50,500)
+                    evs.append({"type":MSG_ADD,"sym":sym,"oid":o,"price":p,"qty":q,
+                                "side":buy,"ssn":self.ssn(sym),"seq":self.seq()})
+                    self.active[o]={"sym":sym,"price":p,"qty":q,"side":buy}
+        return evs
 
-                bid_oid = self._new_oid()
-                ask_oid = self._new_oid()
+    def gen_one(self):
+        if not self.active: return None
+        act=self.rng.choices(["add","mod","del","exec"],weights=[40,30,15,15])[0]
+        if act=="add":
+            s=self.rng.choice(self.stocks);sym=s["idx"];buy=self.rng.random()<0.5
+            base=self._prices[sym];sp=max(base//200,10)
+            p=base+(self.rng.randint(-sp*3,-sp//2) if buy else self.rng.randint(sp//2,sp*3))
+            q=self.rng.choice([50,100,200,300,500]);o=self.oid()
+            self.active[o]={"sym":sym,"price":p,"qty":q,"side":buy}
+            return {"type":MSG_ADD,"sym":sym,"oid":o,"price":p,"qty":q,"side":buy,
+                    "ssn":self.ssn(sym),"seq":self.seq()}
+        elif act=="mod":
+            o=self.rng.choice(list(self.active.keys()));old=self.active[o]
+            np=max(100,old["price"]+self.rng.randint(-50,50));nq=self.rng.choice([50,100,200,300])
+            self.active[o]["price"]=np;self.active[o]["qty"]=nq
+            return {"type":MSG_MOD,"sym":old["sym"],"oid":o,"price":np,"qty":nq,
+                    "side":old["side"],"ssn":self.ssn(old["sym"]),"seq":self.seq()}
+        elif act=="del":
+            o=self.rng.choice(list(self.active.keys()));old=self.active.pop(o)
+            return {"type":MSG_DEL,"sym":old["sym"],"oid":o,"price":old["price"],"qty":old["qty"],
+                    "side":old["side"],"ssn":self.ssn(old["sym"]),"seq":self.seq()}
+        elif act=="exec":
+            o=self.rng.choice(list(self.active.keys()));old=self.active[o]
+            eq=min(old["qty"],self.rng.choice([25,50,100]));old["qty"]-=eq
+            if old["qty"]<=0: self.active.pop(o)
+            return {"type":MSG_EXEC,"sym":old["sym"],"oid":o,"price":old["price"],"qty":eq,
+                    "side":old["side"],"ssn":self.ssn(old["sym"]),"seq":self.seq()}
 
-                events.append({
-                    "type": MSG_ADD, "sym": sym, "oid": bid_oid,
-                    "price": bid_p, "qty": bid_q, "side": True,
-                    "ssn": self._ssn(sym), "seq": self._next_seq(),
-                })
-                self.active_oids[bid_oid] = {
-                    "sym": sym, "price": bid_p, "qty": bid_q, "side": True
-                }
-
-                events.append({
-                    "type": MSG_ADD, "sym": sym, "oid": ask_oid,
-                    "price": ask_p, "qty": ask_q, "side": False,
-                    "ssn": self._ssn(sym), "seq": self._next_seq(),
-                })
-                self.active_oids[ask_oid] = {
-                    "sym": sym, "price": ask_p, "qty": ask_q, "side": False
-                }
-        return events
-
-    def gen_update_batch(self, batch_size=10) -> List[dict]:
-        """Generate a batch of random market updates."""
-        events = []
-        for _ in range(batch_size):
-            ev = self._gen_single_update()
-            if ev:
-                events.append(ev)
-        return events
-
-    def gen_arb_trigger(self, component_idx=0, delta=2000) -> List[dict]:
-        """Move a component's bid up sharply to trigger an arbitrage signal."""
-        sym = component_idx
-        events = []
-        candidates = [
-            oid for oid, info in self.active_oids.items()
-            if info["sym"] == sym and info["side"]
-        ]
-        if candidates:
-            oid = candidates[0]
-            old = self.active_oids[oid]
-            new_price = old["price"] + delta
-            events.append({
-                "type": MSG_MOD, "sym": sym, "oid": oid,
-                "price": new_price, "qty": old["qty"], "side": old["side"],
-                "ssn": self._ssn(sym), "seq": self._next_seq(),
-            })
-            self.active_oids[oid]["price"] = new_price
-        return events
-
-    def _gen_single_update(self) -> Optional[dict]:
-        if not self.active_oids:
-            return None
-
-        action = self.rng.choices(
-            ["add", "mod", "del", "exec"],
-            weights=[40, 30, 15, 15]
-        )[0]
-
-        if action == "add":
-            s = self.rng.choice(self.stocks)
-            sym = s["idx"]
-            is_bid = self.rng.random() < 0.5
-            base = self._prices[sym]
-            spread = max(base // 200, 10)
-            if is_bid:
-                price = base - self.rng.randint(spread // 2, spread * 3)
-            else:
-                price = base + self.rng.randint(spread // 2, spread * 3)
-            qty = self.rng.choice([50, 100, 200, 300, 500])
-            oid = self._new_oid()
-            self.active_oids[oid] = {
-                "sym": sym, "price": price, "qty": qty, "side": is_bid
-            }
-            return {
-                "type": MSG_ADD, "sym": sym, "oid": oid,
-                "price": price, "qty": qty, "side": is_bid,
-                "ssn": self._ssn(sym), "seq": self._next_seq(),
-            }
-
-        elif action == "mod":
-            oid = self.rng.choice(list(self.active_oids.keys()))
-            old = self.active_oids[oid]
-            delta = self.rng.randint(-50, 50)
-            new_price = max(100, old["price"] + delta)
-            new_qty = self.rng.choice([50, 100, 200, 300])
-            self.active_oids[oid]["price"] = new_price
-            self.active_oids[oid]["qty"] = new_qty
-            return {
-                "type": MSG_MOD, "sym": old["sym"], "oid": oid,
-                "price": new_price, "qty": new_qty, "side": old["side"],
-                "ssn": self._ssn(old["sym"]), "seq": self._next_seq(),
-            }
-
-        elif action == "del":
-            oid = self.rng.choice(list(self.active_oids.keys()))
-            old = self.active_oids.pop(oid)
-            return {
-                "type": MSG_DEL, "sym": old["sym"], "oid": oid,
-                "price": old["price"], "qty": old["qty"], "side": old["side"],
-                "ssn": self._ssn(old["sym"]), "seq": self._next_seq(),
-            }
-
-        elif action == "exec":
-            oid = self.rng.choice(list(self.active_oids.keys()))
-            old = self.active_oids[oid]
-            exec_qty = min(old["qty"], self.rng.choice([25, 50, 100]))
-            old["qty"] -= exec_qty
-            if old["qty"] <= 0:
-                self.active_oids.pop(oid)
-            return {
-                "type": MSG_EXEC, "sym": old["sym"], "oid": oid,
-                "price": old["price"], "qty": exec_qty, "side": old["side"],
-                "ssn": self._ssn(old["sym"]), "seq": self._next_seq(),
-            }
-        return None
-
+    def arb_trigger(self,comp=0,delta=3000):
+        cands=[o for o,i in self.active.items() if i["sym"]==comp and i["side"]]
+        if not cands: return []
+        o=cands[0];old=self.active[o];np=old["price"]+delta
+        self.active[o]["price"]=np
+        return [{"type":MSG_MOD,"sym":comp,"oid":o,"price":np,"qty":old["qty"],
+                 "side":old["side"],"ssn":self.ssn(comp),"seq":self.seq()}]
 
 # ===========================================================================
-#  AXI-STREAM DRIVER — send raw packets beat by beat
+#  AXI-STREAM + HELPERS
 # ===========================================================================
-async def axis_send_packet(dut, pkt_bytes: bytearray):
-    """Drive one packet onto rx_axis as 64-bit AXI-Stream beats."""
-    total_bytes = len(pkt_bytes)
-    beats = (total_bytes + 7) // 8
-
+async def axis_send(dut,pkt):
+    n=len(pkt);beats=(n+7)//8
     for b in range(beats):
-        offset = b * 8
-        remaining = min(8, total_bytes - offset)
-
-        data = 0
-        keep = 0
-        for i in range(remaining):
-            data |= pkt_bytes[offset + i] << (i * 8)
-            keep |= 1 << i
-
-        dut.rx_axis_tdata.value = data
-        dut.rx_axis_tkeep.value = keep
-        dut.rx_axis_tvalid.value = 1
-        dut.rx_axis_tlast.value = 1 if b == beats - 1 else 0
-
+        off=b*8;rem=min(8,n-off);data=0;keep=0
+        for i in range(rem): data|=pkt[off+i]<<(i*8); keep|=1<<i
+        dut.rx_axis_tdata.value=data;dut.rx_axis_tkeep.value=keep
+        dut.rx_axis_tvalid.value=1;dut.rx_axis_tlast.value=(1 if b==beats-1 else 0)
         await RisingEdge(dut.clk)
-        while dut.rx_axis_tready.value == 0:
-            await RisingEdge(dut.clk)
+        while dut.rx_axis_tready.value==0: await RisingEdge(dut.clk)
+    dut.rx_axis_tvalid.value=0;dut.rx_axis_tlast.value=0
 
-    dut.rx_axis_tvalid.value = 0
-    dut.rx_axis_tlast.value = 0
+def ev_to_pkt(ev):
+    t=ev["type"]
+    if t==MSG_ADD:  return build_add(ev["sym"],ev["ssn"],ev["oid"],ev["price"],ev["qty"],ev["side"],ev["seq"])
+    if t==MSG_MOD:  return build_mod(ev["sym"],ev["ssn"],ev["oid"],ev["price"],ev["qty"],ev["seq"])
+    if t==MSG_DEL:  return build_del(ev["sym"],ev["ssn"],ev["oid"],ev["seq"])
+    if t==MSG_EXEC: return build_exec(ev["sym"],ev["ssn"],ev["oid"],ev["price"],ev["qty"],ev["seq"])
 
+MSG_NAMES={MSG_ADD:"ADD",MSG_MOD:"MOD",MSG_DEL:"DEL",MSG_EXEC:"EXEC"}
 
-def event_to_packet(ev: dict) -> bytearray:
-    """Convert a market event dict to a raw XDP packet."""
-    t = ev["type"]
-    if t == MSG_ADD:
-        return build_add_packet(
-            ev["sym"], ev["ssn"], ev["oid"],
-            ev["price"], ev["qty"], ev["side"], ev["seq"]
-        )
-    elif t == MSG_MOD:
-        return build_mod_packet(
-            ev["sym"], ev["ssn"], ev["oid"],
-            ev["price"], ev["qty"], ev["seq"]
-        )
-    elif t == MSG_DEL:
-        return build_del_packet(
-            ev["sym"], ev["ssn"], ev["oid"], ev["seq"]
-        )
-    elif t == MSG_EXEC:
-        return build_exec_packet(
-            ev["sym"], ev["ssn"], ev["oid"],
-            ev["price"], ev["qty"], ev["seq"]
-        )
-    raise ValueError(f"Unknown event type {t}")
+def push_input(ev,cycle):
+    try: input_q.put_nowait({"cycle":cycle,"type":MSG_NAMES.get(ev["type"],"?"),
+        "ticker":TICKER_MAP.get(ev["sym"],"?"),"sym":ev["sym"],
+        "price":ev["price"],"qty":ev["qty"],"side":"BUY" if ev.get("side") else "SELL"})
+    except: pass
 
-
-MSG_NAMES = {MSG_ADD: "ADD", MSG_MOD: "MOD", MSG_DEL: "DEL",
-             MSG_EXEC: "EXEC", MSG_REPL: "REPL"}
-
-
-def push_input_event(ev: dict, cycle: int):
-    """Push a market event to the GUI input queue."""
-    ticker = TICKER_MAP.get(ev["sym"], f"?{ev['sym']}")
-    try:
-        input_q.put_nowait({
-            "cycle": cycle,
-            "type": MSG_NAMES.get(ev["type"], "?"),
-            "ticker": ticker,
-            "sym": ev["sym"],
-            "price": ev["price"],
-            "qty": ev["qty"],
-            "side": "BUY" if ev.get("side") else "SELL",
-        })
-    except queue.Full:
-        pass
-
+def push_books(cycle,active_sym=None):
+    try: book_q.put_nowait({"cycle":cycle,"books":tracker.all(),"active_sym":active_sym})
+    except: pass
 
 # ===========================================================================
-#  OUTPUT MONITORS — read packed-struct ports from DUT
+#  TX MONITOR
 # ===========================================================================
-#
-# tob_out_t packed layout (MSB→LSB):
-#   valid(1) | symbol_idx(9) | best_bid.price(32) | best_bid.qty(32)
-#            | best_ask.price(32) | best_ask.qty(32)
-# Total = 138 bits
-#
-# trade_signal_t packed layout (MSB→LSB):
-#   valid(1) | direction(1) | spread(64) | computed_index(64) | actual_price(32)
-# Total = 162 bits
-
-def read_tob(dut) -> Optional[dict]:
-    """Read tob_snapshot packed struct."""
-    try:
-        raw = int(dut.tob_snapshot.value)
-    except Exception:
-        return None
-    valid     = (raw >> 137) & 1
-    sym_idx   = (raw >> 128) & 0x1FF
-    bid_price = (raw >> 96) & 0xFFFFFFFF
-    bid_qty   = (raw >> 64) & 0xFFFFFFFF
-    ask_price = (raw >> 32) & 0xFFFFFFFF
-    ask_qty   = raw & 0xFFFFFFFF
-    if not valid:
-        return None
-    return {
-        "sym": sym_idx,
-        "bid_price": bid_price, "bid_qty": bid_qty,
-        "ask_price": ask_price, "ask_qty": ask_qty,
-    }
-
-
-def read_trade(dut) -> Optional[dict]:
-    """Read trade_signal packed struct."""
-    try:
-        raw = int(dut.trade_signal.value)
-    except Exception:
-        return None
-    valid     = (raw >> 161) & 1
-    direction = (raw >> 160) & 1
-    spread_u  = (raw >> 96) & 0xFFFFFFFFFFFFFFFF
-    comp_idx  = (raw >> 32) & 0xFFFFFFFFFFFFFFFF
-    actual_p  = raw & 0xFFFFFFFF
-
-    if not valid:
-        return None
-
-    # spread is signed Q44.20
-    if spread_u >= (1 << 63):
-        spread_s = spread_u - (1 << 64)
-    else:
-        spread_s = spread_u
-
-    return {
-        "direction": "SELL" if direction else "BUY",
-        "spread": spread_s,
-        "spread_dollars": spread_s / Q_ONE,
-        "computed_index": comp_idx / Q_ONE,
-        "actual_price": actual_p,
-    }
-
-
-async def output_monitor(dut, stop_event: threading.Event):
-    """Background cocotb coroutine that polls DUT outputs every cycle."""
-    cycle = 0
-    trade_count = 0
+async def tx_monitor(dut,stop_event):
+    tc=0;cyc=0;pkt=bytearray()
     while not stop_event.is_set():
-        await RisingEdge(dut.clk)
-        cycle += 1
-
-        # Read trade signal
-        trade = read_trade(dut)
-        if trade:
-            trade_count += 1
-            trade["number"] = trade_count
-            trade["cycle"] = cycle
-            try:
-                trade_q.put_nowait(trade)
-            except queue.Full:
-                pass
-
-        # Periodic book snapshot for GUI history slider
-        if cycle % 50 == 0:
-            tracker.take_snapshot(cycle)
-            snap_all = {}
-            for sym in tracker.all_symbols():
-                snap_all[sym] = tracker.get_book(sym)
-            try:
-                book_q.put_nowait({"cycle": cycle, "books": snap_all})
-            except queue.Full:
-                pass
-
-        # Status update
-        if cycle % 20 == 0:
-            try:
-                oc = int(dut.order_count.value)
-            except Exception:
-                oc = 0
-            try:
-                np_raw = int(dut.net_position.value)
-                if np_raw >= (1 << 31):
-                    np_val = np_raw - (1 << 32)
-                else:
-                    np_val = np_raw
-            except Exception:
-                np_val = 0
-            try:
-                ci = int(dut.computed_index.value) / Q_ONE
-            except Exception:
-                ci = 0.0
-            try:
-                status_q.put_nowait({
-                    "cycle": cycle,
-                    "order_count": oc,
-                    "net_position": np_val,
-                    "computed_index": ci,
-                    "trades": trade_count,
-                })
-            except queue.Full:
-                pass
-
+        await RisingEdge(dut.clk);cyc+=1
+        try: tv=int(dut.tx_axis_tvalid.value);tl=int(dut.tx_axis_tlast.value)
+        except: continue
+        if tv:
+            try: td=int(dut.tx_axis_tdata.value);tk=int(dut.tx_axis_tkeep.value)
+            except: continue
+            for i in range(8):
+                if tk&(1<<i): pkt.append((td>>(i*8))&0xFF)
+            if tl:
+                tc+=1;d="?";ap=0;sd=0.0
+                if len(pkt)>=74:
+                    d="BUY" if pkt[44]==0x42 else "SELL"
+                    ap=struct.unpack_from("<I",pkt,50)[0]
+                    sd=struct.unpack_from("<q",pkt,66)[0]/Q_ONE
+                logger.info(f"  >>> TX TRADE #{tc}: {d} price=${ap/100:.2f} spread=${sd:.2f}")
+                try: trade_q.put_nowait({"number":tc,"direction":d,"spread_dollars":sd,
+                    "computed_index":0.0,"actual_price":ap,"cycle":cyc})
+                except: pass
+                pkt=bytearray()
+        if cyc%500==0:
+            try: oc=int(dut.order_count.value)
+            except: oc=0
+            try: nr=int(dut.net_position.value);nv=nr-(1<<32) if nr>=(1<<31) else nr
+            except: nv=0
+            try: ci=int(dut.computed_index.value)/Q_ONE
+            except: ci=0.0
+            try: status_q.put_nowait({"cycle":cyc,"order_count":oc,"net_position":nv,
+                                      "computed_index":ci,"trades":tc})
+            except: pass
 
 # ===========================================================================
-#  MAIN COCOTB TEST
+async def check_pause(dut):
+    try:
+        cmd=control_q.get_nowait()
+        if cmd=="quit": return True
+        if cmd=="pause":
+            logger.info("  PAUSED")
+            while True:
+                await ClockCycles(dut.clk,100)
+                try:
+                    c=control_q.get_nowait()
+                    if c in ("play","step"): break
+                    if c=="quit": return True
+                except: pass
+    except: pass
+    return False
+
+async def send_event(dut,ev,cycle):
+    pkt=ev_to_pkt(ev)
+    await axis_send(dut,pkt)
+    await ClockCycles(dut.clk,80);cycle[0]+=80
+    t=ev["type"]
+    if t==MSG_ADD: tracker.add(ev["oid"],ev["sym"],ev["price"],ev["qty"],ev["side"])
+    elif t==MSG_MOD: tracker.mod(ev["oid"],ev["price"],ev["qty"])
+    elif t==MSG_DEL: tracker.delete(ev["oid"])
+    elif t==MSG_EXEC: tracker.exec(ev["oid"],ev["qty"])
+    push_input(ev,cycle[0]);push_books(cycle[0],active_sym=ev["sym"])
+    if INTER_PKT_DELAY>0:
+        for _ in range(int(INTER_PKT_DELAY/0.01)):
+            await ClockCycles(dut.clk,50);cycle[0]+=50;time.sleep(0.01)
+
+# ===========================================================================
+#  MAIN TEST
 # ===========================================================================
 @cocotb.test()
 async def test_hft_pipeline(dut):
-    """Full integration test: S&P 500 data → pipeline → GUI dashboard."""
+    stop_event=threading.Event()
+    cocotb.start_soon(Clock(dut.clk,4,unit="ns").start())
 
-    stop_event = threading.Event()
-
-    # ------------------------------------------------------------------
-    # 1. Start clock (250 MHz = 4 ns)
-    # ------------------------------------------------------------------
-    cocotb.start_soon(Clock(dut.clk, 4, unit="ns").start())
-
-    # ------------------------------------------------------------------
-    # 2. Start GUI in background thread
-    # ------------------------------------------------------------------
-    gui_thread = None
+    # GUI
+    gui_thread=None
     if GUI_ENABLE:
         try:
             from hft_dashboard import HFTDashboard
-            dashboard = HFTDashboard(
-                input_q, book_q, trade_q, status_q, control_q,
-                STOCKS, TICKER_MAP, tracker
-            )
-            gui_thread = threading.Thread(target=dashboard.run, daemon=True)
-            gui_thread.start()
-            logger.info("GUI dashboard launched")
-        except Exception as e:
-            logger.warning(f"GUI unavailable: {e}")
+            dashboard=HFTDashboard(input_q,book_q,trade_q,status_q,control_q,STOCKS,TICKER_MAP,tracker)
+            gui_thread=threading.Thread(target=dashboard.run,daemon=True)
+            gui_thread.start();logger.info("Dashboard launched");time.sleep(1.5)
+        except Exception as e: logger.warning(f"GUI unavailable: {e}")
 
-    # ------------------------------------------------------------------
-    # 3. Reset
-    # ------------------------------------------------------------------
-    dut.rst_n.value = 0
-    dut.rx_axis_tdata.value = 0
-    dut.rx_axis_tkeep.value = 0
-    dut.rx_axis_tvalid.value = 0
-    dut.rx_axis_tlast.value = 0
-    dut.tx_enable.value = 1
-    dut.wt_wr_en.value = 0
-    dut.wt_wr_addr.value = 0
-    dut.wt_wr_data.value = 0
-    dut.threshold.value = 0
-    dut.tx_axis_tready.value = 1
-
-    await ClockCycles(dut.clk, 10)
-    dut.rst_n.value = 1
+    # Reset
+    dut.rst_n.value=0;dut.rx_axis_tdata.value=0;dut.rx_axis_tkeep.value=0
+    dut.rx_axis_tvalid.value=0;dut.rx_axis_tlast.value=0;dut.tx_enable.value=1
+    dut.wt_wr_en.value=0;dut.wt_wr_addr.value=0;dut.wt_wr_data.value=0
+    dut.threshold.value=0;dut.tx_axis_tready.value=1
+    await ClockCycles(dut.clk,10);dut.rst_n.value=1
     logger.info("Reset released")
 
-    # ------------------------------------------------------------------
-    # 4. Wait for hash table init
-    # ------------------------------------------------------------------
     for _ in range(20000):
         await RisingEdge(dut.clk)
         try:
-            if int(dut.ol_ready.value) == 1:
-                break
-        except Exception:
-            pass
+            if int(dut.ol_ready.value)==1: break
+        except: pass
     logger.info("Hash table ready")
 
-    # ------------------------------------------------------------------
-    # 5. Load index weights — equal weight for all components
-    # ------------------------------------------------------------------
-    weight_per = Q_ONE // NUM_COMPONENTS  # 1/N in Q12.20
+    # Weights — equal weight per component
+    w=Q_ONE//NUM_COMPONENTS
+    logger.info(f"Loading {NUM_COMPONENTS} weights (each={w}, sum={w*NUM_COMPONENTS}, Q_ONE={Q_ONE})")
     for i in range(NUM_COMPONENTS):
-        dut.wt_wr_en.value = 1
-        dut.wt_wr_addr.value = i
-        dut.wt_wr_data.value = weight_per
+        dut.wt_wr_en.value=1;dut.wt_wr_addr.value=i;dut.wt_wr_data.value=w
         await RisingEdge(dut.clk)
-    dut.wt_wr_en.value = 0
-    logger.info(f"Loaded {NUM_COMPONENTS} weights (each={weight_per} Q12.20)")
+    dut.wt_wr_en.value=0
 
-    # ------------------------------------------------------------------
-    # 6. Set spread threshold — 100 cents ($1.00) in Q44.20
-    # ------------------------------------------------------------------
-    threshold_cents = 100
-    threshold_q = threshold_cents * Q_ONE
-    dut.threshold.value = threshold_q
+    # Threshold — 25 cents
+    thresh=25*Q_ONE
+    dut.threshold.value=thresh
     await RisingEdge(dut.clk)
-    logger.info(f"Threshold set to {threshold_cents} cents ({threshold_q} Q44.20)")
+    logger.info(f"Threshold=25c ({thresh} Q44.20)")
+    logger.info(f"IDX_SYMBOL={IDX_SYMBOL} (must match RTL IDX_SYM via Makefile -G)")
 
-    # ------------------------------------------------------------------
-    # 7. Start output monitor
-    # ------------------------------------------------------------------
-    cocotb.start_soon(output_monitor(dut, stop_event))
+    cocotb.start_soon(tx_monitor(dut,stop_event))
 
-    # ------------------------------------------------------------------
-    # 8. Initialize order books — send ADD orders for all stocks
-    # ------------------------------------------------------------------
-    logger.info(f"Building initial order books for {len(STOCKS)} instruments...")
-    mkt = MarketDataGen(STOCKS)
-    init_events = mkt.gen_initial_book()
+    # Build initial books
+    logger.info(f"Building books for {len(STOCKS)} instruments...")
+    mkt=MktGen(STOCKS);init=mkt.init_book();cycle=[0]
+    for i,ev in enumerate(init):
+        await axis_send(dut,ev_to_pkt(ev))
+        await ClockCycles(dut.clk,60);cycle[0]+=60
+        tracker.add(ev["oid"],ev["sym"],ev["price"],ev["qty"],ev["side"])
+        if i%20==0: push_books(cycle[0],ev["sym"]); push_input(ev,cycle[0])
+        if (i+1)%50==0: logger.info(f"  init: {i+1}/{len(init)}")
+    push_books(cycle[0]);await ClockCycles(dut.clk,200);cycle[0]+=200
+    logger.info(f"Book init done: {len(init)} orders")
 
-    cycle_count = 0
-    for i, ev in enumerate(init_events):
-        # Check for pause
-        while True:
-            try:
-                cmd = control_q.get_nowait()
-                if cmd == "pause":
-                    while True:
-                        await ClockCycles(dut.clk, 10)
-                        try:
-                            cmd2 = control_q.get_nowait()
-                            if cmd2 in ("play", "step"):
-                                break
-                            if cmd2 == "quit":
-                                stop_event.set()
-                                return
-                        except queue.Empty:
-                            pass
-                elif cmd == "quit":
-                    stop_event.set()
-                    return
-            except queue.Empty:
-                break
-
-        pkt = event_to_packet(ev)
-        await axis_send_packet(dut, pkt)
-        await ClockCycles(dut.clk, 30)  # drain time
-        cycle_count += 30
-
-        # Update Python-side tracker
-        if ev["type"] == MSG_ADD:
-            tracker.apply_add(ev["oid"], ev["sym"], ev["price"],
-                              ev["qty"], ev["side"])
-        push_input_event(ev, cycle_count)
-
-        # Push book update periodically
-        if i % 20 == 0:
-            snap_all = {}
-            for sym in tracker.all_symbols():
-                snap_all[sym] = tracker.get_book(sym)
-            try:
-                book_q.put_nowait({"cycle": cycle_count, "books": snap_all})
-            except queue.Full:
-                pass
-
-        if (i + 1) % 100 == 0:
-            logger.info(f"  init: {i+1}/{len(init_events)} orders sent")
-
-    logger.info(f"Initial book built: {len(init_events)} orders")
-    tracker.take_snapshot(cycle_count)
-
-    # ------------------------------------------------------------------
-    # 9. Continuous market updates + arb triggers
-    # ------------------------------------------------------------------
-    logger.info("Starting continuous market simulation...")
-    num_rounds = 50
-    paused = False
-
-    for rnd in range(num_rounds):
-        # Check controls
-        try:
-            cmd = control_q.get_nowait()
-            if cmd == "pause":
-                paused = True
-            elif cmd == "play":
-                paused = False
-            elif cmd == "quit":
-                break
-        except queue.Empty:
-            pass
-
-        while paused:
-            await ClockCycles(dut.clk, 10)
-            try:
-                cmd = control_q.get_nowait()
-                if cmd in ("play", "step"):
-                    paused = cmd != "step"
-                    break
-                elif cmd == "quit":
-                    stop_event.set()
-                    return
-            except queue.Empty:
-                pass
-
-        # Normal market updates
-        updates = mkt.gen_update_batch(batch_size=8)
-        for ev in updates:
-            pkt = event_to_packet(ev)
-            await axis_send_packet(dut, pkt)
-            await ClockCycles(dut.clk, 25)
-            cycle_count += 25
-
-            # Track
-            if ev["type"] == MSG_ADD:
-                tracker.apply_add(ev["oid"], ev["sym"], ev["price"],
-                                  ev["qty"], ev["side"])
-            elif ev["type"] == MSG_MOD:
-                tracker.apply_mod(ev["oid"], ev["price"], ev["qty"])
-            elif ev["type"] == MSG_DEL:
-                tracker.apply_del(ev["oid"])
-            elif ev["type"] == MSG_EXEC:
-                tracker.apply_exec(ev["oid"], ev["qty"])
-
-            push_input_event(ev, cycle_count)
-
-        # Every 10 rounds, trigger an arb opportunity
-        if rnd % 10 == 9 and rnd > 0:
-            comp = rnd // 10 % NUM_COMPONENTS
-            logger.info(f"  Triggering arb on component {comp} "
-                        f"({TICKER_MAP.get(comp, '?')})")
-            arb_events = mkt.gen_arb_trigger(component_idx=comp, delta=3000)
-            for ev in arb_events:
-                pkt = event_to_packet(ev)
-                await axis_send_packet(dut, pkt)
-                await ClockCycles(dut.clk, 40)
-                cycle_count += 40
-                tracker.apply_mod(ev["oid"], ev["price"], ev["qty"])
-                push_input_event(ev, cycle_count)
-
-        # Push book snapshots
-        snap_all = {}
-        for sym in tracker.all_symbols():
-            snap_all[sym] = tracker.get_book(sym)
-        try:
-            book_q.put_nowait({"cycle": cycle_count, "books": snap_all})
-        except queue.Full:
-            pass
-
-        await ClockCycles(dut.clk, 20)
-        cycle_count += 20
-
-        if (rnd + 1) % 10 == 0:
-            logger.info(f"  round {rnd+1}/{num_rounds}")
-
-    # ------------------------------------------------------------------
-    # 10. Final status
-    # ------------------------------------------------------------------
-    await ClockCycles(dut.clk, 100)
-    stop_event.set()
-
+    # Probe after init
     try:
-        oc = int(dut.order_count.value)
-    except Exception:
-        oc = 0
-    try:
-        np_raw = int(dut.net_position.value)
-        np_val = np_raw - (1 << 32) if np_raw >= (1 << 31) else np_raw
-    except Exception:
-        np_val = 0
+        oc=int(dut.order_count.value);ci=int(dut.computed_index.value)/Q_ONE
+        logger.info(f"  POST-INIT: order_count={oc}, computed_index={ci:.2f} cents (${ci/100:.2f})")
+    except: pass
 
-    logger.info("=" * 60)
-    logger.info(f"  Simulation complete")
-    logger.info(f"  Cycles:       {cycle_count}")
-    logger.info(f"  Order count:  {oc}")
-    logger.info(f"  Net position: {np_val}")
-    logger.info(f"  Snapshots:    {len(tracker.history)}")
-    logger.info("=" * 60)
+    # Continuous simulation
+    logger.info(f"Live simulation running (delay={INTER_PKT_DELAY}s)...")
+    rnd=0;arb_every=10
 
-    # Keep GUI alive — wait for user to close the window
-    if gui_thread and gui_thread.is_alive():
-        logger.info("GUI still open — close the window to finish simulation")
-        while gui_thread.is_alive():
-            await ClockCycles(dut.clk, 10000)
-        logger.info("GUI closed — exiting")
+    while True:
+        if await check_pause(dut): break
+        if gui_thread and not gui_thread.is_alive(): logger.info("Browser closed"); break
+
+        ev=mkt.gen_one()
+        if not ev: continue
+        await send_event(dut,ev,cycle)
+        rnd+=1
+
+        if rnd%arb_every==0:
+            comp=(rnd//arb_every)%NUM_COMPONENTS
+            delta=1500+rnd*20
+            logger.info(f"  #{rnd}: ARB on {TICKER_MAP.get(comp,'?')} (+${delta/100:.0f})")
+            for aev in mkt.arb_trigger(comp=comp,delta=delta):
+                await send_event(dut,aev,cycle)
+            # Probe
+            try:
+                oc=int(dut.order_count.value);ci=int(dut.computed_index.value)/Q_ONE
+                logger.info(f"    order_count={oc}, idx={ci:.2f}c (${ci/100:.2f})")
+            except: pass
+
+        if rnd%25==0: logger.info(f"  #{rnd} cycle={cycle[0]}")
+
+    stop_event.set();await ClockCycles(dut.clk,200)
+    try: oc=int(dut.order_count.value)
+    except: oc=0
+    logger.info("="*50)
+    logger.info(f"  Done. Events={rnd}, DUT orders={oc}")
+    logger.info("="*50)
