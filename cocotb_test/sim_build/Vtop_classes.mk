@@ -13,48 +13,49 @@ VM_TIMING = 0
 VM_COVERAGE = 0
 # Parallel builds?  0/1 (from --output-split)
 VM_PARALLEL_BUILDS = 1
-# Tracing output mode?  0/1 (from --trace-fst/--trace-saif/--trace-vcd)
+# Tracing output mode?  0/1 (from --trace/--trace-fst)
 VM_TRACE = 0
+# Tracing output mode in VCD format?  0/1 (from --trace)
+VM_TRACE_VCD = 0
 # Tracing output mode in FST format?  0/1 (from --trace-fst)
 VM_TRACE_FST = 0
-# Tracing output mode in SAIF format?  0/1 (from --trace-saif)
-VM_TRACE_SAIF = 0
-# Tracing output mode in VCD format?  0/1 (from --trace-vcd)
-VM_TRACE_VCD = 0
 
 ### Object file lists...
 # Generated module classes, fast-path, compile with highest optimization
 VM_CLASSES_FAST += \
-  Vtop \
-  Vtop___024root__0 \
-  Vtop___024root__1 \
-  Vtop___024root__2 \
+	Vtop \
+	Vtop___024root__DepSet_h84412442__0 \
+	Vtop___024root__DepSet_heccd7ead__0 \
+	Vtop___024root__DepSet_heccd7ead__1 \
+	Vtop___024root__DepSet_heccd7ead__2 \
+	Vtop___024root__DepSet_heccd7ead__3 \
 
 # Generated module classes, non-fast-path, compile with low/medium optimization
 VM_CLASSES_SLOW += \
-  Vtop__ConstPool__0__Slow \
-  Vtop___024root__Slow \
-  Vtop___024root__0__Slow \
-  Vtop___024root__1__Slow \
-  Vtop___024unit__Slow \
-  Vtop___024unit__0__Slow \
+	Vtop__ConstPool_0 \
+	Vtop___024root__Slow \
+	Vtop___024root__DepSet_h84412442__0__Slow \
+	Vtop___024root__DepSet_heccd7ead__0__Slow \
+	Vtop___024unit__Slow \
+	Vtop___024unit__DepSet_hff17caec__0__Slow \
 
 # Generated support classes, fast-path, compile with highest optimization
 VM_SUPPORT_FAST += \
-  Vtop__Dpi \
+	Vtop__Dpi \
 
 # Generated support classes, non-fast-path, compile with low/medium optimization
 VM_SUPPORT_SLOW += \
-  Vtop__Syms__Slow \
+	Vtop__Syms \
 
 # Global classes, need linked once per executable, fast-path, compile with highest optimization
 VM_GLOBAL_FAST += \
-  verilated \
-  verilated_dpi \
-  verilated_vpi \
-  verilated_threads \
+	verilated \
+	verilated_dpi \
+	verilated_vpi \
+	verilated_threads \
 
 # Global classes, need linked once per executable, non-fast-path, compile with low/medium optimization
 VM_GLOBAL_SLOW += \
+
 
 # Verilated -*- Makefile -*-

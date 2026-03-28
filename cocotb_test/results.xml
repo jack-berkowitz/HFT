@@ -1,8 +1,0 @@
-<testsuites name="results">
-  <testsuite name="all" package="all">
-    <property name="random_seed" value="1774494554" />
-    <testcase name="test_hft_pipeline" classname="test_hft_pipeline_top" file="/Users/jackberkowitz/Desktop/HFT/cocotb_test/test_hft_pipeline_top.py" lineno="392" time="44.98032522201538" sim_time_ns="705968.0" ratio_time="15695.03992057549">
-      <failure error_type="KeyboardInterrupt" error_msg="" />
-    </testcase>
-  </testsuite>
-</testsuites>

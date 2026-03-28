@@ -289,7 +289,7 @@ class HFTDashboard:
         srv.timeout=0.1
         threading.Thread(target=self._serve,args=(srv,),daemon=True).start()
         url=f'http://127.0.0.1:{self.port}'
-        print(f"\n  \u26a1 Dashboard: {url}\n")
+        print(f"\n  Dashboard: {url}\n")
         webbrowser.open(url)
         while self._on: self._drain(); time.sleep(0.04)
         srv.shutdown()

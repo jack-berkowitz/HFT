@@ -83,13 +83,22 @@ module skewed_hash_table #(
     // =================================================================
     // Hash seeds (splitmix64 / murmur-family constants, up to 8 ways)
     // =================================================================
-    localparam logic [63:0] HASH_SEEDS [0:7] = '{
-        64'h9E3779B97F4A7C15, 64'h517CC1B727220A95,
-        64'h6C62272E07BB0142, 64'hBF58476D1CE4E5B9,
-        64'h94D049BB133111EB, 64'hC6A4A7935BD1E995,
-        64'hE7037ED1A0B428DB, 64'h27D4EB2F165B7D1A
-    };
-    localparam int HASH_ROT [0:7] = '{3, 7, 13, 19, 23, 29, 37, 41};
+    localparam [63:0] HASH_SEEDS_0 = 64'h9E3779B97F4A7C15;
+    localparam [63:0] HASH_SEEDS_1 = 64'h517CC1B727220A95;
+    localparam [63:0] HASH_SEEDS_2 = 64'h6C62272E07BB0142;
+    localparam [63:0] HASH_SEEDS_3 = 64'hBF58476D1CE4E5B9;
+    localparam [63:0] HASH_SEEDS_4 = 64'h94D049BB133111EB;
+    localparam [63:0] HASH_SEEDS_5 = 64'hC6A4A7935BD1E995;
+    localparam [63:0] HASH_SEEDS_6 = 64'hE7037ED1A0B428DB;
+    localparam [63:0] HASH_SEEDS_7 = 64'h27D4EB2F165B7D1A;
+    localparam HASH_ROT_0 = 3;
+    localparam HASH_ROT_1 = 7;
+    localparam HASH_ROT_2 = 13;
+    localparam HASH_ROT_3 = 19;
+    localparam HASH_ROT_4 = 23;
+    localparam HASH_ROT_5 = 29;
+    localparam HASH_ROT_6 = 37;
+    localparam HASH_ROT_7 = 41;
 
     // =================================================================
     // Hash function — replace body for CRC / Zobrist / perfect hash
@@ -103,13 +112,33 @@ module skewed_hash_table #(
         int rot;
 
         // Tile 64-bit seed to fill KEY_W bits
+        logic [63:0] seed64;
+        case (way)
+            0: seed64 = HASH_SEEDS_0;
+            1: seed64 = HASH_SEEDS_1;
+            2: seed64 = HASH_SEEDS_2;
+            3: seed64 = HASH_SEEDS_3;
+            4: seed64 = HASH_SEEDS_4;
+            5: seed64 = HASH_SEEDS_5;
+            6: seed64 = HASH_SEEDS_6;
+            default: seed64 = HASH_SEEDS_7;
+        endcase
         for (int b = 0; b < KEY_W; b++)
-            seed_k[b] = HASH_SEEDS[way][b % 64];
+            seed_k[b] = seed64[b % 64];
 
         mixed = key ^ seed_k;
 
         // Rotate left by per-way coprime amount
-        rot   = HASH_ROT[way] % KEY_W;
+        case (way)
+            0: rot = HASH_ROT_0 % KEY_W;
+            1: rot = HASH_ROT_1 % KEY_W;
+            2: rot = HASH_ROT_2 % KEY_W;
+            3: rot = HASH_ROT_3 % KEY_W;
+            4: rot = HASH_ROT_4 % KEY_W;
+            5: rot = HASH_ROT_5 % KEY_W;
+            6: rot = HASH_ROT_6 % KEY_W;
+            default: rot = HASH_ROT_7 % KEY_W;
+        endcase
         mixed = (mixed << rot) | (mixed >> (KEY_W - rot));
 
         // XOR-fold to index width

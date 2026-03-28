@@ -10,18 +10,15 @@
 
 class Vtop__Syms;
 
-class alignas(VL_CACHE_LINE_BYTES) Vtop___024unit final {
+class alignas(VL_CACHE_LINE_BYTES) Vtop___024unit final : public VerilatedModule {
   public:
 
     // INTERNAL VARIABLES
-    Vtop__Syms* vlSymsp;
-    const char* vlNamep;
+    Vtop__Syms* const vlSymsp;
 
     // CONSTRUCTORS
-    Vtop___024unit();
+    Vtop___024unit(Vtop__Syms* symsp, const char* v__name);
     ~Vtop___024unit();
-    void ctor(Vtop__Syms* symsp, const char* namep);
-    void dtor();
     VL_UNCOPYABLE(Vtop___024unit);
 
     // INTERNAL METHODS

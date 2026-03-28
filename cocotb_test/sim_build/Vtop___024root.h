@@ -10,7 +10,7 @@
 
 class Vtop__Syms;
 
-class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
+class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final : public VerilatedModule {
   public:
 
     // DESIGN SPECIFIC STATE
@@ -149,7 +149,7 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
     };
     struct {
         CData/*0:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_slot_empty;
-        CData/*0:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h3945d898__0;
+        CData/*0:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT____Vlvbound_hb313f869__0;
         CData/*0:0*/ hft_pipeline_top__DOT__u_tob__DOT__clk;
         CData/*0:0*/ hft_pipeline_top__DOT__u_tob__DOT__rst_n;
         CData/*4:0*/ hft_pipeline_top__DOT__u_tob__DOT__sym;
@@ -190,11 +190,6 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         CData/*0:0*/ hft_pipeline_top__DOT__u_tx__DOT__pos_ok;
         CData/*7:0*/ hft_pipeline_top__DOT__u_tx__DOT__beat_keep;
         CData/*0:0*/ hft_pipeline_top__DOT__u_tx__DOT__beat_last;
-        CData/*0:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5____Vlvbound_h61001783__0;
-        CData/*0:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7____Vlvbound_h61001783__0;
-        CData/*0:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__8____Vlvbound_h61001783__0;
-        CData/*0:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__9____Vlvbound_h61001783__0;
-        CData/*0:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__10____Vlvbound_h61001783__0;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__14__b0;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__14__b1;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__15__b0;
@@ -212,32 +207,21 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__16__b6;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__16__b7;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__17__b2;
-    };
-    struct {
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__17__b3;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__17__b4;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__17__b5;
         CData/*7:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__18__b4;
-        CData/*0:0*/ __VdlySet__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v0;
-        CData/*0:0*/ __VdlySet__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v1;
-        CData/*0:0*/ __VdlySet__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v2;
-        CData/*0:0*/ __VdlySet__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v3;
+        CData/*0:0*/ __Vdlyvset__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v0;
+    };
+    struct {
+        CData/*0:0*/ __Vdlyvset__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v1;
+        CData/*0:0*/ __Vdlyvset__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v2;
+        CData/*0:0*/ __Vdlyvset__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v3;
         CData/*0:0*/ __VstlFirstIteration;
-        CData/*0:0*/ __VstlPhaseResult;
         CData/*0:0*/ __VicoFirstIteration;
-        CData/*0:0*/ __VicoPhaseResult;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_filter__DOT__clk__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_framer__DOT__clk__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_demux__DOT__clk__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_order_lookup__DOT__clk__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_order_lookup__DOT__rst_n__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__clk__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__rst_n__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_tob__DOT__clk__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_index_arb__DOT__clk__0;
-        CData/*0:0*/ __Vtrigprevexpr___TOP__hft_pipeline_top__DOT__u_tx__DOT__clk__0;
-        CData/*0:0*/ __VactPhaseResult;
-        CData/*0:0*/ __VnbaPhaseResult;
+        CData/*0:0*/ __Vtrigprevexpr___TOP__clk__0;
+        CData/*0:0*/ __Vtrigprevexpr___TOP__rst_n__0;
+        CData/*0:0*/ __VactContinue;
         VL_IN16(wt_wr_addr,8,0);
         SData/*8:0*/ hft_pipeline_top__DOT__wt_wr_addr;
         SData/*15:0*/ hft_pipeline_top__DOT__u_filter__DOT__ethertype;
@@ -249,8 +233,6 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         SData/*8:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__wt_wr_addr;
         SData/*8:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__s0_sym;
         SData/*8:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__s1_sym;
-        SData/*8:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5__Vfuncout;
-        SData/*8:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5__folded;
         SData/*8:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7__Vfuncout;
         SData/*8:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7__folded;
         SData/*8:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__8__Vfuncout;
@@ -278,8 +260,6 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         VlWide<3>/*64:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__wr_val_r;
         VlWide<3>/*64:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__lookup_value;
         VlWide<3>/*64:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__insert_value;
-    };
-    struct {
         VlWide<3>/*64:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__s1_value;
         VlWide<3>/*64:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__op_value_r;
         VlWide<3>/*64:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_value_r;
@@ -290,16 +270,6 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__unnamedblk7__DOT__w;
         IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__unnamedblk8__DOT__w;
         IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__unnamedblk9__DOT__w;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_hf307708e__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_hf30588e6__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_haf3ac47c__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_haf3acc64__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h813121f6__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h81311a8e__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h104c0e2d__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h104c1625__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_hc27b3eda__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_hc27b46c2__0;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__rm_price;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__rm_qty;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__add_price;
@@ -308,6 +278,8 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk2__DOT__i;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk3__DOT__i;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk3__DOT__unnamedblk4__DOT__j;
+    };
+    struct {
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk5__DOT__i;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk6__DOT__i;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk7__DOT__i;
@@ -317,10 +289,12 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk13__DOT__l;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk10__DOT__s;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__unnamedblk10__DOT__unnamedblk11__DOT__l;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT____Vlvbound_h0e01100d__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT____Vlvbound_hc531679c__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT____Vlvbound_hd9b7c195__0;
-        IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT____Vlvbound_hd419c78d__0;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h8199cc1e__0;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h81b53c54__0;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_ha1ace092__0;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_ha1b6c32c__0;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_ha9a88706__0;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_ha9a2f2c4__0;
         IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__wt_wr_data;
         IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__actual_mid;
         IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__s0_new_mid;
@@ -330,27 +304,17 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__next_actual;
         IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__unnamedblk1__DOT__i;
         IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__unnamedblk2__DOT__i;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT____Vlvbound_h536e47fe__0;
+        IData/*31:0*/ hft_pipeline_top__DOT__u_index_arb__DOT____Vlvbound_hb6d5d6c1__0;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tx__DOT__order_count;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tx__DOT__net_position;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tx__DOT__lat_price;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tx__DOT__cd_cnt;
         IData/*31:0*/ hft_pipeline_top__DOT__u_tx__DOT__next_pos;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5__way;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5__rot;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7__way;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7__rot;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__8__way;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__8__rot;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__9__way;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__9__rot;
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__10__way;
-    };
-    struct {
-        IData/*31:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__10__rot;
-        VlWide<5>/*129:0*/ __VdlyVal__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v0;
-        VlWide<5>/*129:0*/ __VdlyVal__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v1;
-        VlWide<5>/*129:0*/ __VdlyVal__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v2;
-        VlWide<5>/*129:0*/ __VdlyVal__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v3;
+        VlWide<5>/*129:0*/ __Vdlyvval__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v0;
+        VlWide<5>/*129:0*/ __Vdlyvval__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v1;
+        VlWide<5>/*129:0*/ __Vdlyvval__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v2;
+        VlWide<5>/*129:0*/ __Vdlyvval__hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__bram_rdata_b__v3;
         IData/*31:0*/ __VactIterCount;
         VL_IN64(rx_axis_tdata,63,0);
         VL_OUT64(tx_axis_tdata,63,0);
@@ -380,6 +344,8 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         VlWide<10>/*300:0*/ hft_pipeline_top__DOT__u_demux__DOT__out_msg;
         QData/*63:0*/ hft_pipeline_top__DOT__u_demux__DOT__order_id_r;
         QData/*63:0*/ hft_pipeline_top__DOT__u_demux__DOT__new_order_id_r;
+    };
+    struct {
         VlWide<10>/*300:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__msg_in;
         VlWide<13>/*401:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__out;
         QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__ht_lu_key;
@@ -393,15 +359,12 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__s1_key;
         QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__op_key_r;
         QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__evict_key_r;
-        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h0f0b0d31__0;
-        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h247cbf38__0;
-        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_hd5cb8263__0;
-        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_hd59551cd__0;
-        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h332dfccf__0;
-        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_hd32e541e__0;
-        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h99a7bc22__0;
         VlWide<13>/*401:0*/ hft_pipeline_top__DOT__u_tob__DOT__in_update;
         VlWide<5>/*137:0*/ hft_pipeline_top__DOT__u_tob__DOT__out_tob;
+        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_he393dcfc__0;
+        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h0974e947__0;
+        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_h960b21d1__0;
+        QData/*63:0*/ hft_pipeline_top__DOT__u_tob__DOT____Vlvbound_he95362a5__0;
         VlWide<5>/*137:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__in_tob;
         QData/*63:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__threshold;
         VlWide<6>/*161:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__out_trade;
@@ -410,8 +373,6 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         QData/*32:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__s0_delta;
         QData/*32:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__s1_delta;
         QData/*63:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__weighted_delta;
-    };
-    struct {
         QData/*63:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__next_accum;
         QData/*63:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__actual_q;
         QData/*63:0*/ hft_pipeline_top__DOT__u_index_arb__DOT__spread;
@@ -422,20 +383,13 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         QData/*63:0*/ hft_pipeline_top__DOT__u_tx__DOT__lat_oid;
         QData/*63:0*/ hft_pipeline_top__DOT__u_tx__DOT__oid_seq;
         QData/*63:0*/ hft_pipeline_top__DOT__u_tx__DOT__beat_data;
-        QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5__key;
-        QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5__seed_k;
-        QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__5__mixed;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7__key;
-        QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7__seed_k;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__7__mixed;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__8__key;
-        QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__8__seed_k;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__8__mixed;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__9__key;
-        QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__9__seed_k;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__9__mixed;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__10__key;
-        QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__10__seed_k;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__hash_fn__10__mixed;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__14__Vfuncout;
         QData/*63:0*/ __Vfunc_hft_pipeline_top__DOT__u_tx__DOT__pk__15__Vfuncout;
@@ -456,22 +410,19 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
         VlUnpacked<VlUnpacked<QData/*63:0*/, 3>, 22> hft_pipeline_top__DOT__u_tob__DOT__ask_book;
         VlUnpacked<QData/*63:0*/, 3> hft_pipeline_top__DOT__u_tob__DOT__cur;
         VlUnpacked<QData/*63:0*/, 3> hft_pipeline_top__DOT__u_tob__DOT__after_rm;
+    };
+    struct {
         VlUnpacked<QData/*63:0*/, 3> hft_pipeline_top__DOT__u_tob__DOT__after_add;
         VlUnpacked<IData/*31:0*/, 20> hft_pipeline_top__DOT__u_index_arb__DOT__weight_tbl;
         VlUnpacked<IData/*31:0*/, 20> hft_pipeline_top__DOT__u_index_arb__DOT__old_mid;
-        VlUnpacked<QData/*63:0*/, 1> __VstlTriggered;
-        VlUnpacked<QData/*63:0*/, 1> __VicoTriggered;
-        VlUnpacked<QData/*63:0*/, 1> __VactTriggered;
-        VlUnpacked<QData/*63:0*/, 1> __VnbaTriggered;
     };
-    VlNBACommitQueue<VlUnpacked<VlUnpacked<QData/*63:0*/, 3>, 22>, true, QData/*63:0*/, 2> __VdlyCommitQueuehft_pipeline_top__DOT__u_tob__DOT__bid_book;
-    VlNBACommitQueue<VlUnpacked<VlUnpacked<QData/*63:0*/, 3>, 22>, true, QData/*63:0*/, 2> __VdlyCommitQueuehft_pipeline_top__DOT__u_tob__DOT__ask_book;
-    VlNBACommitQueue<VlUnpacked<IData/*31:0*/, 20>, false, IData/*31:0*/, 1> __VdlyCommitQueuehft_pipeline_top__DOT__u_index_arb__DOT__weight_tbl;
-    VlNBACommitQueue<VlUnpacked<IData/*31:0*/, 20>, false, IData/*31:0*/, 1> __VdlyCommitQueuehft_pipeline_top__DOT__u_index_arb__DOT__old_mid;
+    VlTriggerVec<1> __VstlTriggered;
+    VlTriggerVec<1> __VicoTriggered;
+    VlTriggerVec<2> __VactTriggered;
+    VlTriggerVec<2> __VnbaTriggered;
 
     // INTERNAL VARIABLES
-    Vtop__Syms* vlSymsp;
-    const char* vlNamep;
+    Vtop__Syms* const vlSymsp;
 
     // PARAMETERS
     static constexpr CData/*2:0*/ hft_pipeline_top__DOT__u_filter__DOT__BEAT_ETHERTYPE = 1U;
@@ -534,6 +485,14 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
     static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__KEY_LO = 0x00000041U;
     static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__VAL_HI = 0x00000040U;
     static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__VAL_LO = 0U;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_0 = 3U;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_1 = 7U;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_2 = 0x0000000dU;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_3 = 0x00000013U;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_4 = 0x00000017U;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_5 = 0x0000001dU;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_6 = 0x00000025U;
+    static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT_7 = 0x00000029U;
     static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__N_LEVELS = 3U;
     static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__N_SYMBOLS = 0x00000016U;
     static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_tob__DOT__SYM_W = 5U;
@@ -554,21 +513,19 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop___024root final {
     static constexpr IData/*31:0*/ hft_pipeline_top__DOT__u_tx__DOT__BEAT_W = 4U;
     static constexpr QData/*47:0*/ hft_pipeline_top__DOT__SRC_MAC = 0x0000deadbeefcafeULL;
     static constexpr QData/*47:0*/ hft_pipeline_top__DOT__DST_MAC = 0x000001005e000001ULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_0 = 0x9e3779b97f4a7c15ULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_1 = 0x517cc1b727220a95ULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_2 = 0x6c62272e07bb0142ULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_3 = 0xbf58476d1ce4e5b9ULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_4 = 0x94d049bb133111ebULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_5 = 0xc6a4a7935bd1e995ULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_6 = 0xe7037ed1a0b428dbULL;
+    static constexpr QData/*63:0*/ hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS_7 = 0x27d4eb2f165b7d1aULL;
     static constexpr QData/*47:0*/ hft_pipeline_top__DOT__u_tx__DOT__SRC_MAC = 0x0000deadbeefcafeULL;
     static constexpr QData/*47:0*/ hft_pipeline_top__DOT__u_tx__DOT__DST_MAC = 0x000001005e000001ULL;
-    static constexpr VlUnpacked<QData/*63:0*/, 8> hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_SEEDS = {{
-        0x9e3779b97f4a7c15ULL, 0x517cc1b727220a95ULL,
-        0x6c62272e07bb0142ULL, 0xbf58476d1ce4e5b9ULL,
-        0x94d049bb133111ebULL, 0xc6a4a7935bd1e995ULL,
-        0xe7037ed1a0b428dbULL, 0x27d4eb2f165b7d1aULL
-    }};
-    static constexpr VlUnpacked<IData/*31:0*/, 8> hft_pipeline_top__DOT__u_order_lookup__DOT__u_order_table__DOT__HASH_ROT = {{
-        3U, 7U, 0x0000000dU, 0x00000013U,
-        0x00000017U, 0x0000001dU, 0x00000025U, 0x00000029U
-    }};
 
     // CONSTRUCTORS
-    Vtop___024root(Vtop__Syms* symsp, const char* namep);
+    Vtop___024root(Vtop__Syms* symsp, const char* v__name);
     ~Vtop___024root();
     VL_UNCOPYABLE(Vtop___024root);
 

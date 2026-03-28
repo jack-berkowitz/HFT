@@ -5,6 +5,7 @@
 // unless using verilator public meta comments.
 // Suggest use Vtop.h instead.
 
+
 #ifndef VERILATED_VTOP__PCH_H_
 #define VERILATED_VTOP__PCH_H_  // guard
 
@@ -22,7 +23,5 @@
 
 #include "Vtop__Syms.h"
 #include "Vtop.h"
-
-// Additional include files added using '--compiler-include'
 
 #endif  // guard

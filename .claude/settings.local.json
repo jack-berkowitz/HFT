@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/c/msys64/usr/bin/bash -lc \"pacman -Sy --noconfirm perl mingw-w64-x86_64-perl\")",
+      "Bash(/c/msys64/mingw64/bin/verilator_bin.exe --version)",
+      "Read(//c/msys64/mingw64/bin/**)",
+      "Bash(export PATH=\"/c/msys64/mingw64/bin:/c/Users/sebas/AppData/Local/Microsoft/WinGet/Packages/ezwinports.make_Microsoft.Winget.Source_8wekyb3d8bbwe/bin:/c/Users/sebas/AppData/Local/Programs/Python/Python313/Scripts:/c/Users/sebas/AppData/Local/Programs/Python/Python313:$PATH\")",
+      "Bash(make SIM=verilator)",
+      "Read(//c/msys64/mingw64/lib/python3.14/site-packages/cocotb/share/lib//**)",
+      "Read(//c/msys64/mingw64/lib/python3.14/site-packages/cocotb/share/lib/verilator//**)",
+      "Bash(wsl -d Ubuntu -- bash -c \"sudo apt-get update -y\")",
+      "Bash(wsl -d Ubuntu -u root -- bash -c \"rm -rf /mnt/c/Users/sebas/Desktop/HFT/cocotb_test/sim_build && cd /mnt/c/Users/sebas/Desktop/HFT/cocotb_test && make SIM=verilator 2>&1\")",
+      "Bash(wsl -d Ubuntu bash -c \"pkill -f Vtop; pkill -f test_hft\")",
+      "Bash(wsl -d Ubuntu bash -c \"cd /mnt/c/Users/sebas/Desktop/HFT/cocotb_test && make SIM=verilator 2>&1\")",
+      "Bash(wsl -d Ubuntu bash -c \"pkill -f Vtop 2>/dev/null; pkill -f test_hft 2>/dev/null; echo done\")"
+    ]
+  }
+}

@@ -392,7 +392,7 @@ async def send_event(dut,ev,cycle):
 @cocotb.test()
 async def test_hft_pipeline(dut):
     stop_event=threading.Event()
-    cocotb.start_soon(Clock(dut.clk,4,unit="ns").start())
+    cocotb.start_soon(Clock(dut.clk,4,units="ns").start())
 
     # GUI
     gui_thread=None
@@ -419,11 +419,18 @@ async def test_hft_pipeline(dut):
         except: pass
     logger.info("Hash table ready")
 
-    # Weights — equal weight per component
-    w=Q_ONE//NUM_COMPONENTS
-    logger.info(f"Loading {NUM_COMPONENTS} weights (each={w}, sum={w*NUM_COMPONENTS}, Q_ONE={Q_ONE})")
-    for i in range(NUM_COMPONENTS):
-        dut.wt_wr_en.value=1;dut.wt_wr_addr.value=i;dut.wt_wr_data.value=w
+    # Price-calibrated weights: w = SPY_base * Q_ONE / SUM(component_base_prices)
+    # Ensures SUM(price_i * w_i) == SPY_price * Q_ONE at startup -> spread starts near 0.
+    # Arb pushes (positive delta) create positive spread -> SELL.
+    # Price drops create negative spread -> BUY. Both directions fire.
+    spy_stock = next(s for s in STOCKS if s["idx"] == IDX_SYMBOL)
+    spy_base  = spy_stock["base_price"]
+    comp_stocks = [s for s in STOCKS if s["idx"] < NUM_COMPONENTS]
+    sum_base  = sum(s["base_price"] for s in comp_stocks)
+    w = (spy_base * Q_ONE) // sum_base
+    logger.info(f"Price-calibrated weights: SPY={spy_base}c sum_comp={sum_base}c w={w} (Q_ONE={Q_ONE})")
+    for s in comp_stocks:
+        dut.wt_wr_en.value=1; dut.wt_wr_addr.value=s["idx"]; dut.wt_wr_data.value=w
         await RisingEdge(dut.clk)
     dut.wt_wr_en.value=0
 
@@ -456,7 +463,17 @@ async def test_hft_pipeline(dut):
 
     # Continuous simulation
     logger.info(f"Live simulation running (delay={INTER_PKT_DELAY}s)...")
-    rnd=0;arb_every=10
+    rnd=0; arb_every=3
+
+    # SPY-bid arb: mean-reverting random walk drives natural BUY/SELL signals.
+    # Every arb_every rounds, nudge SPY best bid by (revert_toward_center + noise).
+    # Reversion prevents runaway drift; noise makes direction genuinely random.
+    _spy_base    = next(s for s in STOCKS if s["idx"]==IDX_SYMBOL)["base_price"]
+    _spy_sp      = max(_spy_base//200, 10)
+    _spy_bid_ctr = _spy_base - _spy_sp//2          # init_book level-0 bid center
+    _spy_bid_max = _spy_bid_ctr + _spy_sp//2 - 20  # stay 20c below ask
+    _spy_bid_cur = _spy_bid_ctr                    # tracks current best-bid price
+    _spy_noise   = max(120, _spy_sp//2)            # noise amplitude (>threshold/2)
 
     while True:
         if await check_pause(dut): break
@@ -468,12 +485,21 @@ async def test_hft_pipeline(dut):
         rnd+=1
 
         if rnd%arb_every==0:
-            comp=(rnd//arb_every)%NUM_COMPONENTS
-            delta=1500+rnd*20
-            logger.info(f"  #{rnd}: ARB on {TICKER_MAP.get(comp,'?')} (+${delta/100:.0f})")
-            for aev in mkt.arb_trigger(comp=comp,delta=delta):
-                await send_event(dut,aev,cycle)
-            # Probe
+            spy_bids=[(o,i["price"]) for o,i in mkt.active.items()
+                      if i["sym"]==IDX_SYMBOL and i["side"]]
+            if spy_bids:
+                spy_oid=max(spy_bids,key=lambda x:x[1])[0]
+                # Mean-reverting random walk: 25% pull back to center + uniform noise
+                revert  = int(0.25*(_spy_bid_ctr - _spy_bid_cur))
+                noise   = random.randint(-_spy_noise, _spy_noise)
+                spy_delta = revert + noise
+                _spy_bid_cur = max(100, min(_spy_bid_max, _spy_bid_cur + spy_delta))
+                mkt.active[spy_oid]["price"] = _spy_bid_cur
+                spy_ev={"type":MSG_MOD,"sym":IDX_SYMBOL,"oid":spy_oid,
+                        "price":_spy_bid_cur,"qty":mkt.active[spy_oid]["qty"],"side":True,
+                        "ssn":mkt.ssn(IDX_SYMBOL),"seq":mkt.seq()}
+                logger.info(f"  #{rnd}: SPY bid {spy_delta:+d}c (cur={_spy_bid_cur})")
+                await send_event(dut,spy_ev,cycle)
             try:
                 oc=int(dut.order_count.value);ci=int(dut.computed_index.value)/Q_ONE
                 logger.info(f"    order_count={oc}, idx={ci:.2f}c (${ci/100:.2f})")
