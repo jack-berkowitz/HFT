@@ -1,1 +1,10 @@
 corundum_env/
+
+# Verilator build artifacts
+cocotb_test/sim_build/
+cocotb_test/results.xml
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
