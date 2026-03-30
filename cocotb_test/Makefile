@@ -45,7 +45,10 @@ ifeq ($(SIM),verilator)
     EXTRA_ARGS += -GIDX_SYM=$(HFT_IDX_SYM)
     EXTRA_ARGS += -GTOB_N_SYMBOLS=$(HFT_TOB_SYMBOLS)
     EXTRA_ARGS += -GIDX_SYM_ID=$(HFT_IDX_SYM)
-    EXTRA_ARGS += -GCOOLDOWN_CYC=20
+    # Cooldown between trades: 5000 cycles = 20µs at 250 MHz.
+    # Prevents the DUT from firing multiple identical trades on
+    # the same spread crossing between market events.
+    EXTRA_ARGS += -GCOOLDOWN_CYC=5000
     EXTRA_ARGS += -GMAX_POS=100000
     EXTRA_ARGS += -GPRICE_OFFSET=10
     EXTRA_ARGS += -GHT_TBL_ENTRIES=$(HFT_HT_ENTRIES)

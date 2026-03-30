@@ -7,7 +7,7 @@ via Verilator -G flags in the Makefile so they match this Python test.
 Fetches live stock prices from Yahoo Finance at startup.
 """
 
-import os, struct, random, threading, queue, time, logging
+import os, struct, random, math, threading, queue, time, logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -35,10 +35,9 @@ status_q  = queue.Queue(maxsize=500)
 control_q = queue.Queue(maxsize=100)
 
 # ===========================================================================
-#  STOCK DATA — live Yahoo Finance prices with fallback
+#  STOCK DATA
 # ===========================================================================
 
-# Full S&P 500 tickers (top ~100 by weight, rest auto-generated)
 _TICKERS = [
     "AAPL","MSFT","AMZN","NVDA","GOOGL","META","BRK-B","TSLA",
     "UNH","JNJ","V","XOM","JPM","PG","MA","HD",
@@ -76,7 +75,6 @@ _TICKERS = [
     "IVZ","ZION","ALLE","HAS","XRAY","RHI","BIO",
 ]
 
-# Fallback prices (cents) for top stocks if yfinance unavailable
 _FALLBACK = {
     "AAPL":19200,"MSFT":42500,"AMZN":18700,"NVDA":88000,"GOOGL":17500,
     "META":50500,"BRK-B":41000,"TSLA":25500,"UNH":52800,"JNJ":15800,
@@ -226,203 +224,334 @@ class Tracker:
 tracker = Tracker()
 
 # ===========================================================================
-#  MARKET DATA GEN
+#  MARKET DATA GENERATOR
 # ===========================================================================
 class MktGen:
-    def __init__(self,stocks,seed=12345):
-        self.stocks=stocks;self.rng=random.Random(seed)
-        self._oid=0x1000;self._seq=1;self._ssn=defaultdict(int);self.active={}
-        self._prices={s["idx"]:s["base_price"] for s in stocks}
-    def oid(self): self._oid+=1; return self._oid
-    def seq(self): self._seq+=1; return self._seq
-    def ssn(self,s): self._ssn[s]+=1; return self._ssn[s]
+    def __init__(self, stocks, seed=12345):
+        self.stocks = stocks
+        self.rng = random.Random(seed)
+        self._oid = 0x1000
+        self._seq = 1
+        self._ssn = defaultdict(int)
+        self.active = {}
+        self._prices = {s["idx"]: s["base_price"] for s in stocks}
+        self._event_count = 0
+        self._momentum = defaultdict(float)
+        self._vol = {}
+        for s in stocks:
+            self._vol[s["idx"]] = max(10, s["base_price"] // 400)
+        self._comp_stocks = [s for s in stocks if s["idx"] != IDX_SYMBOL]
+        if self._comp_stocks:
+            self._hot_sym = self.rng.choice(self._comp_stocks)["idx"]
+            self._hot_countdown = self.rng.randint(30, 80)
+        else:
+            self._hot_sym = -1
+            self._hot_countdown = 999
+
+    def oid(self):  self._oid += 1; return self._oid
+    def seq(self):  self._seq += 1; return self._seq
+    def ssn(self, s): self._ssn[s] += 1; return self._ssn[s]
 
     def init_book(self):
-        evs=[]
+        evs = []
         for s in self.stocks:
-            sym=s["idx"];base=s["base_price"];sp=max(base//200,10)
+            sym = s["idx"]; base = s["base_price"]
+            sp = max(base // 200, 10)
             for i in range(TOB_LEVELS):
-                for buy in [True,False]:
-                    o=self.oid();p=base+(-sp//2-i*sp if buy else sp//2+i*sp)
-                    q=self.rng.randint(50,500)
-                    evs.append({"type":MSG_ADD,"sym":sym,"oid":o,"price":p,"qty":q,
-                                "side":buy,"ssn":self.ssn(sym),"seq":self.seq()})
-                    self.active[o]={"sym":sym,"price":p,"qty":q,"side":buy}
+                for buy in [True, False]:
+                    o = self.oid()
+                    p = base + (-sp // 2 - i * sp if buy else sp // 2 + i * sp)
+                    q = self.rng.randint(50, 500)
+                    evs.append({"type": MSG_ADD, "sym": sym, "oid": o,
+                                "price": p, "qty": q, "side": buy,
+                                "ssn": self.ssn(sym), "seq": self.seq()})
+                    self.active[o] = {"sym": sym, "price": p, "qty": q, "side": buy}
+        self.rng.shuffle(evs)
         return evs
+
+    def _rand_qty(self):
+        r = self.rng.random()
+        if r < 0.50:  return self.rng.choice([50, 100])
+        if r < 0.80:  return self.rng.choice([200, 300])
+        if r < 0.95:  return self.rng.choice([500, 800])
+        return self.rng.choice([1000, 2000, 5000])
+
+    def _price_step(self, sym):
+        vol = self._vol.get(sym, 20)
+        if sym == self._hot_sym: vol *= 3
+        mom = self._momentum.get(sym, 0.0)
+        step = self.rng.gauss(mom * 0.3, vol)
+        self._momentum[sym] = 0.7 * mom + 0.3 * step
+        return int(round(step))
+
+    def _maybe_rotate_hot(self):
+        self._hot_countdown -= 1
+        if self._hot_countdown <= 0 and self._comp_stocks:
+            old = self._hot_sym
+            self._hot_sym = self.rng.choice(self._comp_stocks)["idx"]
+            self._hot_countdown = self.rng.randint(30, 80)
+            if old != self._hot_sym:
+                logger.info(f"  [MktGen] Hot symbol: "
+                            f"{TICKER_MAP.get(old,'?')} -> "
+                            f"{TICKER_MAP.get(self._hot_sym,'?')}")
+
+    def _pick_stock(self):
+        weights = [3.0 if s["idx"] == self._hot_sym else 1.0 for s in self.stocks]
+        return self.rng.choices(self.stocks, weights=weights, k=1)[0]
 
     def gen_one(self):
         if not self.active: return None
-        act=self.rng.choices(["add","mod","del","exec"],weights=[40,30,15,15])[0]
-        if act=="add":
-            s=self.rng.choice(self.stocks);sym=s["idx"];buy=self.rng.random()<0.5
-            base=self._prices[sym];sp=max(base//200,10)
-            p=base+(self.rng.randint(-sp*3,-sp//2) if buy else self.rng.randint(sp//2,sp*3))
-            q=self.rng.choice([50,100,200,300,500]);o=self.oid()
-            self.active[o]={"sym":sym,"price":p,"qty":q,"side":buy}
-            return {"type":MSG_ADD,"sym":sym,"oid":o,"price":p,"qty":q,"side":buy,
-                    "ssn":self.ssn(sym),"seq":self.seq()}
-        elif act=="mod":
-            o=self.rng.choice(list(self.active.keys()));old=self.active[o]
-            np=max(100,old["price"]+self.rng.randint(-50,50));nq=self.rng.choice([50,100,200,300])
-            self.active[o]["price"]=np;self.active[o]["qty"]=nq
-            return {"type":MSG_MOD,"sym":old["sym"],"oid":o,"price":np,"qty":nq,
-                    "side":old["side"],"ssn":self.ssn(old["sym"]),"seq":self.seq()}
-        elif act=="del":
-            o=self.rng.choice(list(self.active.keys()));old=self.active.pop(o)
-            return {"type":MSG_DEL,"sym":old["sym"],"oid":o,"price":old["price"],"qty":old["qty"],
-                    "side":old["side"],"ssn":self.ssn(old["sym"]),"seq":self.seq()}
-        elif act=="exec":
-            o=self.rng.choice(list(self.active.keys()));old=self.active[o]
-            eq=min(old["qty"],self.rng.choice([25,50,100]));old["qty"]-=eq
-            if old["qty"]<=0: self.active.pop(o)
-            return {"type":MSG_EXEC,"sym":old["sym"],"oid":o,"price":old["price"],"qty":eq,
-                    "side":old["side"],"ssn":self.ssn(old["sym"]),"seq":self.seq()}
+        self._event_count += 1
+        self._maybe_rotate_hot()
+        n = len(self.active)
+        w_add  = max(10, 50 - n // 5)
+        w_mod  = 25 + min(20, n // 10)
+        w_del  = 10 + min(10, n // 20)
+        w_exec = 15 + min(15, n // 15)
+        act = self.rng.choices(["add", "mod", "del", "exec"],
+                               weights=[w_add, w_mod, w_del, w_exec])[0]
+        if act == "add":
+            s = self._pick_stock(); sym = s["idx"]
+            buy = self.rng.random() < 0.5
+            base = self._prices[sym]; sp = max(base // 200, 10)
+            mom_bias = int(self._momentum.get(sym, 0) * 0.2)
+            p = base + (self.rng.randint(-sp * 3, -sp // 2) if buy else self.rng.randint(sp // 2, sp * 3)) + mom_bias
+            p = max(100, p)
+            q = self._rand_qty(); o = self.oid()
+            self.active[o] = {"sym": sym, "price": p, "qty": q, "side": buy}
+            return {"type": MSG_ADD, "sym": sym, "oid": o, "price": p, "qty": q,
+                    "side": buy, "ssn": self.ssn(sym), "seq": self.seq()}
+        elif act == "mod":
+            o = self.rng.choice(list(self.active.keys())); old = self.active[o]
+            step = self._price_step(old["sym"])
+            np = max(100, old["price"] + step); nq = self._rand_qty()
+            self.active[o]["price"] = np; self.active[o]["qty"] = nq
+            return {"type": MSG_MOD, "sym": old["sym"], "oid": o, "price": np, "qty": nq,
+                    "side": old["side"], "ssn": self.ssn(old["sym"]), "seq": self.seq()}
+        elif act == "del":
+            o = self.rng.choice(list(self.active.keys())); old = self.active.pop(o)
+            return {"type": MSG_DEL, "sym": old["sym"], "oid": o,
+                    "price": old["price"], "qty": old["qty"],
+                    "side": old["side"], "ssn": self.ssn(old["sym"]), "seq": self.seq()}
+        elif act == "exec":
+            o = self.rng.choice(list(self.active.keys())); old = self.active[o]
+            eq = min(old["qty"], self.rng.choice([25, 50, 100]))
+            old["qty"] -= eq
+            if old["qty"] <= 0: self.active.pop(o)
+            return {"type": MSG_EXEC, "sym": old["sym"], "oid": o,
+                    "price": old["price"], "qty": eq,
+                    "side": old["side"], "ssn": self.ssn(old["sym"]), "seq": self.seq()}
 
-    def arb_trigger(self,comp=0,delta=3000):
-        cands=[o for o,i in self.active.items() if i["sym"]==comp and i["side"]]
+    def gen_sector_sweep(self, direction_up=True):
+        """Move 4-8 component best-bids in the same direction to create
+        enough index delta to cross the arb threshold from component
+        activity alone (without touching SPY)."""
+        evs = []
+        n_sweep = self.rng.randint(4, min(8, len(self._comp_stocks)))
+        start = self.rng.randint(0, max(0, len(self._comp_stocks) - n_sweep))
+        sweep_syms = [s["idx"] for s in self._comp_stocks[start:start + n_sweep]]
+        delta_cents = self.rng.randint(80, 200)
+        if not direction_up: delta_cents = -delta_cents
+        tickers_moved = []
+        for sym in sweep_syms:
+            sym_bids = [(o, info) for o, info in self.active.items()
+                        if info["sym"] == sym and info["side"]]
+            if not sym_bids: continue
+            best_oid = max(sym_bids, key=lambda x: x[1]["price"])[0]
+            old = self.active[best_oid]
+            np = max(100, old["price"] + delta_cents)
+            self.active[best_oid]["price"] = np
+            self._momentum[sym] = delta_cents * 0.5
+            evs.append({"type": MSG_MOD, "sym": sym, "oid": best_oid,
+                         "price": np, "qty": old["qty"], "side": old["side"],
+                         "ssn": self.ssn(sym), "seq": self.seq()})
+            tickers_moved.append(TICKER_MAP.get(sym, f"SYM{sym}"))
+        dir_str = "UP" if direction_up else "DOWN"
+        if tickers_moved:
+            logger.info(f"  SECTOR SWEEP {dir_str} ${abs(delta_cents)/100:.2f} on "
+                        f"{', '.join(tickers_moved)}")
+        return evs
+
+    def gen_burst(self, sym_idx):
+        evs = []
+        count = self.rng.randint(3, 6)
+        shock = self.rng.gauss(0, self._vol.get(sym_idx, 20) * 4)
+        self._momentum[sym_idx] = shock
+        for _ in range(count):
+            act = self.rng.choices(["add", "mod", "exec"], weights=[20, 50, 30])[0]
+            sym_orders = [o for o, i in self.active.items() if i["sym"] == sym_idx]
+            if act == "add" or not sym_orders:
+                buy = self.rng.random() < 0.5
+                base = self._prices[sym_idx]; sp = max(base // 200, 10)
+                bias = int(shock * 0.5)
+                p = base + (self.rng.randint(-sp * 2, -sp // 4) if buy else self.rng.randint(sp // 4, sp * 2)) + bias
+                p = max(100, p); q = self._rand_qty(); o = self.oid()
+                self.active[o] = {"sym": sym_idx, "price": p, "qty": q, "side": buy}
+                evs.append({"type": MSG_ADD, "sym": sym_idx, "oid": o,
+                            "price": p, "qty": q, "side": buy,
+                            "ssn": self.ssn(sym_idx), "seq": self.seq()})
+            elif act == "mod":
+                o = self.rng.choice(sym_orders); old = self.active[o]
+                step = int(shock * 0.3 + self.rng.gauss(0, self._vol.get(sym_idx, 20)))
+                np = max(100, old["price"] + step); nq = self._rand_qty()
+                self.active[o]["price"] = np; self.active[o]["qty"] = nq
+                evs.append({"type": MSG_MOD, "sym": sym_idx, "oid": o,
+                            "price": np, "qty": nq, "side": old["side"],
+                            "ssn": self.ssn(sym_idx), "seq": self.seq()})
+            elif act == "exec":
+                o = self.rng.choice(sym_orders); old = self.active[o]
+                eq = min(old["qty"], self.rng.choice([50, 100, 200]))
+                old["qty"] -= eq
+                if old["qty"] <= 0: self.active.pop(o)
+                evs.append({"type": MSG_EXEC, "sym": sym_idx, "oid": o,
+                            "price": old["price"], "qty": eq, "side": old["side"],
+                            "ssn": self.ssn(sym_idx), "seq": self.seq()})
+        return evs
+
+    def arb_trigger(self, comp=0, delta=3000):
+        cands = [o for o, i in self.active.items() if i["sym"] == comp and i["side"]]
         if not cands: return []
-        o=cands[0];old=self.active[o];np=old["price"]+delta
-        self.active[o]["price"]=np
-        return [{"type":MSG_MOD,"sym":comp,"oid":o,"price":np,"qty":old["qty"],
-                 "side":old["side"],"ssn":self.ssn(comp),"seq":self.seq()}]
+        o = cands[0]; old = self.active[o]; np = old["price"] + delta
+        self.active[o]["price"] = np
+        return [{"type": MSG_MOD, "sym": comp, "oid": o, "price": np, "qty": old["qty"],
+                 "side": old["side"], "ssn": self.ssn(comp), "seq": self.seq()}]
 
 # ===========================================================================
 #  AXI-STREAM + HELPERS
 # ===========================================================================
-async def axis_send(dut,pkt):
-    n=len(pkt);beats=(n+7)//8
+async def axis_send(dut, pkt):
+    n = len(pkt); beats = (n + 7) // 8
     for b in range(beats):
-        off=b*8;rem=min(8,n-off);data=0;keep=0
-        for i in range(rem): data|=pkt[off+i]<<(i*8); keep|=1<<i
-        dut.rx_axis_tdata.value=data;dut.rx_axis_tkeep.value=keep
-        dut.rx_axis_tvalid.value=1;dut.rx_axis_tlast.value=(1 if b==beats-1 else 0)
+        off = b * 8; rem = min(8, n - off); data = 0; keep = 0
+        for i in range(rem): data |= pkt[off + i] << (i * 8); keep |= 1 << i
+        dut.rx_axis_tdata.value = data; dut.rx_axis_tkeep.value = keep
+        dut.rx_axis_tvalid.value = 1; dut.rx_axis_tlast.value = (1 if b == beats - 1 else 0)
         await RisingEdge(dut.clk)
-        while dut.rx_axis_tready.value==0: await RisingEdge(dut.clk)
-    dut.rx_axis_tvalid.value=0;dut.rx_axis_tlast.value=0
+        while dut.rx_axis_tready.value == 0: await RisingEdge(dut.clk)
+    dut.rx_axis_tvalid.value = 0; dut.rx_axis_tlast.value = 0
 
 def ev_to_pkt(ev):
-    t=ev["type"]
-    if t==MSG_ADD:  return build_add(ev["sym"],ev["ssn"],ev["oid"],ev["price"],ev["qty"],ev["side"],ev["seq"])
-    if t==MSG_MOD:  return build_mod(ev["sym"],ev["ssn"],ev["oid"],ev["price"],ev["qty"],ev["seq"])
-    if t==MSG_DEL:  return build_del(ev["sym"],ev["ssn"],ev["oid"],ev["seq"])
-    if t==MSG_EXEC: return build_exec(ev["sym"],ev["ssn"],ev["oid"],ev["price"],ev["qty"],ev["seq"])
+    t = ev["type"]
+    if t == MSG_ADD:  return build_add(ev["sym"], ev["ssn"], ev["oid"], ev["price"], ev["qty"], ev["side"], ev["seq"])
+    if t == MSG_MOD:  return build_mod(ev["sym"], ev["ssn"], ev["oid"], ev["price"], ev["qty"], ev["seq"])
+    if t == MSG_DEL:  return build_del(ev["sym"], ev["ssn"], ev["oid"], ev["seq"])
+    if t == MSG_EXEC: return build_exec(ev["sym"], ev["ssn"], ev["oid"], ev["price"], ev["qty"], ev["seq"])
 
-MSG_NAMES={MSG_ADD:"ADD",MSG_MOD:"MOD",MSG_DEL:"DEL",MSG_EXEC:"EXEC"}
+MSG_NAMES = {MSG_ADD: "ADD", MSG_MOD: "MOD", MSG_DEL: "DEL", MSG_EXEC: "EXEC"}
 
-def push_input(ev,cycle):
-    try: input_q.put_nowait({"cycle":cycle,"type":MSG_NAMES.get(ev["type"],"?"),
-        "ticker":TICKER_MAP.get(ev["sym"],"?"),"sym":ev["sym"],
-        "price":ev["price"],"qty":ev["qty"],"side":"BUY" if ev.get("side") else "SELL"})
+def push_input(ev, cycle):
+    try: input_q.put_nowait({"cycle": cycle, "type": MSG_NAMES.get(ev["type"], "?"),
+        "ticker": TICKER_MAP.get(ev["sym"], "?"), "sym": ev["sym"],
+        "price": ev["price"], "qty": ev["qty"], "side": "BUY" if ev.get("side") else "SELL"})
     except: pass
 
-def push_books(cycle,active_sym=None):
-    try: book_q.put_nowait({"cycle":cycle,"books":tracker.all(),"active_sym":active_sym})
+def push_books(cycle, active_sym=None):
+    try: book_q.put_nowait({"cycle": cycle, "books": tracker.all(), "active_sym": active_sym})
     except: pass
 
 # ===========================================================================
 #  TX MONITOR
 # ===========================================================================
-async def tx_monitor(dut,stop_event):
-    tc=0;cyc=0;pkt=bytearray()
+async def tx_monitor(dut, stop_event):
+    tc = 0; cyc = 0; pkt = bytearray()
     while not stop_event.is_set():
-        await RisingEdge(dut.clk);cyc+=1
-        try: tv=int(dut.tx_axis_tvalid.value);tl=int(dut.tx_axis_tlast.value)
+        await RisingEdge(dut.clk); cyc += 1
+        try: tv = int(dut.tx_axis_tvalid.value); tl = int(dut.tx_axis_tlast.value)
         except: continue
         if tv:
-            try: td=int(dut.tx_axis_tdata.value);tk=int(dut.tx_axis_tkeep.value)
+            try: td = int(dut.tx_axis_tdata.value); tk = int(dut.tx_axis_tkeep.value)
             except: continue
             for i in range(8):
-                if tk&(1<<i): pkt.append((td>>(i*8))&0xFF)
+                if tk & (1 << i): pkt.append((td >> (i * 8)) & 0xFF)
             if tl:
-                tc+=1;d="?";ap=0;sd=0.0
-                if len(pkt)>=74:
-                    d="BUY" if pkt[44]==0x42 else "SELL"
-                    ap=struct.unpack_from("<I",pkt,50)[0]
-                    sd=struct.unpack_from("<q",pkt,66)[0]/Q_ONE
-                logger.info(f"  >>> TX TRADE #{tc}: {d} price=${ap/100:.2f} spread=${sd:.2f}")
-                try: trade_q.put_nowait({"number":tc,"direction":d,"spread_dollars":sd,
-                    "computed_index":0.0,"actual_price":ap,"cycle":cyc})
+                tc += 1; d = "?"; ap = 0; sd = 0.0
+                if len(pkt) >= 74:
+                    d = "BUY" if pkt[44] == 0x42 else "SELL"
+                    ap = struct.unpack_from("<I", pkt, 50)[0]
+                    sd = struct.unpack_from("<q", pkt, 66)[0] / Q_ONE
+                logger.info(f"  >>> TX TRADE #{tc}: {d} price=${ap/100:.2f} spread=${sd/100:.2f}")
+                try: trade_q.put_nowait({"number": tc, "direction": d, "spread_dollars": sd / 100,
+                    "computed_index": 0.0, "actual_price": ap, "cycle": cyc})
                 except: pass
-                pkt=bytearray()
-        if cyc%500==0:
-            try: oc=int(dut.order_count.value)
-            except: oc=0
-            try: nr=int(dut.net_position.value);nv=nr-(1<<32) if nr>=(1<<31) else nr
-            except: nv=0
-            try: ci=int(dut.computed_index.value)/Q_ONE
-            except: ci=0.0
-            try: status_q.put_nowait({"cycle":cyc,"order_count":oc,"net_position":nv,
-                                      "computed_index":ci,"trades":tc})
+                pkt = bytearray()
+        if cyc % 500 == 0:
+            try: oc = int(dut.order_count.value)
+            except: oc = 0
+            try: nr = int(dut.net_position.value); nv = nr - (1 << 32) if nr >= (1 << 31) else nr
+            except: nv = 0
+            try: ci = int(dut.computed_index.value) / Q_ONE
+            except: ci = 0.0
+            try: status_q.put_nowait({"cycle": cyc, "order_count": oc, "net_position": nv,
+                                      "computed_index": ci, "trades": tc})
             except: pass
 
 # ===========================================================================
 async def check_pause(dut):
     try:
-        cmd=control_q.get_nowait()
-        if cmd=="quit": return True
-        if cmd=="pause":
+        cmd = control_q.get_nowait()
+        if cmd == "quit": return True
+        if cmd == "pause":
             logger.info("  PAUSED")
             while True:
-                await ClockCycles(dut.clk,100)
+                await ClockCycles(dut.clk, 100)
                 try:
-                    c=control_q.get_nowait()
-                    if c in ("play","step"): break
-                    if c=="quit": return True
+                    c = control_q.get_nowait()
+                    if c in ("play", "step"): break
+                    if c == "quit": return True
                 except: pass
     except: pass
     return False
 
-async def send_event(dut,ev,cycle):
-    pkt=ev_to_pkt(ev)
-    await axis_send(dut,pkt)
-    await ClockCycles(dut.clk,80);cycle[0]+=80
-    t=ev["type"]
-    if t==MSG_ADD: tracker.add(ev["oid"],ev["sym"],ev["price"],ev["qty"],ev["side"])
-    elif t==MSG_MOD: tracker.mod(ev["oid"],ev["price"],ev["qty"])
-    elif t==MSG_DEL: tracker.delete(ev["oid"])
-    elif t==MSG_EXEC: tracker.exec(ev["oid"],ev["qty"])
-    push_input(ev,cycle[0]);push_books(cycle[0],active_sym=ev["sym"])
-    if INTER_PKT_DELAY>0:
-        for _ in range(int(INTER_PKT_DELAY/0.01)):
-            await ClockCycles(dut.clk,50);cycle[0]+=50;time.sleep(0.01)
+async def send_event(dut, ev, cycle):
+    pkt = ev_to_pkt(ev)
+    await axis_send(dut, pkt)
+    await ClockCycles(dut.clk, 80); cycle[0] += 80
+    t = ev["type"]
+    if t == MSG_ADD:  tracker.add(ev["oid"], ev["sym"], ev["price"], ev["qty"], ev["side"])
+    elif t == MSG_MOD:  tracker.mod(ev["oid"], ev["price"], ev["qty"])
+    elif t == MSG_DEL:  tracker.delete(ev["oid"])
+    elif t == MSG_EXEC: tracker.exec(ev["oid"], ev["qty"])
+    push_input(ev, cycle[0]); push_books(cycle[0], active_sym=ev["sym"])
+    if INTER_PKT_DELAY > 0:
+        for _ in range(int(INTER_PKT_DELAY / 0.01)):
+            await ClockCycles(dut.clk, 50); cycle[0] += 50; time.sleep(0.01)
 
 # ===========================================================================
 #  MAIN TEST
 # ===========================================================================
 @cocotb.test()
 async def test_hft_pipeline(dut):
-    stop_event=threading.Event()
-    cocotb.start_soon(Clock(dut.clk,4,units="ns").start())
+    stop_event = threading.Event()
+    cocotb.start_soon(Clock(dut.clk, 4, units="ns").start())
 
     # GUI
-    gui_thread=None
+    gui_thread = None
     if GUI_ENABLE:
         try:
             from hft_dashboard import HFTDashboard
-            dashboard=HFTDashboard(input_q,book_q,trade_q,status_q,control_q,STOCKS,TICKER_MAP,tracker)
-            gui_thread=threading.Thread(target=dashboard.run,daemon=True)
-            gui_thread.start();logger.info("Dashboard launched");time.sleep(1.5)
+            dashboard = HFTDashboard(input_q, book_q, trade_q, status_q, control_q,
+                                     STOCKS, TICKER_MAP, tracker)
+            gui_thread = threading.Thread(target=dashboard.run, daemon=True)
+            gui_thread.start(); logger.info("Dashboard launched"); time.sleep(1.5)
         except Exception as e: logger.warning(f"GUI unavailable: {e}")
 
-    # Reset
-    dut.rst_n.value=0;dut.rx_axis_tdata.value=0;dut.rx_axis_tkeep.value=0
-    dut.rx_axis_tvalid.value=0;dut.rx_axis_tlast.value=0;dut.tx_enable.value=1
-    dut.wt_wr_en.value=0;dut.wt_wr_addr.value=0;dut.wt_wr_data.value=0
-    dut.threshold.value=0;dut.tx_axis_tready.value=1
-    await ClockCycles(dut.clk,10);dut.rst_n.value=1
-    logger.info("Reset released")
+    # Reset — TX DISABLED until book init completes
+    dut.rst_n.value = 0; dut.rx_axis_tdata.value = 0; dut.rx_axis_tkeep.value = 0
+    dut.rx_axis_tvalid.value = 0; dut.rx_axis_tlast.value = 0
+    dut.tx_enable.value = 0       # OFF during init — no garbage trades
+    dut.wt_wr_en.value = 0; dut.wt_wr_addr.value = 0; dut.wt_wr_data.value = 0
+    dut.threshold.value = 0; dut.tx_axis_tready.value = 1
+    await ClockCycles(dut.clk, 10); dut.rst_n.value = 1
+    logger.info("Reset released (TX disabled during init)")
 
     for _ in range(20000):
         await RisingEdge(dut.clk)
         try:
-            if int(dut.ol_ready.value)==1: break
+            if int(dut.ol_ready.value) == 1: break
         except: pass
     logger.info("Hash table ready")
 
-    # Price-calibrated weights: w = SPY_base * Q_ONE / SUM(component_base_prices)
-    # Ensures SUM(price_i * w_i) == SPY_price * Q_ONE at startup -> spread starts near 0.
-    # Arb pushes (positive delta) create positive spread -> SELL.
-    # Price drops create negative spread -> BUY. Both directions fire.
+    # Price-calibrated weights
     spy_stock = next(s for s in STOCKS if s["idx"] == IDX_SYMBOL)
     spy_base  = spy_stock["base_price"]
     comp_stocks = [s for s in STOCKS if s["idx"] < NUM_COMPONENTS]
@@ -430,86 +559,116 @@ async def test_hft_pipeline(dut):
     w = (spy_base * Q_ONE) // sum_base
     logger.info(f"Price-calibrated weights: SPY={spy_base}c sum_comp={sum_base}c w={w} (Q_ONE={Q_ONE})")
     for s in comp_stocks:
-        dut.wt_wr_en.value=1; dut.wt_wr_addr.value=s["idx"]; dut.wt_wr_data.value=w
+        dut.wt_wr_en.value = 1; dut.wt_wr_addr.value = s["idx"]; dut.wt_wr_data.value = w
         await RisingEdge(dut.clk)
-    dut.wt_wr_en.value=0
+    dut.wt_wr_en.value = 0
 
-    # Threshold — 25 cents
-    thresh=25*Q_ONE
-    dut.threshold.value=thresh
+    thresh = 25 * Q_ONE
+    dut.threshold.value = thresh
     await RisingEdge(dut.clk)
     logger.info(f"Threshold=25c ({thresh} Q44.20)")
     logger.info(f"IDX_SYMBOL={IDX_SYMBOL} (must match RTL IDX_SYM via Makefile -G)")
 
-    cocotb.start_soon(tx_monitor(dut,stop_event))
+    cocotb.start_soon(tx_monitor(dut, stop_event))
 
-    # Build initial books
-    logger.info(f"Building books for {len(STOCKS)} instruments...")
-    mkt=MktGen(STOCKS);init=mkt.init_book();cycle=[0]
-    for i,ev in enumerate(init):
-        await axis_send(dut,ev_to_pkt(ev))
-        await ClockCycles(dut.clk,60);cycle[0]+=60
-        tracker.add(ev["oid"],ev["sym"],ev["price"],ev["qty"],ev["side"])
-        if i%20==0: push_books(cycle[0],ev["sym"]); push_input(ev,cycle[0])
-        if (i+1)%50==0: logger.info(f"  init: {i+1}/{len(init)}")
-    push_books(cycle[0]);await ClockCycles(dut.clk,200);cycle[0]+=200
+    # Build initial books with TX DISABLED
+    logger.info(f"Building books for {len(STOCKS)} instruments (TX disabled)...")
+    mkt = MktGen(STOCKS); init = mkt.init_book(); cycle = [0]
+    for i, ev in enumerate(init):
+        await axis_send(dut, ev_to_pkt(ev))
+        await ClockCycles(dut.clk, 60); cycle[0] += 60
+        tracker.add(ev["oid"], ev["sym"], ev["price"], ev["qty"], ev["side"])
+        if i % 20 == 0: push_books(cycle[0], ev["sym"]); push_input(ev, cycle[0])
+        if (i + 1) % 50 == 0: logger.info(f"  init: {i+1}/{len(init)}")
+    push_books(cycle[0]); await ClockCycles(dut.clk, 200); cycle[0] += 200
     logger.info(f"Book init done: {len(init)} orders")
 
-    # Probe after init
     try:
-        oc=int(dut.order_count.value);ci=int(dut.computed_index.value)/Q_ONE
+        oc = int(dut.order_count.value); ci = int(dut.computed_index.value) / Q_ONE
         logger.info(f"  POST-INIT: order_count={oc}, computed_index={ci:.2f} cents (${ci/100:.2f})")
     except: pass
 
+    # *** ENABLE TX — spread is near zero, clean start ***
+    dut.tx_enable.value = 1
+    await ClockCycles(dut.clk, 10)
+    logger.info("TX ENABLED — live trading active")
+
     # Continuous simulation
     logger.info(f"Live simulation running (delay={INTER_PKT_DELAY}s)...")
-    rnd=0; arb_every=3
+    rnd = 0
 
-    # SPY-bid arb: mean-reverting random walk drives natural BUY/SELL signals.
-    # Every arb_every rounds, nudge SPY best bid by (revert_toward_center + noise).
-    # Reversion prevents runaway drift; noise makes direction genuinely random.
-    _spy_base    = next(s for s in STOCKS if s["idx"]==IDX_SYMBOL)["base_price"]
-    _spy_sp      = max(_spy_base//200, 10)
-    _spy_bid_ctr = _spy_base - _spy_sp//2          # init_book level-0 bid center
-    _spy_bid_max = _spy_bid_ctr + _spy_sp//2 - 20  # stay 20c below ask
-    _spy_bid_cur = _spy_bid_ctr                    # tracks current best-bid price
-    _spy_noise   = max(120, _spy_sp//2)            # noise amplitude (>threshold/2)
+    # Randomized intervals (not fixed cadences)
+    _next_arb   = random.randint(2, 5)
+    _next_burst = random.randint(12, 25)
+    _next_sweep = random.randint(5, 12)
+
+    # SPY arb state
+    _spy_sp      = max(spy_base // 200, 10)
+    _spy_bid_ctr = spy_base - _spy_sp // 2
+    _spy_bid_max = _spy_bid_ctr + _spy_sp // 2 - 20
+    _spy_bid_cur = _spy_bid_ctr
+    _spy_noise   = max(120, _spy_sp // 2)
+
+    _last_sweep_up = True
 
     while True:
         if await check_pause(dut): break
         if gui_thread and not gui_thread.is_alive(): logger.info("Browser closed"); break
 
-        ev=mkt.gen_one()
-        if not ev: continue
-        await send_event(dut,ev,cycle)
-        rnd+=1
+        # --- Sector sweep: move 4-8 components in same direction ---
+        # Creates enough index delta (~30c) to trigger trades from
+        # component activity alone, without touching SPY.
+        if rnd > 0 and rnd >= _next_sweep:
+            up = random.random() < (0.3 if _last_sweep_up else 0.7)
+            sweep_evs = mkt.gen_sector_sweep(direction_up=up)
+            _last_sweep_up = up
+            for sev in sweep_evs:
+                await send_event(dut, sev, cycle)
+            _next_sweep = rnd + random.randint(5, 12)
 
-        if rnd%arb_every==0:
-            spy_bids=[(o,i["price"]) for o,i in mkt.active.items()
-                      if i["sym"]==IDX_SYMBOL and i["side"]]
+        # --- Activity burst on hot symbol ---
+        if rnd > 0 and rnd >= _next_burst:
+            if mkt._hot_sym >= 0:
+                burst_evs = mkt.gen_burst(mkt._hot_sym)
+                ticker = TICKER_MAP.get(mkt._hot_sym, "?")
+                logger.info(f"  #{rnd}: BURST on {ticker} ({len(burst_evs)} events)")
+                for bev in burst_evs:
+                    await send_event(dut, bev, cycle)
+            _next_burst = rnd + random.randint(12, 25)
+
+        # --- Normal single event ---
+        ev = mkt.gen_one()
+        if not ev: continue
+        await send_event(dut, ev, cycle)
+        rnd += 1
+
+        # --- SPY arb nudge (randomized interval) ---
+        if rnd >= _next_arb:
+            spy_bids = [(o, i["price"]) for o, i in mkt.active.items()
+                        if i["sym"] == IDX_SYMBOL and i["side"]]
             if spy_bids:
-                spy_oid=max(spy_bids,key=lambda x:x[1])[0]
-                # Mean-reverting random walk: 25% pull back to center + uniform noise
-                revert  = int(0.25*(_spy_bid_ctr - _spy_bid_cur))
+                spy_oid = max(spy_bids, key=lambda x: x[1])[0]
+                revert  = int(0.25 * (_spy_bid_ctr - _spy_bid_cur))
                 noise   = random.randint(-_spy_noise, _spy_noise)
                 spy_delta = revert + noise
                 _spy_bid_cur = max(100, min(_spy_bid_max, _spy_bid_cur + spy_delta))
                 mkt.active[spy_oid]["price"] = _spy_bid_cur
-                spy_ev={"type":MSG_MOD,"sym":IDX_SYMBOL,"oid":spy_oid,
-                        "price":_spy_bid_cur,"qty":mkt.active[spy_oid]["qty"],"side":True,
-                        "ssn":mkt.ssn(IDX_SYMBOL),"seq":mkt.seq()}
+                spy_ev = {"type": MSG_MOD, "sym": IDX_SYMBOL, "oid": spy_oid,
+                          "price": _spy_bid_cur, "qty": mkt.active[spy_oid]["qty"],
+                          "side": True, "ssn": mkt.ssn(IDX_SYMBOL), "seq": mkt.seq()}
                 logger.info(f"  #{rnd}: SPY bid {spy_delta:+d}c (cur={_spy_bid_cur})")
-                await send_event(dut,spy_ev,cycle)
+                await send_event(dut, spy_ev, cycle)
             try:
-                oc=int(dut.order_count.value);ci=int(dut.computed_index.value)/Q_ONE
+                oc = int(dut.order_count.value); ci = int(dut.computed_index.value) / Q_ONE
                 logger.info(f"    order_count={oc}, idx={ci:.2f}c (${ci/100:.2f})")
             except: pass
+            _next_arb = rnd + random.randint(2, 5)
 
-        if rnd%25==0: logger.info(f"  #{rnd} cycle={cycle[0]}")
+        if rnd % 25 == 0: logger.info(f"  #{rnd} cycle={cycle[0]}")
 
-    stop_event.set();await ClockCycles(dut.clk,200)
-    try: oc=int(dut.order_count.value)
-    except: oc=0
-    logger.info("="*50)
+    stop_event.set(); await ClockCycles(dut.clk, 200)
+    try: oc = int(dut.order_count.value)
+    except: oc = 0
+    logger.info("=" * 50)
     logger.info(f"  Done. Events={rnd}, DUT orders={oc}")
-    logger.info("="*50)
+    logger.info("=" * 50)
