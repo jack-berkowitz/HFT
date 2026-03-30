@@ -4,6 +4,7 @@
 // skewed_hash_table_tb.sv
 //
 // Module-level testbench for skewed_hash_table.sv
+// Hash function: CRC32 (IEEE 802.3, poly 0x04C11DB7) with per-way seeds
 //
 // Tests:
 //   1. Post-reset ready

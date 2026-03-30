@@ -20,8 +20,8 @@
 //
 // Hash function
 // -------------
-//   Default: per-way seed XOR -> bit rotation -> XOR fold to index width.
-//   Replace hash_fn() for CRC-32, Zobrist, perfect hash, etc.
+//   CRC32 (IEEE 802.3, polynomial 0x04C11DB7) with per-way initial
+//   values as seeds.  Bit-serial LFSR, result XOR-folded to IDX_W.
 //
 // Reset
 // -----
@@ -81,70 +81,53 @@ module skewed_hash_table #(
     localparam VAL_LO = 0;
 
     // =================================================================
-    // Hash seeds (splitmix64 / murmur-family constants, up to 8 ways)
+    // CRC32 polynomial and per-way initial values (seeds)
     // =================================================================
-    localparam [63:0] HASH_SEEDS_0 = 64'h9E3779B97F4A7C15;
-    localparam [63:0] HASH_SEEDS_1 = 64'h517CC1B727220A95;
-    localparam [63:0] HASH_SEEDS_2 = 64'h6C62272E07BB0142;
-    localparam [63:0] HASH_SEEDS_3 = 64'hBF58476D1CE4E5B9;
-    localparam [63:0] HASH_SEEDS_4 = 64'h94D049BB133111EB;
-    localparam [63:0] HASH_SEEDS_5 = 64'hC6A4A7935BD1E995;
-    localparam [63:0] HASH_SEEDS_6 = 64'hE7037ED1A0B428DB;
-    localparam [63:0] HASH_SEEDS_7 = 64'h27D4EB2F165B7D1A;
-    localparam HASH_ROT_0 = 3;
-    localparam HASH_ROT_1 = 7;
-    localparam HASH_ROT_2 = 13;
-    localparam HASH_ROT_3 = 19;
-    localparam HASH_ROT_4 = 23;
-    localparam HASH_ROT_5 = 29;
-    localparam HASH_ROT_6 = 37;
-    localparam HASH_ROT_7 = 41;
+    localparam [31:0] CRC32_POLY = 32'h04C1_1DB7;   // IEEE 802.3
+
+    localparam [31:0] CRC_INIT_0 = 32'hFFFF_FFFF;
+    localparam [31:0] CRC_INIT_1 = 32'h1EDC_6F41;
+    localparam [31:0] CRC_INIT_2 = 32'hA833_982B;
+    localparam [31:0] CRC_INIT_3 = 32'h04C1_1DB7;
+    localparam [31:0] CRC_INIT_4 = 32'h8141_41AB;
+    localparam [31:0] CRC_INIT_5 = 32'hD419_CC15;
+    localparam [31:0] CRC_INIT_6 = 32'hE306_9283;
+    localparam [31:0] CRC_INIT_7 = 32'hF4AC_FB13;
 
     // =================================================================
-    // Hash function — replace body for CRC / Zobrist / perfect hash
+    // Hash function — CRC32 with per-way seed, XOR-folded to IDX_W
     // =================================================================
     function automatic [IDX_W-1:0] hash_fn(
         input [KEY_W-1:0] key,
         input int          way
     );
-        logic [KEY_W-1:0] seed_k, mixed;
+        logic [31:0]      crc;
+        logic              xor_bit;
         logic [IDX_W-1:0] folded;
-        int rot;
 
-        // Tile 64-bit seed to fill KEY_W bits
-        logic [63:0] seed64;
+        // Select per-way initial CRC value
         case (way)
-            0: seed64 = HASH_SEEDS_0;
-            1: seed64 = HASH_SEEDS_1;
-            2: seed64 = HASH_SEEDS_2;
-            3: seed64 = HASH_SEEDS_3;
-            4: seed64 = HASH_SEEDS_4;
-            5: seed64 = HASH_SEEDS_5;
-            6: seed64 = HASH_SEEDS_6;
-            default: seed64 = HASH_SEEDS_7;
+            0: crc = CRC_INIT_0;
+            1: crc = CRC_INIT_1;
+            2: crc = CRC_INIT_2;
+            3: crc = CRC_INIT_3;
+            4: crc = CRC_INIT_4;
+            5: crc = CRC_INIT_5;
+            6: crc = CRC_INIT_6;
+            default: crc = CRC_INIT_7;
         endcase
-        for (int b = 0; b < KEY_W; b++)
-            seed_k[b] = seed64[b % 64];
 
-        mixed = key ^ seed_k;
+        // Bit-serial CRC32 computation (MSB first)
+        for (int b = KEY_W - 1; b >= 0; b--) begin
+            xor_bit = crc[31] ^ key[b];
+            crc = {crc[30:0], 1'b0};
+            if (xor_bit) crc = crc ^ CRC32_POLY;
+        end
 
-        // Rotate left by per-way coprime amount
-        case (way)
-            0: rot = HASH_ROT_0 % KEY_W;
-            1: rot = HASH_ROT_1 % KEY_W;
-            2: rot = HASH_ROT_2 % KEY_W;
-            3: rot = HASH_ROT_3 % KEY_W;
-            4: rot = HASH_ROT_4 % KEY_W;
-            5: rot = HASH_ROT_5 % KEY_W;
-            6: rot = HASH_ROT_6 % KEY_W;
-            default: rot = HASH_ROT_7 % KEY_W;
-        endcase
-        mixed = (mixed << rot) | (mixed >> (KEY_W - rot));
-
-        // XOR-fold to index width
+        // XOR-fold 32-bit CRC to index width
         folded = '0;
-        for (int b = 0; b < KEY_W; b++)
-            folded[b % IDX_W] = folded[b % IDX_W] ^ mixed[b];
+        for (int b = 0; b < 32; b++)
+            folded[b % IDX_W] = folded[b % IDX_W] ^ crc[b];
 
         return folded;
     endfunction
