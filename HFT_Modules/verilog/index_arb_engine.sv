@@ -40,9 +40,26 @@
 //
 // --- Timing ---
 //
-// Pipelined: 2-cycle latency from tob input to trade output.
-//   Stage 0: compute mid, read old_mid + weight, compute delta
-//   Stage 1: multiply, accumulate, compare, output
+// Pipelined: 5-cycle latency from tob input to trade output.
+//   Stage 0 (DECODE):  compute mid, read old_mid + weight, delta
+//   Stage 1 (MUL_P1):  partial product — mplier[10:0] × mcand
+//   Stage 2 (MUL_P2):  partial product — mplier[21:11] × mcand
+//   Stage 3 (MUL_P3):  partial product — mplier[32:22] × mcand
+//   Stage 4 (ACC):     accumulate, spread compare, trade output
+//
+// The 33-bit × 33-bit multiply is decomposed into three 11-bit ×
+// 64-bit partial-product stages using shift-and-add.  Each stage
+// processes SHIFT=11 bits of the multiplier (weight), shifts the
+// multiplicand (delta) left by 11, and accumulates the running
+// partial product sum.  This keeps each stage's combinational
+// multiply small (11×64) and ASIC-friendly for Synopsys DC
+// at 250 MHz without relying on retiming.
+//
+// The low 64 bits of the unsigned partial-product sum equal the
+// correct signed Q44.20 result because 2's-complement truncation
+// is modular: sign-extending delta to 64 bits and zero-extending
+// weight to 64 bits, then keeping the low 64 bits of the unsigned
+// product, gives the same bit pattern as a signed multiply.
 // ============================================================
 module index_arb_engine #(
     parameter N_COMPONENTS = 500,        // number of index components
@@ -74,6 +91,12 @@ module index_arb_engine #(
     localparam WW   = `WEIGHT_W;           // 32
     localparam SYMW = `SYM_IDX_W;          // 9
 
+    // Partial-product multiply parameters
+    // delta is signed 33-bit, weight is unsigned 32-bit (33-bit with leading 0)
+    // 33 multiplier bits / 3 stages = 11 bits per stage
+    localparam MUL_STAGES = 3;
+    localparam SHIFT      = 11;
+
     // ----------------------------------------------------------------
     // Storage
     // ----------------------------------------------------------------
@@ -81,7 +104,7 @@ module index_arb_engine #(
     // Per-component weight table (Q12.20, written at startup)
     logic [WW-1:0]  weight_tbl [N_COMPONENTS];
 
-    // Per-component last-known mid-price (32-bit integer, e.g. cents)
+    // Per-component last-known mid-price (32-bit integer, cents)
     logic [31:0]    old_mid    [N_COMPONENTS];
 
     // Running weighted index accumulator (Q44.20 signed)
@@ -103,7 +126,7 @@ module index_arb_engine #(
     end
 
     // ----------------------------------------------------------------
-    // Stage 0: compute mid-price, delta, read weight
+    // Stage 0 (DECODE): compute mid-price, delta, read weight
     //
     // Mid-price = (bid + ask) / 2
     // Only update if both bid and ask are nonzero (two-sided market).
@@ -111,13 +134,13 @@ module index_arb_engine #(
     // last valid price and the index stays consistent.
     // ----------------------------------------------------------------
     logic               s0_valid;
-    logic               s0_is_index;      // is this the actual index symbol?
-    logic               s0_is_component;  // is this a component update?
+    logic               s0_is_index;
+    logic               s0_is_component;
     logic [SYMW-1:0]    s0_sym;
     logic [31:0]        s0_new_mid;
-    logic signed [32:0] s0_delta;         // signed 33-bit: new_mid - old_mid
+    logic signed [32:0] s0_delta;
     logic [WW-1:0]      s0_weight;
-    logic               s0_two_sided;     // both bid and ask present
+    logic               s0_two_sided;
 
     always_comb begin
         s0_sym        = in_tob.symbol_idx;
@@ -134,32 +157,34 @@ module index_arb_engine #(
         s0_valid      = in_tob.valid;
     end
 
-    // Pipeline register: stage 0 → stage 1
+    // Pipeline register: Stage 0 → Stage 1
     logic               s1_valid;
     logic               s1_is_index;
     logic               s1_is_component;
-    logic [SYMW-1:0]    s1_sym;
     logic [31:0]        s1_new_mid;
-    logic signed [32:0] s1_delta;
-    logic [WW-1:0]      s1_weight;
+
+    // Multiply operands (sign-extended / zero-extended to AW bits)
+    // These become the initial mcand and mplier for the partial-product chain.
+    logic [AW-1:0]      s1_mcand;     // sign-extended delta (multiplicand)
+    logic [AW-1:0]      s1_mplier;    // zero-extended weight (multiplier)
 
     always_ff @(posedge clk) begin
         if (!rst_n) begin
             s1_valid        <= 1'b0;
             s1_is_index     <= 1'b0;
             s1_is_component <= 1'b0;
-            s1_sym          <= '0;
             s1_new_mid      <= '0;
-            s1_delta        <= '0;
-            s1_weight       <= '0;
+            s1_mcand        <= '0;
+            s1_mplier       <= '0;
         end else begin
             s1_valid        <= s0_valid;
             s1_is_index     <= s0_is_index && in_tob.valid && s0_two_sided;
             s1_is_component <= s0_is_component;
-            s1_sym          <= s0_sym;
             s1_new_mid      <= s0_new_mid;
-            s1_delta        <= s0_delta;
-            s1_weight       <= s0_weight;
+            // Sign-extend 33-bit signed delta to 64 bits
+            s1_mcand        <= {{(AW-33){s0_delta[32]}}, s0_delta};
+            // Zero-extend {1'b0, weight} = 33-bit unsigned to 64 bits
+            s1_mplier       <= {{(AW-33){1'b0}}, 1'b0, s0_weight};
         end
     end
 
@@ -174,17 +199,131 @@ module index_arb_engine #(
     end
 
     // ----------------------------------------------------------------
-    // Stage 1: multiply, accumulate, compare, output
+    // Stages 1-3: 3-stage partial-product multiply pipeline
+    //
+    // Decomposes the 33×33 multiply into three 11×64 partial products
+    // using shift-and-add:
+    //
+    //   Stage 1: pp = mplier[10:0]  × mcand;  sum  = 0 + pp
+    //   Stage 2: pp = mplier[10:0]  × mcand;  sum += pp
+    //            (mplier has been shifted right by 11, mcand left by 11)
+    //   Stage 3: pp = mplier[10:0]  × mcand;  sum += pp
+    //            (shifted again — now covers mplier bits [32:22])
+    //
+    // After 3 stages, all 33 multiplier bits have been consumed.
+    // The remaining mplier bits [63:33] were zero (from zero-extension)
+    // so no further stages are needed.
+    //
+    // Each stage's combinational path is only an 11-bit × 64-bit
+    // multiply plus a 64-bit add — easily meets 250 MHz on ASIC.
     // ----------------------------------------------------------------
 
-    // Multiply: signed delta (33b) × unsigned weight (32b) → signed 65b
-    // We keep 64 bits (Q44.20) — the MSB overflow is negligible
-    // for reasonable price ranges.
-    logic signed [AW-1:0] weighted_delta;
+    // --- Stage 1 (MUL_P1): first partial product -------------------
 
-    always_comb begin
-        weighted_delta = AW'($signed(s1_delta) * $signed({1'b0, s1_weight}));
+    logic [AW-1:0] pp1;
+    assign pp1 = s1_mplier[SHIFT-1:0] * s1_mcand;
+
+    logic               mp1_valid;
+    logic               mp1_is_index;
+    logic               mp1_is_component;
+    logic [31:0]        mp1_new_mid;
+    logic [AW-1:0]      mp1_sum;
+    logic [AW-1:0]      mp1_mcand;
+    logic [AW-1:0]      mp1_mplier;
+
+    always_ff @(posedge clk) begin
+        if (!rst_n) begin
+            mp1_valid        <= 1'b0;
+            mp1_is_index     <= 1'b0;
+            mp1_is_component <= 1'b0;
+            mp1_new_mid      <= '0;
+            mp1_sum          <= '0;
+            mp1_mcand        <= '0;
+            mp1_mplier       <= '0;
+        end else begin
+            mp1_valid        <= s1_valid;
+            mp1_is_index     <= s1_is_index;
+            mp1_is_component <= s1_is_component;
+            mp1_new_mid      <= s1_new_mid;
+            mp1_sum          <= pp1;                                            // prev_sum = 0
+            mp1_mcand        <= {s1_mcand[AW-1-SHIFT:0], {SHIFT{1'b0}}};       // shift left
+            mp1_mplier       <= {{SHIFT{1'b0}}, s1_mplier[AW-1:SHIFT]};        // shift right
+        end
     end
+
+    // --- Stage 2 (MUL_P2): second partial product ------------------
+
+    logic [AW-1:0] pp2;
+    assign pp2 = mp1_mplier[SHIFT-1:0] * mp1_mcand;
+
+    logic               mp2_valid;
+    logic               mp2_is_index;
+    logic               mp2_is_component;
+    logic [31:0]        mp2_new_mid;
+    logic [AW-1:0]      mp2_sum;
+    logic [AW-1:0]      mp2_mcand;
+    logic [AW-1:0]      mp2_mplier;
+
+    always_ff @(posedge clk) begin
+        if (!rst_n) begin
+            mp2_valid        <= 1'b0;
+            mp2_is_index     <= 1'b0;
+            mp2_is_component <= 1'b0;
+            mp2_new_mid      <= '0;
+            mp2_sum          <= '0;
+            mp2_mcand        <= '0;
+            mp2_mplier       <= '0;
+        end else begin
+            mp2_valid        <= mp1_valid;
+            mp2_is_index     <= mp1_is_index;
+            mp2_is_component <= mp1_is_component;
+            mp2_new_mid      <= mp1_new_mid;
+            mp2_sum          <= mp1_sum + pp2;                                  // accumulate
+            mp2_mcand        <= {mp1_mcand[AW-1-SHIFT:0], {SHIFT{1'b0}}};      // shift left
+            mp2_mplier       <= {{SHIFT{1'b0}}, mp1_mplier[AW-1:SHIFT]};       // shift right
+        end
+    end
+
+    // --- Stage 3 (MUL_P3): third partial product (final) -----------
+
+    logic [AW-1:0] pp3;
+    assign pp3 = mp2_mplier[SHIFT-1:0] * mp2_mcand;
+
+    logic               mp3_valid;
+    logic               mp3_is_index;
+    logic               mp3_is_component;
+    logic [31:0]        mp3_new_mid;
+    logic [AW-1:0]      mp3_product;     // final multiply result
+
+    always_ff @(posedge clk) begin
+        if (!rst_n) begin
+            mp3_valid        <= 1'b0;
+            mp3_is_index     <= 1'b0;
+            mp3_is_component <= 1'b0;
+            mp3_new_mid      <= '0;
+            mp3_product      <= '0;
+        end else begin
+            mp3_valid        <= mp2_valid;
+            mp3_is_index     <= mp2_is_index;
+            mp3_is_component <= mp2_is_component;
+            mp3_new_mid      <= mp2_new_mid;
+            mp3_product      <= mp2_sum + pp3;                                  // final sum
+            // No need to pipe mcand/mplier further — all 33 bits consumed
+        end
+    end
+
+    // ----------------------------------------------------------------
+    // Stage 4 (ACC): accumulate, spread compare, trade output
+    //
+    // mp3_product is the correct signed Q44.20 weighted delta
+    // (low 64 bits of unsigned partial-product chain = signed result
+    // due to 2's-complement modular arithmetic).
+    //
+    // No forwarding hazard: consecutive TOB updates entering S0 on
+    // cycles N and N+1 reach S4 on cycles N+4 and N+5.  The
+    // accumulate from N+4 writes index_accum on posedge N+4, so
+    // cycle N+5's S4 reads the already-updated value.
+    // ----------------------------------------------------------------
 
     // Accumulate index value and track actual index price
     always_ff @(posedge clk) begin
@@ -192,23 +331,19 @@ module index_arb_engine #(
             index_accum <= '0;
             actual_mid  <= '0;
         end else begin
-            if (s1_is_component)
-                index_accum <= index_accum + weighted_delta;
+            if (mp3_is_component)
+                index_accum <= index_accum + $signed(mp3_product);
 
-            if (s1_is_index)
-                actual_mid <= s1_new_mid;
+            if (mp3_is_index)
+                actual_mid <= mp3_new_mid;
         end
     end
 
-    // ----------------------------------------------------------------
     // Spread calculation and trade signal generation
     //
-    // KEY: spread must be computed from the PROSPECTIVE next values
-    // of index_accum and actual_mid, because out_trade is registered
-    // on the same edge that updates the accumulator.  Using the old
-    // registered values would cause a 1-cycle misalignment where
-    // s1_valid is high but spread still reflects the pre-update state.
-    // ----------------------------------------------------------------
+    // Spread uses PROSPECTIVE next values so the output register
+    // (clocked on the same edge as the accumulate) sees the
+    // post-update state.
     logic signed [AW-1:0] next_accum;
     logic        [31:0]   next_actual;
     logic signed [AW-1:0] actual_q;
@@ -218,9 +353,9 @@ module index_arb_engine #(
     logic                  trade_dir;  // 0=BUY, 1=SELL
 
     always_comb begin
-        // Prospective values: what accum/actual will be AFTER this edge
-        next_accum  = s1_is_component ? (index_accum + weighted_delta) : index_accum;
-        next_actual = s1_is_index     ? s1_new_mid                    : actual_mid;
+        next_accum  = mp3_is_component ? (index_accum + $signed(mp3_product))
+                                       : index_accum;
+        next_actual = mp3_is_index     ? mp3_new_mid : actual_mid;
 
         actual_q   = AW'(next_actual) <<< FRAC;
         spread     = next_accum - actual_q;
@@ -234,7 +369,7 @@ module index_arb_engine #(
         if (!rst_n) begin
             out_trade <= '0;
         end else begin
-            out_trade.valid          <= s1_valid && trade_fire;
+            out_trade.valid          <= mp3_valid && trade_fire;
             out_trade.direction      <= trade_dir;
             out_trade.spread         <= spread;
             out_trade.computed_index <= next_accum;

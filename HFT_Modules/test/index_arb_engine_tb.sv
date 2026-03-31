@@ -81,11 +81,14 @@ module index_arb_engine_tb;
         tob_in.best_bid.qty   = bid_q;
         tob_in.best_ask.price = ask_p;
         tob_in.best_ask.qty   = ask_q;
-        @(posedge clk); #1;       // posedge 0: s0 combinational, s0→s1 reg captures
+        @(posedge clk); #1;       // posedge 0: S0 decode → S1 reg captures
         tob_in = '0;
-        @(posedge clk); #1;       // posedge 1: s1 active, accum updated, out_trade captured
+        @(posedge clk); #1;       // posedge 1: MUL_P1 — mplier[10:0] × mcand
+        @(posedge clk); #1;       // posedge 2: MUL_P2 — mplier[21:11] × mcand
+        @(posedge clk); #1;       // posedge 3: MUL_P3 — mplier[32:22] × mcand (final)
+        @(posedge clk); #1;       // posedge 4: S4 ACC active, out_trade valid
         // out_trade.valid is high RIGHT NOW (if trade_fire).
-        // Next posedge will clear it (s1_valid goes 0).
+        // Next posedge will clear it (mp3_valid goes 0).
     endtask
 
     // Convert Q44.20 accumulator to integer cents for display
