@@ -26,7 +26,7 @@ module skewed_hash_table_tb;
     localparam KEY_W       = 32;
     localparam VALUE_W     = 64;
     localparam N_WAYS      = 4;
-    localparam TBL_ENTRIES = 64;       // Small for fast simulation
+    localparam TBL_ENTRIES = 2;       // Small for fast simulation
     localparam MAX_CHAIN   = 8;
 
     // ----------------------------------------------------------------

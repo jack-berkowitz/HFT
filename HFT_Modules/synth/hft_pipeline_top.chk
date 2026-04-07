@@ -2,7 +2,7 @@
 ****************************************
 check_design summary:
 Version:     V-2023.12-SP5
-Date:        Wed Apr  1 16:31:01 2026
+Date:        Tue Apr  7 14:06:39 2026
 ****************************************
 
                    Name                                            Total
@@ -13,6 +13,9 @@ Inputs/Outputs                                                      1
 Cells                                                              29
     Cells do not drive (LINT-1)                                    29
 
+Designs                                                             1
+    Black box (LINT-55)                                             1
+
 Nets                                                              245
     Unloaded nets (LINT-2)                                        245
 --------------------------------------------------------------------------------
@@ -21,8 +24,8 @@ Warning: In design 'hft_pipeline_top', cell 'u_filter/C443' does not drive any n
 Warning: In design 'hft_pipeline_top', cell 'u_framer/C1045' does not drive any nets. (LINT-1)
 Warning: In design 'hft_pipeline_top', cell 'u_demux/C3602' does not drive any nets. (LINT-1)
 Warning: In design 'hft_pipeline_top', cell 'u_order_lookup/B_24' does not drive any nets. (LINT-1)
-Warning: In design 'hft_pipeline_top', cell 'u_order_lookup/u_order_table/C4345649' does not drive any nets. (LINT-1)
-Warning: In design 'hft_pipeline_top', cell 'u_order_lookup/u_order_table/C4343542' does not drive any nets. (LINT-1)
+Warning: In design 'hft_pipeline_top', cell 'u_order_lookup/u_order_table/C68757' does not drive any nets. (LINT-1)
+Warning: In design 'hft_pipeline_top', cell 'u_order_lookup/u_order_table/C66650' does not drive any nets. (LINT-1)
 Warning: In design 'hft_pipeline_top', cell 'u_tob/C967256' does not drive any nets. (LINT-1)
 Warning: In design 'hft_pipeline_top', cell 'u_tob/C967255' does not drive any nets. (LINT-1)
 Warning: In design 'hft_pipeline_top', cell 'u_tob/C967254' does not drive any nets. (LINT-1)
@@ -292,4 +295,5 @@ Warning: In design 'hft_pipeline_top', net 'f2d_tkeep[5]' driven by pin 'u_frame
 Warning: In design 'hft_pipeline_top', net 'f2d_tkeep[6]' driven by pin 'u_framer/C937/Z_6' has no loads. (LINT-2)
 Warning: In design 'hft_pipeline_top', net 'f2d_tkeep[7]' driven by pin 'u_framer/C937/Z_7' has no loads. (LINT-2)
 Warning: In design 'hft_pipeline_top', output port 'tx_axis_tkeep[1]' is connected directly to output port 'tx_axis_tkeep[0]'. (LINT-31)
+Information: Design 'dp_ram_ADDR_W12_DATA_W130_DEPTH4096' does not contain any cells or nets. (LINT-55)
 1

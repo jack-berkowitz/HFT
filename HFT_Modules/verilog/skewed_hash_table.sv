@@ -34,7 +34,7 @@ module skewed_hash_table #(
     parameter KEY_W       = 32,
     parameter VALUE_W     = 64,
     parameter N_WAYS      = 4,
-    parameter TBL_ENTRIES = 1024,
+    parameter TBL_ENTRIES = 256,
     parameter MAX_CHAIN   = 16
 ) (
     input  logic                  clk,
@@ -98,8 +98,8 @@ module skewed_hash_table #(
     // Hash function — CRC32 with per-way seed, XOR-folded to IDX_W
     // =================================================================
     function automatic [IDX_W-1:0] hash_fn(
-        input [KEY_W-1:0] key,
-        input int          way
+        input [KEY_W-1:0]      key,
+        input logic [WAY_W-1:0] way
     );
         logic [31:0]      crc;
         logic              xor_bit;
@@ -147,22 +147,22 @@ module skewed_hash_table #(
 
     generate
         for (genvar w = 0; w < N_WAYS; w++) begin : gen_bram
-            (* ram_style = "block" *)
-            logic [ENTRY_W-1:0] mem [0:TBL_ENTRIES-1];
-
-            // Port A — read only (lookup)
-            always_ff @(posedge clk) begin
-                bram_rdata_a[w] <= mem[bram_addr_a[w]];
-            end
-
-            // Port B — read/write (controller)
-            always_ff @(posedge clk) begin
-                if (bram_wen_b[w])
-                    mem[bram_addr_b[w]] <= bram_wdata_b[w];
-                bram_rdata_b[w] <= mem[bram_addr_b[w]];
-            end
+            dp_ram #(
+                .ADDR_W (IDX_W),
+                .DATA_W (ENTRY_W),
+                .DEPTH  (TBL_ENTRIES)
+            ) u_ram (
+                .clk     (clk),
+                .a_addr  (bram_addr_a[w]),
+                .a_rdata (bram_rdata_a[w]),
+                .b_addr  (bram_addr_b[w]),
+                .b_wdata (bram_wdata_b[w]),
+                .b_wen   (bram_wen_b[w]),
+                .b_rdata (bram_rdata_b[w])
+            );
         end
     endgenerate
+
 
     // =================================================================
     // Lookup pipeline  (port A only — never stalls)

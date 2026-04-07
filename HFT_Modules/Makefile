@@ -102,10 +102,14 @@ xdp_packet_framer_DEPS    = verilog/xdp_packet_framer.sv
 
 xdp_msg_demux_DEPS        = verilog/xdp_msg_demux.sv
 
-skewed_hash_table_DEPS    = verilog/skewed_hash_table.sv
+skewed_hash_table_DEPS    = verilog/skewed_hash_table.sv \
+                            verilog/dp_ram.sv
 
 order_lookup_DEPS         = verilog/order_lookup.sv \
-                            verilog/skewed_hash_table.sv
+                            verilog/skewed_hash_table.sv \
+                            verilog/dp_ram.sv
+
+# ... and similarly for hft_pipeline_DEPS, hft_pipeline_top_DEPS, xdp_chain_DEPS
 
 top_of_book_DEPS          = verilog/top_of_book.sv
 
@@ -117,7 +121,8 @@ order_gen_tx_DEPS         = verilog/order_gen_tx.sv
 xdp_chain_DEPS            = verilog/ipv4_udp_port_filter.sv \
                              verilog/xdp_packet_framer.sv    \
                              verilog/xdp_msg_demux.sv        \
-                             verilog/skewed_hash_table.sv
+                             verilog/skewed_hash_table.sv 	\
+							 verilog/dp_ram.sv
 
 # Full pipeline integration TB (all 7 stages, no top wrapper)
 hft_pipeline_DEPS         = verilog/ipv4_udp_port_filter.sv \
@@ -127,7 +132,8 @@ hft_pipeline_DEPS         = verilog/ipv4_udp_port_filter.sv \
                              verilog/order_lookup.sv          \
                              verilog/top_of_book.sv           \
                              verilog/index_arb_engine.sv      \
-                             verilog/order_gen_tx.sv
+                             verilog/order_gen_tx.sv			\
+							 verilog/dp_ram.sv
 
 # Top-level wrapper TB (hft_pipeline_top.sv + all sub-modules)
 hft_pipeline_top_DEPS     = verilog/hft_pipeline_top.sv      \
@@ -138,7 +144,8 @@ hft_pipeline_top_DEPS     = verilog/hft_pipeline_top.sv      \
                              verilog/order_lookup.sv           \
                              verilog/top_of_book.sv            \
                              verilog/index_arb_engine.sv       \
-                             verilog/order_gen_tx.sv
+                             verilog/order_gen_tx.sv			\
+							 verilog/dp_ram.sv
 
 # ---- Per-module synthesis source lists ---- #
 # By default a module synthesizes from its own single .sv file.
@@ -151,11 +158,12 @@ xdp_packet_framer_SYN_SRCS    = verilog/xdp_packet_framer.sv
 
 xdp_msg_demux_SYN_SRCS        = verilog/xdp_msg_demux.sv
 
-skewed_hash_table_SYN_SRCS    = verilog/skewed_hash_table.sv
+skewed_hash_table_SYN_SRCS    = verilog/skewed_hash_table.sv \
+                                synth/dp_ram_stub.sv
 
-# order_lookup instantiates skewed_hash_table, so both must be passed to dc_shell
 order_lookup_SYN_SRCS         = verilog/order_lookup.sv \
-                                  verilog/skewed_hash_table.sv
+                                verilog/skewed_hash_table.sv \
+                                synth/dp_ram_stub.sv
 
 top_of_book_SYN_SRCS          = verilog/top_of_book.sv
 
@@ -169,6 +177,7 @@ hft_pipeline_top_SYN_SRCS    = verilog/hft_pipeline_top.sv      \
                                  verilog/xdp_packet_framer.sv     \
                                  verilog/xdp_msg_demux.sv         \
                                  verilog/skewed_hash_table.sv     \
+                                 synth/dp_ram_stub.sv             \
                                  verilog/order_lookup.sv          \
                                  verilog/top_of_book.sv           \
                                  verilog/index_arb_engine.sv      \

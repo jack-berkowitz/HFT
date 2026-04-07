@@ -1,7 +1,0 @@
-Command exited with non-zero status 255
-{"vcs1":{"timestamp_begin":1774471737.131505084, "rt":1.56, "ut":0.08, "st":0.13}}
-{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1774471736.013521702}
-{"VCS_COMP_START_TIME": 1774471736.013521702}
-{"VCS_COMP_END_TIME": 1774471738.820939788}
-{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=4.0 +incdir+verilog test/hft_pipeline_top_tb.sv verilog/hft_pipeline_top.sv verilog/ipv4_udp_port_filter.sv verilog/xdp_packet_framer.sv verilog/xdp_msg_demux.sv verilog/skewed_hash_table.sv verilog/order_lookup.sv verilog/top_of_book.sv verilog/index_arb_engine.sv verilog/order_gen_tx.sv -o build/hft_pipeline_top.simv"}
-{"vcs1": {"peak_mem": 466844}}

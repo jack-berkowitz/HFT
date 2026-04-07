@@ -31,19 +31,19 @@ Please use '-no_save' simv switch to avoid this.
             Inclusivity and Diversity" (Refer to article 000036315 at
                         https://solvnetplus.synopsys.com)
 Initializing...
-Current time:       Wed Apr  1 16:22:02 2026
-Hostname:           vizhub03.dc.umich.edu
-CPU Model:          12th Gen Intel(R) Core(TM) i7-12700
-CPU Details:        Cores = 20 : Sockets = 1 : Cache Size = 25600 KB : Freq = 0.80 GHz
-OS:                 Linux 5.14.0-611.5.1.el9_7.x86_64
-RAM:                 31 GB (Free  17 GB)
-Swap:                14 GB (Free  14 GB)
-Work Filesystem:    /home/arlendai mounted to //engin-labs.m.storage.umich.edu/engin-labs/home/arlendai/dotfiles
+Current time:       Tue Apr  7 14:04:48 2026
+Hostname:           caen-vnc-mi11.engin.umich.edu
+CPU Model:          Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz
+CPU Details:        Cores = 9 : Sockets = 17 : Cache Size = 49152 KB : Freq = 2.59 GHz
+OS:                 Linux 5.14.0-611.16.1.el9_7.x86_64
+RAM:                 17 GB (Free   6 GB)
+Swap:                 8 GB (Free   8 GB)
+Work Filesystem:    /home/jackberk mounted to //engin-labs.m.storage.umich.edu/engin-labs/home/jackberk/dotfiles
 Tmp Filesystem:     /tmp mounted to /dev/mapper/vg1-lv_tmp
-Work Disk:          64512 GB (Free 9271 GB)
+Work Disk:          64512 GB (Free 9220 GB)
 Tmp Disk:            29 GB (Free  29 GB)
 
-CPU Load: 9%, Ram Free: 17 GB, Swap Free: 14 GB, Work Disk Free: 9271 GB, Tmp Disk Free: 29 GB
+CPU Load: 68%, Ram Free: 6 GB, Swap Free: 8 GB, Work Disk Free: 9220 GB, Tmp Disk Free: 29 GB
 ##########################
 # ---- Introduction ---- #
 ##########################
@@ -180,6 +180,7 @@ Opening include file ../verilog/sys_defs.svh
 Compiling source file ../verilog/xdp_msg_demux.sv
 Opening include file ../verilog/sys_defs.svh
 Compiling source file ../verilog/skewed_hash_table.sv
+Compiling source file ../synth/dp_ram_stub.sv
 Compiling source file ../verilog/order_lookup.sv
 Opening include file ../verilog/sys_defs.svh
 Compiling source file ../verilog/top_of_book.sv
@@ -404,7 +405,7 @@ Statistics for MUX_OPs
 | top_of_book_N_LEVELS3_N_SYMBOLS500/282 |  512   |   128   |      9       |
 ============================================================================
 Presto compilation completed successfully. (top_of_book_N_LEVELS3_N_SYMBOLS500)
-Module: top_of_book_N_LEVELS3_N_SYMBOLS500, Elapsed Time: 00:00:26, CPU Time: 00:00:25, Total Mem: 2.45 GB, Mem: 2.30 GB, Time: Wed Apr  1 16:22:31 2026
+Module: top_of_book_N_LEVELS3_N_SYMBOLS500, Elapsed Time: 00:00:54, CPU Time: 00:00:52, Total Mem: 2.45 GB, Mem: 2.30 GB, Time: Tue Apr  7 14:05:48 2026
 Information: Building the design 'index_arb_engine' instantiated from design 'hft_pipeline_top' with
 	the parameters "N_COMPONENTS=500,IDX_SYM=9'h1f4". (HDL-193)
 Warning:  ../verilog/index_arb_engine.sv:123: signed to unsigned conversion occurs. (VER-318)
@@ -567,7 +568,6 @@ Warning:  ../verilog/skewed_hash_table.sv:289: signed to unsigned assignment occ
 Warning:  ../verilog/skewed_hash_table.sv:380: signed to unsigned conversion occurs. (VER-318)
 Warning:  ../verilog/skewed_hash_table.sv:424: signed to unsigned assignment occurs. (VER-318)
 Warning:  ../verilog/skewed_hash_table.sv:470: signed to unsigned conversion occurs. (VER-318)
-Warning:  ../verilog/skewed_hash_table.sv:109: signed to unsigned part selection occurs. (VER-318)
 
 Statistics for case statements in always block at line 305 in file
 	'../verilog/skewed_hash_table.sv'
@@ -589,28 +589,6 @@ Statistics for case statements in always block at line 351 in file
 |           377            |    auto/auto     |
 |           109            |    auto/auto     |
 ===============================================
-
-Inferred memory devices in process
-	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 154 in file
-		'../verilog/skewed_hash_table.sv'.
-===============================================================================
-|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
-===============================================================================
-|  bram_rdata_a_reg   | Flip-flop |  520  |  Y  | N  | N  | N  | N  | N  | N  |
-===============================================================================
-
-Inferred memory devices in process
-	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 159 in file
-		'../verilog/skewed_hash_table.sv'.
-================================================================================
-|    Register Name    |   Type    | Width  | Bus | MB | AR | AS | SR | SS | ST |
-================================================================================
-| gen_bram[0].mem_reg | Flip-flop | 532480 |  Y  | N  | N  | N  | N  | N  | N  |
-|  bram_rdata_b_reg   | Flip-flop |  520   |  Y  | N  | N  | N  | N  | N  | N  |
-| gen_bram[1].mem_reg | Flip-flop | 532480 |  Y  | N  | N  | N  | N  | N  | N  |
-| gen_bram[2].mem_reg | Flip-flop | 532480 |  Y  | N  | N  | N  | N  | N  | N  |
-| gen_bram[3].mem_reg | Flip-flop | 532480 |  Y  | N  | N  | N  | N  | N  | N  |
-================================================================================
 
 Inferred memory devices in process
 	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 186 in file
@@ -638,7 +616,7 @@ Inferred memory devices in process
 ===================================================================================
 |    lookup_value_reg     | Flip-flop |  65   |  Y  | N  | Y  | N  | N  | N  | N  |
 | lookup_result_valid_reg | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
-|     lookup_hit_reg      | Flip-flop |   1   |  N  | N  | Y  | N  | N  | N  | N  |
+|     lookup_hit_reg      | Flip-flop |   1   |  N  | N  | Y  | N  | N  | Y  | N  |
 ===================================================================================
 
 Inferred memory devices in process
@@ -669,21 +647,15 @@ Statistics for MUX_OPs
 =================================================================================================================
 |                              block name/line                                | Inputs | Outputs | # sel inputs |
 =================================================================================================================
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/155 |  4096  |   130   |      12      |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/162 |  4096  |   130   |      12      |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/155 |  4096  |   130   |      12      |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/162 |  4096  |   130   |      12      |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/155 |  4096  |   130   |      12      |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/162 |  4096  |   130   |      12      |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/155 |  4096  |   130   |      12      |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/162 |  4096  |   130   |      12      |
 | skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/300 |   4    |    1    |      2       |
 | skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/479 |   4    |   129   |      2       |
 | skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/482 |   4    |   64    |      2       |
 =================================================================================================================
 Information:  Complex logic will not be considered for set/reset inference. (ELAB-2008)
 Presto compilation completed successfully. (skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16)
-Module: skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16, Elapsed Time: 00:03:36, CPU Time: 00:03:28, Total Mem: 16.39 GB, Mem: 13.80 GB, Time: Wed Apr  1 16:26:23 2026
+Information: Building the design 'dp_ram' instantiated from design 'skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16' with
+	the parameters "ADDR_W=12,DATA_W=130,DEPTH=4096". (HDL-193)
+Presto compilation completed successfully. (dp_ram_ADDR_W12_DATA_W130_DEPTH4096)
 if { [current_design $design_name] == [list] } {exit 1}
 Current design is 'hft_pipeline_top'.
 #########################################
@@ -769,7 +741,7 @@ if { ![link] } {exit 1}
   Linking design 'hft_pipeline_top'
   Using the following designs and libraries:
   --------------------------------------------------------------------------
-  * (9 designs)               /home/arlendai/hft/hft/HFT_Modules/synth/hft_pipeline_top.db, etc
+  * (10 designs)              /home/jackberk/HFT/HFT_Modules/synth/hft_pipeline_top.db, etc
   lec25dscc25_TT (library)    /usr/caen/misc/class/eecs470/lib/synopsys/lec25dscc25_TT.db
 
 eecs_470_set_wire_load $design_name
@@ -809,7 +781,7 @@ uniquify
 1
 ungroup -all -flatten
 Information: Updating graph... (UID-83)
-Warning: Design 'hft_pipeline_top' contains 723 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+Warning: Design 'hft_pipeline_top' contains 202 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
 1
 # write the check file before compiling
 set chk_file ./${design_name}.chk
@@ -819,7 +791,7 @@ redirect $chk_file { check_design }
 # map_effort can be changed to high if you're ok with time increasing for better performance
 # or you can change from compile to compile_ultra for best performance, but likely increased time
 compile -map_effort medium
-CPU Load: 5%, Ram Free: 0 GB, Swap Free: 13 GB, Work Disk Free: 9270 GB, Tmp Disk Free: 29 GB
+CPU Load: 51%, Ram Free: 3 GB, Swap Free: 8 GB, Work Disk Free: 9221 GB, Tmp Disk Free: 29 GB
 Information: Evaluating DesignWare library utilization. (UISN-27)
 
 ============================================================================
@@ -837,15 +809,15 @@ Information: Evaluating DesignWare library utilization. (UISN-27)
 | Design Information                                      | Value                                  |
 ====================================================================================================
 | Number of Scenarios                                     | 0                                      |
-| Leaf Cell Count                                         | 2401929                                |
+| Leaf Cell Count                                         | 253721                                 |
 | Number of User Hierarchies                              | 0                                      |
-| Sequential Cell Count                                   | 2358029                                |
+| Sequential Cell Count                                   | 227069                                 |
 | Macro Count                                             | 0                                      |
 | Number of Power Domains                                 | 0                                      |
 | Number of Path Groups                                   | 3                                      |
 | Number of VT Class                                      | 0                                      |
 | Number of Clocks                                        | 0                                      |
-| Number of Dont Touch Cells                              | 2981                                   |
+| Number of Dont Touch Cells                              | 2883                                   |
 | Number of Dont Touch Nets                               | 0                                      |
 | Number of Size Only Cells                               | 0                                      |
 | Design with UPF Data                                    | false                                  |
