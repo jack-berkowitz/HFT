@@ -110,8 +110,8 @@ set search_path [list "./" "../" "../verilog" "/usr/caen/misc/class/eecs470/lib/
 
 # this script assumes your clock and reset variables will be named "clock" and "reset" everywhere
 # note: these are just local variables
-set clock_name clock
-set reset_name reset
+set clock_name clk
+set reset_name rst_n
 
 # this makes it so you don't need to add
 # // synopsys sync_set_reset "reset"
