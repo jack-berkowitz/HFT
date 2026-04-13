@@ -14,8 +14,10 @@ module top_of_book #(
 
     localparam SYM_W = $clog2(N_SYMBOLS);
 
-    price_level_t bid_book [N_SYMBOLS][N_LEVELS];
-    price_level_t ask_book [N_SYMBOLS][N_LEVELS];
+    logic [31:0] bid_price [N_SYMBOLS][N_LEVELS];
+    logic [31:0] bid_qty   [N_SYMBOLS][N_LEVELS];
+    logic [31:0] ask_price [N_SYMBOLS][N_LEVELS];
+    logic [31:0] ask_qty   [N_SYMBOLS][N_LEVELS];
 
     logic [SYM_W-1:0] sym;
     logic              sym_valid;
@@ -86,56 +88,65 @@ module top_of_book #(
 
     assign is_bid = (op_side == `SIDE_BUY);
 
-    price_level_t cur [N_LEVELS];
+    logic [31:0] cur_price [N_LEVELS];
+    logic [31:0] cur_qty   [N_LEVELS];
 
     always_comb begin
-        for (int i = 0; i < N_LEVELS; i++)
-            cur[i] = is_bid ? bid_book[sym][i] : ask_book[sym][i];
+        for (int i = 0; i < N_LEVELS; i++) begin
+            cur_price[i] = is_bid ? bid_price[sym][i] : ask_price[sym][i];
+            cur_qty[i]   = is_bid ? bid_qty[sym][i]   : ask_qty[sym][i];
+        end
     end
 
-    price_level_t after_rm [N_LEVELS];
+    logic [31:0] after_rm_price [N_LEVELS];
+    logic [31:0] after_rm_qty   [N_LEVELS];
     logic         rm_found;
 
     always_comb begin
         rm_found = 1'b0;
-        for (int i = 0; i < N_LEVELS; i++)
-            after_rm[i] = cur[i];
+        for (int i = 0; i < N_LEVELS; i++) begin
+            after_rm_price[i] = cur_price[i];
+            after_rm_qty[i]   = cur_qty[i];
+        end
 
         if (do_remove) begin
             for (int i = 0; i < N_LEVELS; i++) begin
                 if (!rm_found &&
-                    cur[i].qty != 32'd0 &&
-                    cur[i].price == rm_price) begin
+                    cur_qty[i] != 32'd0 &&
+                    cur_price[i] == rm_price) begin
 
                     rm_found = 1'b1;
 
-                    if (cur[i].qty <= rm_qty) begin
-                        for (int j = i; j < N_LEVELS - 1; j++)
-                            after_rm[j] = cur[j + 1];
-                        after_rm[N_LEVELS - 1].price = 32'd0;
-                        after_rm[N_LEVELS - 1].qty   = 32'd0;
+                    if (cur_qty[i] <= rm_qty) begin
+                        for (int j = i; j < N_LEVELS - 1; j++) begin
+                            after_rm_price[j] = cur_price[j + 1];
+                            after_rm_qty[j]   = cur_qty[j + 1];
+                        end
+                        after_rm_price[N_LEVELS - 1] = 32'd0;
+                        after_rm_qty[N_LEVELS - 1]   = 32'd0;
                     end else begin
-                        after_rm[i].price = cur[i].price;
-                        after_rm[i].qty   = cur[i].qty - rm_qty;
+                        after_rm_price[i] = cur_price[i];
+                        after_rm_qty[i]   = cur_qty[i] - rm_qty;
                     end
                 end
             end
         end
     end
 
-    price_level_t             after_add [N_LEVELS];
+    logic [31:0]              after_add_price [N_LEVELS];
+    logic [31:0]              after_add_qty   [N_LEVELS];
     logic                     add_match_found;
     logic                     add_inserted;
     logic [N_LEVELS-1:0]      better_than;
 
     always_comb begin
         for (int i = 0; i < N_LEVELS; i++) begin
-            if (after_rm[i].qty == 32'd0)
+            if (after_rm_qty[i] == 32'd0)
                 better_than[i] = 1'b1;
             else if (is_bid)
-                better_than[i] = (add_price > after_rm[i].price);
+                better_than[i] = (add_price > after_rm_price[i]);
             else
-                better_than[i] = (add_price < after_rm[i].price);
+                better_than[i] = (add_price < after_rm_price[i]);
         end
     end
 
@@ -143,19 +154,21 @@ module top_of_book #(
         add_match_found = 1'b0;
         add_inserted    = 1'b0;
 
-        for (int i = 0; i < N_LEVELS; i++)
-            after_add[i] = after_rm[i];
+        for (int i = 0; i < N_LEVELS; i++) begin
+            after_add_price[i] = after_rm_price[i];
+            after_add_qty[i]   = after_rm_qty[i];
+        end
 
         if (do_add && add_qty != 32'd0) begin
 
             for (int i = 0; i < N_LEVELS; i++) begin
                 if (!add_match_found &&
-                    after_rm[i].qty != 32'd0 &&
-                    after_rm[i].price == add_price) begin
+                    after_rm_qty[i] != 32'd0 &&
+                    after_rm_price[i] == add_price) begin
 
                     add_match_found = 1'b1;
-                    after_add[i].price = after_rm[i].price;
-                    after_add[i].qty   = after_rm[i].qty + add_qty;
+                    after_add_price[i] = after_rm_price[i];
+                    after_add_qty[i]   = after_rm_qty[i] + add_qty;
                 end
             end
 
@@ -164,11 +177,13 @@ module top_of_book #(
                     if (!add_inserted && better_than[i]) begin
                         add_inserted = 1'b1;
 
-                        for (int j = N_LEVELS - 1; j > i; j--)
-                            after_add[j] = after_rm[j - 1];
+                        for (int j = N_LEVELS - 1; j > i; j--) begin
+                            after_add_price[j] = after_rm_price[j - 1];
+                            after_add_qty[j]   = after_rm_qty[j - 1];
+                        end
 
-                        after_add[i].price = add_price;
-                        after_add[i].qty   = add_qty;
+                        after_add_price[i] = add_price;
+                        after_add_qty[i]   = add_qty;
                     end
                 end
             end
@@ -179,18 +194,22 @@ module top_of_book #(
         if (!rst_n) begin
             for (int s = 0; s < N_SYMBOLS; s++)
                 for (int l = 0; l < N_LEVELS; l++) begin
-                    bid_book[s][l].price <= 32'd0;
-                    bid_book[s][l].qty   <= 32'd0;
-                    ask_book[s][l].price <= 32'd0;
-                    ask_book[s][l].qty   <= 32'd0;
+                    bid_price[s][l] <= 32'd0;
+                    bid_qty[s][l]   <= 32'd0;
+                    ask_price[s][l] <= 32'd0;
+                    ask_qty[s][l]   <= 32'd0;
                 end
         end else if (sym_valid) begin
             if (is_bid) begin
-                for (int l = 0; l < N_LEVELS; l++)
-                    bid_book[sym][l] <= after_add[l];
+                for (int l = 0; l < N_LEVELS; l++) begin
+                    bid_price[sym][l] <= after_add_price[l];
+                    bid_qty[sym][l]   <= after_add_qty[l];
+                end
             end else begin
-                for (int l = 0; l < N_LEVELS; l++)
-                    ask_book[sym][l] <= after_add[l];
+                for (int l = 0; l < N_LEVELS; l++) begin
+                    ask_price[sym][l] <= after_add_price[l];
+                    ask_qty[sym][l]   <= after_add_qty[l];
+                end
             end
         end
     end
@@ -204,15 +223,15 @@ module top_of_book #(
 
             if (sym_valid) begin
                 if (is_bid) begin
-                    out_tob.best_bid.price <= after_add[0].price;
-                    out_tob.best_bid.qty   <= after_add[0].qty;
-                    out_tob.best_ask.price <= ask_book[sym][0].price;
-                    out_tob.best_ask.qty   <= ask_book[sym][0].qty;
+                    out_tob.best_bid.price <= after_add_price[0];
+                    out_tob.best_bid.qty   <= after_add_qty[0];
+                    out_tob.best_ask.price <= ask_price[sym][0];
+                    out_tob.best_ask.qty   <= ask_qty[sym][0];
                 end else begin
-                    out_tob.best_bid.price <= bid_book[sym][0].price;
-                    out_tob.best_bid.qty   <= bid_book[sym][0].qty;
-                    out_tob.best_ask.price <= after_add[0].price;
-                    out_tob.best_ask.qty   <= after_add[0].qty;
+                    out_tob.best_bid.price <= bid_price[sym][0];
+                    out_tob.best_bid.qty   <= bid_qty[sym][0];
+                    out_tob.best_ask.price <= after_add_price[0];
+                    out_tob.best_ask.qty   <= after_add_qty[0];
                 end
             end
         end

@@ -82,15 +82,6 @@ module order_lookup #(
         .delete_not_found    (ht_del_not_found)
     );
 
-    logic [31:0] exec_remaining;
-
-    always_comb begin
-        if (ht_lu_value[Q_HI:Q_LO] > msg_r.qty)
-            exec_remaining = ht_lu_value[Q_HI:Q_LO] - msg_r.qty;
-        else
-            exec_remaining = 32'd0;
-    end
-
     typedef enum logic [3:0] {
         ST_IDLE,
         ST_LOOKUP,
@@ -105,6 +96,15 @@ module order_lookup #(
     state_t              state_r;
 
     pillar_msg_t         msg_r;
+
+    logic [31:0] exec_remaining;
+
+    always_comb begin
+        if (ht_lu_value[Q_HI:Q_LO] > msg_r.qty)
+            exec_remaining = ht_lu_value[Q_HI:Q_LO] - msg_r.qty;
+        else
+            exec_remaining = 32'd0;
+    end
 
     logic                lu_hit_r;
     logic [31:0]         lu_price_r;

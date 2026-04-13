@@ -11,6 +11,7 @@ VERILOG_SOURCES  = $(VDIR)/hft_pipeline_top.sv    \
                    $(VDIR)/XDP_packet_framer.sv    \
                    $(VDIR)/xdp_msg_demux.sv        \
                    $(VDIR)/skewed_hash_table.sv    \
+                   $(VDIR)/dp_ram.sv               \
                    $(VDIR)/order_lookup.sv          \
                    $(VDIR)/top_of_book.sv           \
                    $(VDIR)/index_arb_engine.sv      \
