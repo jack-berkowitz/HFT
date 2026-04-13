@@ -11,6 +11,4 @@ module dp_ram #(
     input  logic               b_wen,
     output logic [DATA_W-1:0]  b_rdata
 );
-    // Intentionally empty — replaced by SRAM macro in real tapeout.
-    // DC sees only the port timing arcs.
 endmodule

@@ -1,27 +1,8 @@
 `timescale 1ns/1ps
 `include "sys_defs.svh"
-// ============================================================
-// order_gen_tx_tb.sv
-//
-// Unit testbench for order_gen_tx.
-//
-// Tests:
-//   1.  Post-reset: idle, counters zeroed
-//   2.  BUY order — packet content verified byte-by-byte
-//   3.  SELL order — price, side, OID, position checked
-//   4.  Cooldown blocks immediate re-fire
-//   5.  Order accepted after cooldown expires
-//   6.  Enable gate blocks order when disabled
-//   7.  Backpressure mid-packet (tready deasserted & released)
-//   8.  Position limit blocks order at MAX_POS
-//   9.  Opposing direction allowed at position limit
-//  10.  Packet header verification (MAC, IP, UDP fields)
-// ============================================================
+
 module order_gen_tx_tb;
 
-    // ----------------------------------------------------------------
-    // DUT parameters (short cooldown for fast simulation)
-    // ----------------------------------------------------------------
     localparam [47:0] TB_SRC_MAC  = 48'hDE_AD_BE_EF_CA_FE;
     localparam [47:0] TB_DST_MAC  = 48'h01_00_5E_00_00_01;
     localparam [31:0] TB_SRC_IP   = {8'd10, 8'd0, 8'd0, 8'd1};
@@ -35,9 +16,6 @@ module order_gen_tx_tb;
     localparam [31:0] TB_IDX_SYM  = 32'd500;
     localparam        AW          = `ACCUM_W;
 
-    // ----------------------------------------------------------------
-    // DUT signals
-    // ----------------------------------------------------------------
     logic              clk, rst_n, enable;
     trade_signal_t     trade_in;
     logic [63:0]       m_axis_tdata;
@@ -47,9 +25,6 @@ module order_gen_tx_tb;
     logic signed [31:0] net_position;
     logic              pkt_sent;
 
-    // ----------------------------------------------------------------
-    // DUT
-    // ----------------------------------------------------------------
     order_gen_tx #(
         .SRC_MAC      (TB_SRC_MAC),
         .DST_MAC      (TB_DST_MAC),
@@ -77,23 +52,14 @@ module order_gen_tx_tb;
         .pkt_sent     (pkt_sent)
     );
 
-    // ----------------------------------------------------------------
-    // Clock: 250 MHz
-    // ----------------------------------------------------------------
     initial clk = 0;
     always #2 clk = ~clk;
 
-    // ----------------------------------------------------------------
-    // VCD
-    // ----------------------------------------------------------------
     initial begin
         $dumpfile("order_gen_tx_dump.vcd");
         $dumpvars(0, order_gen_tx_tb);
     end
 
-    // ----------------------------------------------------------------
-    // Output packet capture
-    // ----------------------------------------------------------------
     logic [7:0]  cap_buf [0:79];
     integer      cap_bytes;
     integer      cap_beats;
@@ -119,9 +85,6 @@ module order_gen_tx_tb;
         cap_last  = 1'b0;
     endtask
 
-    // ----------------------------------------------------------------
-    // Trade signal helper — pulses valid for exactly one cycle
-    // ----------------------------------------------------------------
     task automatic fire_trade(
         input logic      dir,
         input [31:0]     actual,
@@ -137,7 +100,6 @@ module order_gen_tx_tb;
         trade_in = '0;
     endtask
 
-    // Wait for packet completion (tlast captured)
     task automatic wait_pkt(output logic timed_out);
         integer t;
         timed_out = 0; t = 0;
@@ -146,14 +108,10 @@ module order_gen_tx_tb;
         @(posedge clk); #1;
     endtask
 
-    // Wait for cooldown to expire
     task wait_cd;
         repeat(TB_COOLDOWN + 5) @(posedge clk); #1;
     endtask
 
-    // ----------------------------------------------------------------
-    // Packet field extraction helpers
-    // ----------------------------------------------------------------
     function automatic [15:0] cap_u16_be(input integer off);
         return {cap_buf[off], cap_buf[off+1]};
     endfunction
@@ -168,9 +126,6 @@ module order_gen_tx_tb;
         return v;
     endfunction
 
-    // ----------------------------------------------------------------
-    // Scoreboard
-    // ----------------------------------------------------------------
     integer fail_count, fb;
 
     task pr(input string name);
@@ -193,13 +148,7 @@ module order_gen_tx_tb;
         end
     endtask
 
-    // ----------------------------------------------------------------
-    // Main test sequence
-    // ----------------------------------------------------------------
     logic timed_out;
-
-    // Track position across tests for accurate assertions
-    // (pos is updated by the DUT; we just check net_position output)
 
     initial begin
         fail_count    = 0;
@@ -216,9 +165,6 @@ module order_gen_tx_tb;
         rst_n = 0; repeat(4) @(posedge clk); #1;
         rst_n = 1; repeat(2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 1: Post-reset state
-        // ============================================================
         $display("\n--- TEST 1: Post-reset state ---");
         fb = fail_count;
         chk_eq("order_count",  order_count,  32'd0);
@@ -226,13 +172,6 @@ module order_gen_tx_tb;
         if (m_axis_tvalid) begin fail_count++; $display("    FAIL: tvalid high"); end
         pr("post-reset idle");
 
-        // ============================================================
-        // TEST 2: BUY order — full packet verification
-        //   actual=15000, spread=0x0000_0000_0012_3456
-        //   expected price = 15000 + 10 = 15010
-        //   expected side  = 'B' (0x42)
-        //   expected OID   = 1
-        // ============================================================
         $display("\n--- TEST 2: BUY order (full packet check) ---");
         fb = fail_count;
         reset_cap();
@@ -247,19 +186,17 @@ module order_gen_tx_tb;
             chk_eq("pkt_size",     cap_bytes,            32'd74);
             chk_eq("beats",       cap_beats,            32'd10);
 
-            // Ethernet
             chk_byte("dst_mac[0]", cap_buf[0],  TB_DST_MAC[47:40]);
             chk_byte("dst_mac[5]", cap_buf[5],  TB_DST_MAC[7:0]);
             chk_byte("src_mac[0]", cap_buf[6],  TB_SRC_MAC[47:40]);
             chk_byte("src_mac[5]", cap_buf[11], TB_SRC_MAC[7:0]);
             chk_eq("ethertype",    cap_u16_be(12), 16'h0800);
 
-            // IPv4
             chk_byte("ipv4_ver",   cap_buf[14], 8'h45);
             chk_eq("ip_total_len", cap_u16_be(16), 16'd60);
             chk_byte("ip_ttl",     cap_buf[22], 8'h40);
             chk_byte("ip_proto",   cap_buf[23], 8'h11);
-            // IP checksum — just verify non-zero
+
             if (cap_u16_be(24) == 16'h0000) begin
                 fail_count++; $display("    FAIL: ip_checksum is zero");
             end
@@ -268,22 +205,19 @@ module order_gen_tx_tb;
             chk_byte("dst_ip[0]",  cap_buf[30], TB_DST_IP[31:24]);
             chk_byte("dst_ip[3]",  cap_buf[33], TB_DST_IP[7:0]);
 
-            // UDP
             chk_eq("udp_sport",    cap_u16_be(34), TB_SRC_PORT);
             chk_eq("udp_dport",    cap_u16_be(36), TB_DST_PORT);
             chk_eq("udp_len",      cap_u16_be(38), 16'd40);
 
-            // Order payload (starts at byte 42, LE fields)
             chk_byte("msg_type_lo", cap_buf[42], 8'h01);
             chk_byte("msg_type_hi", cap_buf[43], 8'h00);
-            chk_byte("side",       cap_buf[44], 8'h42);    // 'B'
+            chk_byte("side",       cap_buf[44], 8'h42);
             chk_eq("symbol_id",    cap_u32_le(46), TB_IDX_SYM);
             chk_eq("price",        cap_u32_le(50), 32'd15010);
             chk_eq("qty",          cap_u32_le(54), TB_QTY);
             chk_eq("client_oid",   cap_u64_le(58), 64'd1);
             chk_eq("spread",       cap_u64_le(66), 64'h0000_0000_0012_3456);
 
-            // Counters
             chk_eq("order_count",  order_count,  32'd1);
             chk_eq("net_position", net_position, 32'sd100);
         end
@@ -291,12 +225,6 @@ module order_gen_tx_tb;
 
         wait_cd();
 
-        // ============================================================
-        // TEST 3: SELL order
-        //   actual=15000 → price = 15000 - 10 = 14990
-        //   side = 'S' (0x53), OID = 2
-        //   position: 100 - 100 = 0
-        // ============================================================
         $display("\n--- TEST 3: SELL order ---");
         fb = fail_count;
         reset_cap();
@@ -307,7 +235,7 @@ module order_gen_tx_tb;
         if (timed_out) begin
             $display("    FAIL: packet timed out"); fail_count++;
         end else begin
-            chk_byte("side",       cap_buf[44], 8'h53);     // 'S'
+            chk_byte("side",       cap_buf[44], 8'h53);
             chk_eq("price",        cap_u32_le(50), 32'd14990);
             chk_eq("client_oid",   cap_u64_le(58), 64'd2);
             chk_eq("spread",       cap_u64_le(66), 64'hAAAA_BBBB_CCCC_DDDD);
@@ -318,19 +246,14 @@ module order_gen_tx_tb;
 
         wait_cd();
 
-        // ============================================================
-        // TEST 4: Cooldown blocks immediate second order
-        // ============================================================
         $display("\n--- TEST 4: Cooldown blocks second order ---");
         fb = fail_count;
 
-        // First order (BUY): accepted → pos=100
         reset_cap();
         fire_trade(1'b0, 32'd16000, 64'd0);
         wait_pkt(timed_out);
         if (timed_out) begin fail_count++; $display("    FAIL: first pkt timeout"); end
 
-        // Immediately fire again — should be blocked
         reset_cap();
         fire_trade(1'b0, 32'd16000, 64'd0);
         repeat(5) @(posedge clk); #1;
@@ -347,14 +270,10 @@ module order_gen_tx_tb;
 
         wait_cd();
 
-        // ============================================================
-        // TEST 5: Order accepted after cooldown
-        // ============================================================
         $display("\n--- TEST 5: Post-cooldown order ---");
         fb = fail_count;
         reset_cap();
 
-        // pos is 100 from test 4; this SELL brings it to 0
         fire_trade(1'b1, 32'd16000, 64'd0);
         wait_pkt(timed_out);
 
@@ -367,9 +286,6 @@ module order_gen_tx_tb;
 
         wait_cd();
 
-        // ============================================================
-        // TEST 6: Enable gate
-        // ============================================================
         $display("\n--- TEST 6: Enable gate ---");
         fb = fail_count;
         enable = 1'b0;
@@ -391,9 +307,6 @@ module order_gen_tx_tb;
 
         repeat(2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 7: Backpressure mid-packet
-        // ============================================================
         $display("\n--- TEST 7: Backpressure ---");
         fb = fail_count;
         reset_cap();
@@ -401,7 +314,7 @@ module order_gen_tx_tb;
         fork
             fire_trade(1'b0, 32'd19000, 64'd0);
             begin
-                // Deassert tready after a few beats
+
                 repeat(4) @(posedge clk); #1;
                 m_axis_tready = 1'b0;
                 repeat(10) @(posedge clk); #1;
@@ -424,16 +337,9 @@ module order_gen_tx_tb;
 
         wait_cd();
 
-        // ============================================================
-        // TEST 8: Position limit
-        //   Current position = 100 (from test 7 BUY).
-        //   MAX_POS = 500, QTY = 100.
-        //   Push position to 500 (4 more BUYs), then verify blocked.
-        // ============================================================
         $display("\n--- TEST 8: Position limit ---");
         fb = fail_count;
 
-        // Push to limit: 100 → 200 → 300 → 400 → 500
         while (net_position + $signed(TB_QTY) <= $signed(TB_MAX_POS)) begin
             reset_cap();
             fire_trade(1'b0, 32'd20000, 64'd0);
@@ -444,7 +350,6 @@ module order_gen_tx_tb;
 
         $display("    Position: %0d (limit: +/-%0d)", net_position, TB_MAX_POS);
 
-        // Next BUY should be blocked (pos + 100 = 600 > 500)
         reset_cap();
         fire_trade(1'b0, 32'd20000, 64'd0);
         repeat(15) @(posedge clk); #1;
@@ -457,10 +362,6 @@ module order_gen_tx_tb;
         end
         pr("position limit");
 
-        // ============================================================
-        // TEST 9: Opposing direction at position limit
-        //   At pos=500, SELL should be allowed (reduces risk).
-        // ============================================================
         $display("\n--- TEST 9: SELL allowed at max long position ---");
         fb = fail_count;
         reset_cap();
@@ -478,15 +379,11 @@ module order_gen_tx_tb;
 
         wait_cd();
 
-        // ============================================================
-        // TEST 10: SELL price floor (actual_price < PRICE_OFFSET)
-        //   When actual_price is very low, SELL price floors at 1.
-        // ============================================================
         $display("\n--- TEST 10: SELL price floor ---");
         fb = fail_count;
         reset_cap();
 
-        fire_trade(1'b1, 32'd5, 64'd0);    // actual=5, offset=10 → would underflow
+        fire_trade(1'b1, 32'd5, 64'd0);
         wait_pkt(timed_out);
 
         if (timed_out) begin
@@ -500,9 +397,6 @@ module order_gen_tx_tb;
 
         wait_cd();
 
-        // ============================================================
-        // TEST 11: Order ID continues incrementing
-        // ============================================================
         $display("\n--- TEST 11: OID sequence ---");
         fb = fail_count;
         begin
@@ -515,7 +409,7 @@ module order_gen_tx_tb;
 
             if (timed_out) begin fail_count++; end
             else begin
-                // OID should be expected_cnt + 1 (since OIDs start at 1)
+
                 $display("    OID in packet: %0d (expected %0d)",
                          cap_u64_le(58), expected_cnt + 1);
                 chk_eq("oid", cap_u64_le(58), 64'(expected_cnt + 1));
@@ -523,9 +417,6 @@ module order_gen_tx_tb;
         end
         pr("OID sequence");
 
-        // ============================================================
-        // Summary
-        // ============================================================
         repeat(4) @(posedge clk);
         $display("");
         $display("  ╔═════════════════════════════════════════════════════════════╗");
@@ -540,9 +431,6 @@ module order_gen_tx_tb;
         $finish;
     end
 
-    // ----------------------------------------------------------------
-    // Watchdog
-    // ----------------------------------------------------------------
     initial begin
         #500_000;
         $display("\nFATAL: Simulation watchdog timeout");

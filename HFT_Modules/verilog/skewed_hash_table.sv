@@ -1,35 +1,3 @@
-// ============================================================================
-// skewed_hash_table.sv
-//
-// Parameterizable N-way skewed (cuckoo) hash table for FPGA.
-//
-// Architecture
-// ------------
-//   N independent BRAM tables, each with its own hash function.
-//   Lookup :  2-cycle pipelined, throughput-1.  All N BRAMs are read in
-//             parallel via port A; stored keys are compared and the
-//             matching value is muxed out.
-//   Insert :  Multi-cycle state machine via BRAM port B.
-//             Cuckoo eviction with configurable max chain depth.
-//   Delete :  Multi-cycle via the same state machine (port B).
-//
-// BRAM ports
-// ----------
-//   Port A (read-only)  — lookup pipeline.  Never stalls.
-//   Port B (read/write) — insert / delete controller.
-//
-// Hash function
-// -------------
-//   CRC32 (IEEE 802.3, polynomial 0x04C11DB7) with per-way initial
-//   values as seeds.  Bit-serial LFSR, result XOR-folded to IDX_W.
-//
-// Reset
-// -----
-//   After rst_n deasserts the controller clears every valid bit
-//   (TBL_ENTRIES cycles).  `ready` is low until the sweep completes.
-//
-// ============================================================================
-
 module skewed_hash_table #(
     parameter KEY_W       = 32,
     parameter VALUE_W     = 64,
@@ -42,14 +10,12 @@ module skewed_hash_table #(
 
     output logic                  ready,
 
-    // Lookup — 2-cycle pipeline, 1/cycle throughput
     input  logic                  lookup_valid,
     input  logic [KEY_W-1:0]      lookup_key,
     output logic                  lookup_result_valid,
     output logic                  lookup_hit,
     output logic [VALUE_W-1:0]    lookup_value,
 
-    // Insert
     input  logic                  insert_valid,
     input  logic [KEY_W-1:0]      insert_key,
     input  logic [VALUE_W-1:0]    insert_value,
@@ -57,7 +23,6 @@ module skewed_hash_table #(
     output logic                  insert_done,
     output logic                  insert_fail,
 
-    // Delete
     input  logic                  delete_valid,
     input  logic [KEY_W-1:0]      delete_key,
     output logic                  delete_ready,
@@ -65,25 +30,18 @@ module skewed_hash_table #(
     output logic                  delete_not_found
 );
 
-    // =================================================================
-    // Derived constants
-    // =================================================================
     localparam IDX_W   = $clog2(TBL_ENTRIES);
-    localparam ENTRY_W = 1 + KEY_W + VALUE_W;        // {valid, key, value}
+    localparam ENTRY_W = 1 + KEY_W + VALUE_W;
     localparam WAY_W   = (N_WAYS > 1) ? $clog2(N_WAYS) : 1;
     localparam CHN_W   = $clog2(MAX_CHAIN + 1);
 
-    // Entry bit-field positions
     localparam V_BIT  = KEY_W + VALUE_W;
     localparam KEY_HI = KEY_W + VALUE_W - 1;
     localparam KEY_LO = VALUE_W;
     localparam VAL_HI = VALUE_W - 1;
     localparam VAL_LO = 0;
 
-    // =================================================================
-    // CRC32 polynomial and per-way initial values (seeds)
-    // =================================================================
-    localparam [31:0] CRC32_POLY = 32'h04C1_1DB7;   // IEEE 802.3
+    localparam [31:0] CRC32_POLY = 32'h04C1_1DB7;
 
     localparam [31:0] CRC_INIT_0 = 32'hFFFF_FFFF;
     localparam [31:0] CRC_INIT_1 = 32'h1EDC_6F41;
@@ -94,9 +52,6 @@ module skewed_hash_table #(
     localparam [31:0] CRC_INIT_6 = 32'hE306_9283;
     localparam [31:0] CRC_INIT_7 = 32'hF4AC_FB13;
 
-    // =================================================================
-    // Hash function — CRC32 with per-way seed, XOR-folded to IDX_W
-    // =================================================================
     function automatic [IDX_W-1:0] hash_fn(
         input [KEY_W-1:0]      key,
         input logic [WAY_W-1:0] way
@@ -105,7 +60,6 @@ module skewed_hash_table #(
         logic              xor_bit;
         logic [IDX_W-1:0] folded;
 
-        // Select per-way initial CRC value
         case (way)
             0: crc = CRC_INIT_0;
             1: crc = CRC_INIT_1;
@@ -117,14 +71,12 @@ module skewed_hash_table #(
             default: crc = CRC_INIT_7;
         endcase
 
-        // Bit-serial CRC32 computation (MSB first)
         for (int b = KEY_W - 1; b >= 0; b--) begin
             xor_bit = crc[31] ^ key[b];
             crc = {crc[30:0], 1'b0};
             if (xor_bit) crc = crc ^ CRC32_POLY;
         end
 
-        // XOR-fold 32-bit CRC to index width
         folded = '0;
         for (int b = 0; b < 32; b++)
             folded[b % IDX_W] = folded[b % IDX_W] ^ crc[b];
@@ -132,11 +84,6 @@ module skewed_hash_table #(
         return folded;
     endfunction
 
-    // =================================================================
-    // BRAM storage — N tables, true dual-port
-    //   Port A : lookup reads   (addr_a, rdata_a)
-    //   Port B : ctrl read/write (addr_b, rdata_b, wdata_b, wen_b)
-    // =================================================================
     logic [IDX_W-1:0]   bram_addr_a  [N_WAYS];
     logic [ENTRY_W-1:0] bram_rdata_a [N_WAYS];
 
@@ -163,23 +110,11 @@ module skewed_hash_table #(
         end
     endgenerate
 
-
-    // =================================================================
-    // Lookup pipeline  (port A only — never stalls)
-    //
-    //   Cycle 0 : hash computed, BRAM addr driven    (combinational)
-    //   Cycle 1 : BRAM data ready, key compare + mux (combinational)
-    //             pipeline reg captures {valid, key}
-    //   Cycle 2 : output register
-    // =================================================================
-
-    // Stage 0: drive BRAM read addresses
     always_comb begin
         for (int w = 0; w < N_WAYS; w++)
             bram_addr_a[w] = hash_fn(lookup_key, w);
     end
 
-    // Pipeline register: stage 0 -> 1
     logic             s1_valid;
     logic [KEY_W-1:0] s1_key;
 
@@ -191,7 +126,6 @@ module skewed_hash_table #(
         s1_key <= lookup_key;
     end
 
-    // Stage 1: compare stored keys, select hit (combinational)
     logic               s1_hit;
     logic [VALUE_W-1:0] s1_value;
 
@@ -207,7 +141,6 @@ module skewed_hash_table #(
         end
     end
 
-    // Output register: stage 1 -> 2
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             lookup_result_valid <= 1'b0;
@@ -220,9 +153,6 @@ module skewed_hash_table #(
         end
     end
 
-    // =================================================================
-    // Controller FSM — insert / delete  (port B)
-    // =================================================================
     typedef enum logic [3:0] {
         ST_CLEAR,
         ST_IDLE,
@@ -237,19 +167,15 @@ module skewed_hash_table #(
 
     state_t              state_r;
 
-    // Operation context
     logic                op_is_insert_r;
     logic [KEY_W-1:0]    op_key_r;
     logic [VALUE_W-1:0]  op_value_r;
 
-    // Clear counter
     logic [IDX_W-1:0]    clear_addr_r;
 
-    // Write target (latched in ST_COMPARE)
     logic [WAY_W-1:0]    sel_way_r;
     logic [IDX_W-1:0]    sel_idx_r;
 
-    // Eviction context
     logic                needs_evict_r;
     logic [KEY_W-1:0]    evict_key_r;
     logic [VALUE_W-1:0]  evict_value_r;
@@ -257,9 +183,6 @@ module skewed_hash_table #(
     logic [IDX_W-1:0]    evict_dst_idx_r;
     logic [CHN_W-1:0]    chain_cnt_r;
 
-    // -----------------------------------------------------------------
-    // Combinational: scan port-B read data  (used in ST_COMPARE)
-    // -----------------------------------------------------------------
     logic              cmp_found_existing;
     logic              cmp_found_empty;
     logic [WAY_W-1:0]  cmp_sel_way;
@@ -271,7 +194,6 @@ module skewed_hash_table #(
         cmp_sel_way        = '0;
         cmp_sel_idx        = hash_fn(op_key_r, 0);
 
-        // Priority: existing match first
         for (int w = 0; w < N_WAYS; w++) begin
             if (bram_rdata_b[w][V_BIT] &&
                 bram_rdata_b[w][KEY_HI:KEY_LO] == op_key_r) begin
@@ -281,7 +203,6 @@ module skewed_hash_table #(
             end
         end
 
-        // Then first empty slot
         if (!cmp_found_existing) begin
             for (int w = 0; w < N_WAYS; w++) begin
                 if (!bram_rdata_b[w][V_BIT] && !cmp_found_empty) begin
@@ -293,15 +214,9 @@ module skewed_hash_table #(
         end
     end
 
-    // -----------------------------------------------------------------
-    // Combinational: check eviction destination slot (ST_EVICT_DECIDE)
-    // -----------------------------------------------------------------
     logic evict_slot_empty;
     assign evict_slot_empty = !bram_rdata_b[evict_dst_way_r][V_BIT];
 
-    // -----------------------------------------------------------------
-    // Port B address / write-data / write-enable mux
-    // -----------------------------------------------------------------
     always_comb begin
         for (int w = 0; w < N_WAYS; w++) begin
             bram_addr_b[w]  = '0;
@@ -313,7 +228,7 @@ module skewed_hash_table #(
             ST_CLEAR: begin
                 for (int w = 0; w < N_WAYS; w++) begin
                     bram_addr_b[w]  = clear_addr_r;
-                    bram_wdata_b[w] = '0;               // valid = 0
+                    bram_wdata_b[w] = '0;
                     bram_wen_b[w]   = 1'b1;
                 end
             end
@@ -326,8 +241,8 @@ module skewed_hash_table #(
             ST_WRITE: begin
                 bram_addr_b[sel_way_r]  = sel_idx_r;
                 bram_wdata_b[sel_way_r] = op_is_insert_r
-                    ? {1'b1, op_key_r, op_value_r}      // insert: valid = 1
-                    : '0;                                // delete: valid = 0
+                    ? {1'b1, op_key_r, op_value_r}
+                    : '0;
                 bram_wen_b[sel_way_r]   = 1'b1;
             end
 
@@ -345,9 +260,6 @@ module skewed_hash_table #(
         endcase
     end
 
-    // -----------------------------------------------------------------
-    // State machine — sequential
-    // -----------------------------------------------------------------
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state_r         <= ST_CLEAR;
@@ -368,14 +280,12 @@ module skewed_hash_table #(
             delete_done     <= 1'b0;
             delete_not_found <= 1'b0;
         end else begin
-            // Clear single-cycle pulses
             insert_done      <= 1'b0;
             insert_fail      <= 1'b0;
             delete_done      <= 1'b0;
             delete_not_found <= 1'b0;
 
             case (state_r)
-                // =====================================================
                 ST_CLEAR: begin
                     if (clear_addr_r == IDX_W'(TBL_ENTRIES - 1))
                         state_r <= ST_IDLE;
@@ -383,7 +293,6 @@ module skewed_hash_table #(
                         clear_addr_r <= clear_addr_r + 1'b1;
                 end
 
-                // =====================================================
                 ST_IDLE: begin
                     needs_evict_r <= 1'b0;
                     chain_cnt_r   <= '0;
@@ -399,24 +308,18 @@ module skewed_hash_table #(
                     end
                 end
 
-                // =====================================================
                 ST_READ: state_r <= ST_WAIT;
 
-                // =====================================================
                 ST_WAIT: state_r <= ST_COMPARE;
 
-                // =====================================================
                 ST_COMPARE: begin
                     sel_way_r <= cmp_sel_way;
                     sel_idx_r <= cmp_sel_idx;
 
                     if (op_is_insert_r) begin
                         if (cmp_found_existing || cmp_found_empty) begin
-                            // Direct insert or update
                             state_r <= ST_WRITE;
                         end else begin
-                            // All ways occupied — cuckoo eviction
-                            // Displace way 0, move its occupant to way 1
                             sel_way_r       <= '0;
                             sel_idx_r       <= hash_fn(op_key_r, 0);
                             evict_key_r     <= bram_rdata_b[0][KEY_HI:KEY_LO];
@@ -431,7 +334,6 @@ module skewed_hash_table #(
                             state_r         <= ST_WRITE;
                         end
                     end else begin
-                        // Delete
                         if (cmp_found_existing)
                             state_r <= ST_WRITE;
                         else begin
@@ -441,7 +343,6 @@ module skewed_hash_table #(
                     end
                 end
 
-                // =====================================================
                 ST_WRITE: begin
                     if (needs_evict_r) begin
                         state_r <= ST_EVICT_READ;
@@ -452,30 +353,22 @@ module skewed_hash_table #(
                     end
                 end
 
-                // =====================================================
                 ST_EVICT_READ: state_r <= ST_EVICT_WAIT;
 
-                // =====================================================
                 ST_EVICT_WAIT: state_r <= ST_EVICT_DECIDE;
 
-                // =====================================================
                 ST_EVICT_DECIDE: begin
                     if (evict_slot_empty) begin
-                        // Victim placed — done
-                        // (write driven combinationally above)
                         insert_done   <= 1'b1;
                         needs_evict_r <= 1'b0;
                         chain_cnt_r   <= '0;
                         state_r       <= ST_IDLE;
                     end else if (chain_cnt_r >= CHN_W'(MAX_CHAIN)) begin
-                        // Chain exhausted — fail
                         insert_fail   <= 1'b1;
                         needs_evict_r <= 1'b0;
                         chain_cnt_r   <= '0;
                         state_r       <= ST_IDLE;
                     end else begin
-                        // Cascade: save displaced entry, write current victim
-                        // (write driven combinationally above)
                         evict_key_r     <= bram_rdata_b[evict_dst_way_r][KEY_HI:KEY_LO];
                         evict_value_r   <= bram_rdata_b[evict_dst_way_r][VAL_HI:VAL_LO];
                         evict_dst_way_r <= WAY_W'((evict_dst_way_r + 1) % N_WAYS);
@@ -488,15 +381,11 @@ module skewed_hash_table #(
                     end
                 end
 
-                // =====================================================
                 default: state_r <= ST_IDLE;
             endcase
         end
     end
 
-    // =================================================================
-    // Handshake outputs
-    // =================================================================
     assign ready        = (state_r == ST_IDLE);
     assign insert_ready = (state_r == ST_IDLE);
     assign delete_ready = (state_r == ST_IDLE);

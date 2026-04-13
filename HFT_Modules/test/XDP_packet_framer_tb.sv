@@ -1,17 +1,5 @@
 `timescale 1ns/1ps
 
-// ============================================================
-// xdp_packet_framer_tb.sv
-//
-// Verifies that the framer correctly strips the 58-byte
-// header and realigns the XDP message payload to byte lane 0.
-//
-// Header: 58 bytes = 7 full beats + 2 leftover in beat 7
-//   Beat 7: bytes 56-57 = header, bytes 58-63 = payload[0:5]
-//
-// After framing, output byte 0 should be the first XDP message
-// byte (MsgSize LSB at original packet byte 58).
-// ============================================================
 module xdp_packet_framer_tb;
 
     localparam DATA_W    = 64;
@@ -52,28 +40,21 @@ module xdp_packet_framer_tb;
     initial clk = 0;
     always #2 clk = ~clk;
 
-    // ----------------------------------------------------------------
-    // Packet buffer
-    // ----------------------------------------------------------------
     logic [PKT_BITS-1:0] pkt_buf;
     integer              pkt_len;
 
-    // Build a packet with known header (0xFF) and incrementing payload
     task build_test_pkt(input integer payload_len);
         integer i;
         pkt_buf = '0;
-        // Fill 58-byte header with 0xFF
+
         for (i = 0; i < 58; i++)
             pkt_buf[i*8 +: 8] = 8'hFF;
-        // Fill payload with incrementing bytes 0xA0, 0xA1, ...
+
         for (i = 0; i < payload_len; i++)
             pkt_buf[(58+i)*8 +: 8] = 8'hA0 + i[7:0];
         pkt_len = 58 + payload_len;
     endtask
 
-    // ----------------------------------------------------------------
-    // AXI-Stream sender
-    // ----------------------------------------------------------------
     task axis_send(input integer idle_cycles);
         integer beats_total, remainder, bt, bk, bi, bthis;
         logic [63:0] bd;
@@ -112,9 +93,6 @@ module xdp_packet_framer_tb;
         s_axis_tlast  = 1'b0;
     endtask
 
-    // ----------------------------------------------------------------
-    // Output capture
-    // ----------------------------------------------------------------
     logic [PKT_BITS-1:0] out_buf;
     integer              out_byte_count;
     integer              out_beat_count;
@@ -140,9 +118,6 @@ module xdp_packet_framer_tb;
         out_last_seen  = 1'b0;
     endtask
 
-    // ----------------------------------------------------------------
-    // Main
-    // ----------------------------------------------------------------
     integer fail_count;
 
     initial begin
@@ -159,17 +134,11 @@ module xdp_packet_framer_tb;
         rst_n = 1;
         repeat(2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 1: 39-byte payload (XDP Add Order size)
-        // Total: 58 + 39 = 97 bytes = 13 beats
-        // Expected output: 39 bytes of payload, starting with 0xA0
-        // ============================================================
         $display("\n=== TEST 1: 39-byte payload (back-to-back) ===");
         reset_capture();
         build_test_pkt(39);
         axis_send(0);
 
-        // Wait for output
         repeat(30) @(posedge clk); #1;
 
         $display("  Output: %0d bytes, %0d beats, last=%b",
@@ -179,7 +148,6 @@ module xdp_packet_framer_tb;
             $display("FAIL t1a: tlast never seen"); fail_count++;
         end
 
-        // Check first few output bytes
         begin
             logic ok;
             ok = 1;
@@ -200,9 +168,6 @@ module xdp_packet_framer_tb;
 
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 2: Same with idle gaps
-        // ============================================================
         $display("\n=== TEST 2: 39-byte payload with idle gaps ===");
         reset_capture();
         build_test_pkt(39);
@@ -227,11 +192,6 @@ module xdp_packet_framer_tb;
 
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 3: Tiny payload (6 bytes — fits in boundary beat remainder)
-        // Total: 58 + 6 = 64 bytes = 8 beats exactly
-        // Payload sits entirely in beat 7 (bytes 58-63)
-        // ============================================================
         $display("\n=== TEST 3: 6-byte payload (boundary beat only) ===");
         reset_capture();
         build_test_pkt(6);
@@ -247,12 +207,9 @@ module xdp_packet_framer_tb;
 
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 4: Two back-to-back packets
-        // ============================================================
         $display("\n=== TEST 4: Two consecutive packets ===");
         reset_capture();
-        build_test_pkt(25);  // Delete Order size
+        build_test_pkt(25);
         axis_send(0);
         repeat(30) @(posedge clk); #1;
 
@@ -275,9 +232,6 @@ module xdp_packet_framer_tb;
             fail_count++;
         end
 
-        // ============================================================
-        // Summary
-        // ============================================================
         repeat(4) @(posedge clk);
         $display("\n========================================");
         if (fail_count == 0)

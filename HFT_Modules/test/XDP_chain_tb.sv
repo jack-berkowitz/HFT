@@ -1,15 +1,6 @@
 `timescale 1ns/1ps
 `include "sys_defs.svh"
-// ============================================================
-// xdp_chain_tb.sv
-//
-// Full-chain testbench:
-//   ipv4_udp_port_filter → xdp_packet_framer → xdp_msg_demux
-//
-// Output: pillar_msg_t struct (sys_defs.svh)
-//   msg_type: 3-bit encoded (0=Add, 1=Mod, 2=Del, 3=Exec, 4=Repl)
-//   side:     1-bit (0=Buy, 1=Sell)
-// ============================================================
+
 module xdp_chain_tb;
 
     localparam DATA_W    = 64;
@@ -18,24 +9,17 @@ module xdp_chain_tb;
     localparam PKT_BITS  = MAX_PKT_B * 8;
     localparam [15:0] XDP_PORT = 16'd11101;
 
-    // ----------------------------------------------------------------
-    // DUT signals
-    // ----------------------------------------------------------------
     logic              clk, rst_n;
     logic [DATA_W-1:0] s_axis_tdata;
     logic [KEEP_W-1:0] s_axis_tkeep;
     logic              s_axis_tvalid, s_axis_tlast, s_axis_tready;
     pillar_msg_t       decoded;
 
-    // Internal wires
     logic [63:0] filt2frm_tdata;  logic [7:0] filt2frm_tkeep;
     logic        filt2frm_tvalid, filt2frm_tlast, filt2frm_tready;
     logic [63:0] frm2dmx_tdata;   logic [7:0] frm2dmx_tkeep;
     logic        frm2dmx_tvalid, frm2dmx_tlast, frm2dmx_tready;
 
-    // ----------------------------------------------------------------
-    // DUT chain
-    // ----------------------------------------------------------------
     ipv4_udp_port_filter #(.FILTER_PORT(XDP_PORT)) u_filter (
         .clk(clk), .rst_n(rst_n),
         .s_axis_tdata(s_axis_tdata),   .s_axis_tkeep(s_axis_tkeep),
@@ -64,15 +48,9 @@ module xdp_chain_tb;
         .out_msg(decoded)
     );
 
-    // ----------------------------------------------------------------
-    // Clock
-    // ----------------------------------------------------------------
     initial clk = 0;
     always #2 clk = ~clk;
 
-    // ----------------------------------------------------------------
-    // Pipeline debug monitors (set debug_en=1 to enable)
-    // ----------------------------------------------------------------
     logic debug_en;
     initial debug_en = 0;
 
@@ -89,11 +67,6 @@ module xdp_chain_tb;
         $display("  [DMX STATE] %0tps st=%0d bcnt=%0d type=%0d",
                  $time, u_demux.state_r, u_demux.beat_cnt_r, u_demux.msg_type_r);
 
-    // ================================================================
-    //  PRETTY PRINT HELPERS
-    // ================================================================
-
-    // Encoded 3-bit msg_type → human-readable name
     function string msg_type_name(input [2:0] t);
         case (t)
             `MSG_ADD:  return "ADD ORDER";
@@ -105,7 +78,6 @@ module xdp_chain_tb;
         endcase
     endfunction
 
-    // Wire 16-bit msg_type → human-readable (for INPUT display)
     function string wire_msg_type_name(input [15:0] t);
         case (t)
             16'd100: return "ADD ORDER";
@@ -117,12 +89,10 @@ module xdp_chain_tb;
         endcase
     endfunction
 
-    // 1-bit side → string
     function string side_str(input logic s);
         return s ? "SELL" : "BUY";
     endfunction
 
-    // ASCII side → string (for INPUT display)
     function string wire_side_str(input [7:0] s);
         case (s)
             "B":     return "BUY";
@@ -131,7 +101,6 @@ module xdp_chain_tb;
         endcase
     endfunction
 
-    // Print what we injected (shows wire-format values)
     task print_input(
         input string     test_name,
         input [15:0]     msg_type,
@@ -164,7 +133,6 @@ module xdp_chain_tb;
         $display("  ├─────────────────────────────────────────────────────────────┤");
     endtask
 
-    // Print what the demux decoded (shows encoded values)
     task print_output();
         $display("  │ OUTPUT (pillar_msg_t — encoded)                            │");
         $display("  │   .valid         : %0d", decoded.valid);
@@ -203,9 +171,6 @@ module xdp_chain_tb;
         $display("  └─────────────────────────────────────────────────────────────┘");
     endtask
 
-    // ----------------------------------------------------------------
-    // Packet buffer helpers
-    // ----------------------------------------------------------------
     logic [PKT_BITS-1:0] pkt_buf;
     integer              pkt_len;
 
@@ -226,9 +191,6 @@ module xdp_chain_tb;
         for (int kk = 0; kk < 8; kk++) pkt_buf[(idx+kk)*8 +: 8] = val[kk*8 +: 8];
     endtask
 
-    // ----------------------------------------------------------------
-    // Network + XDP packet header builders
-    // ----------------------------------------------------------------
     task build_net_hdr(input integer udp_payload_len);
         integer ip_total_len, udp_total_len;
         ip_total_len  = 20 + 8 + udp_payload_len;
@@ -265,9 +227,6 @@ module xdp_chain_tb;
         pkt_write_u32_le(66, sym); pkt_write_u32_le(70, ssn); pkt_write_u64_le(74, oid);
     endtask
 
-    // ----------------------------------------------------------------
-    // Per-type packet builders
-    // ----------------------------------------------------------------
     task build_add_order(input [31:0] seq, input [63:0] oid, input [31:0] price,
                          input [31:0] qty, input [31:0] sym, input [7:0] side);
         localparam SZ = 39;
@@ -318,9 +277,6 @@ module xdp_chain_tb;
         pkt_len = 42+16+SZ;
     endtask
 
-    // ----------------------------------------------------------------
-    // AXI-Stream Master BFM
-    // ----------------------------------------------------------------
     task axis_send(input integer idle_cycles);
         integer bt, bk, bi, bthis, beats_total, remainder;
         logic [63:0] bd; logic [7:0] bkp;
@@ -342,9 +298,6 @@ module xdp_chain_tb;
         s_axis_tvalid = 0; s_axis_tlast = 0; s_axis_tkeep = '0; s_axis_tdata = '0;
     endtask
 
-    // ----------------------------------------------------------------
-    // Wait for decoded.valid
-    // ----------------------------------------------------------------
     task automatic wait_decoded(output logic timed_out);
         integer t; timed_out = 0; t = 0;
         while (!decoded.valid && t < 400) begin @(posedge clk); #1; t++; end
@@ -352,9 +305,6 @@ module xdp_chain_tb;
         else @(posedge clk); #1;
     endtask
 
-    // ----------------------------------------------------------------
-    // Scoreboard
-    // ----------------------------------------------------------------
     integer fail_count, msg_count, field_errs;
 
     task check_3(input string nm, input [2:0] got, exp);
@@ -373,17 +323,11 @@ module xdp_chain_tb;
         if (got !== exp) begin $display("  │   ** MISMATCH %s: got %0d, expected %0d", nm, got, exp); field_errs++; fail_count++; end
     endtask
 
-    // ----------------------------------------------------------------
-    // VCD
-    // ----------------------------------------------------------------
     initial begin
         $dumpfile("xdp_chain_dump.vcd");
         $dumpvars(0, xdp_chain_tb);
     end
 
-    // ----------------------------------------------------------------
-    // Main test sequence
-    // ----------------------------------------------------------------
     initial begin
         logic timed_out;
 
@@ -402,9 +346,6 @@ module xdp_chain_tb;
         rst_n = 0; repeat(4) @(posedge clk); #1;
         rst_n = 1; repeat(2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 1: Add Order (wire 100 → encoded 0)
-        // ============================================================
         field_errs = 0;
         build_add_order(32'd1001, 64'hDEAD_0000_0000_0001,
                         32'd98750, 32'd100, 32'd12345, "B");
@@ -424,9 +365,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 2: Modify Order (wire 101 → encoded 1)
-        // ============================================================
         field_errs = 0;
         build_mod_order(32'd1002, 64'hBEEF_0000_0000_0002,
                         32'd100500, 32'd250, 32'd12345);
@@ -445,9 +383,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 3: Delete Order (wire 102 → encoded 2)
-        // ============================================================
         field_errs = 0;
         build_del_order(32'd1003, 64'hCAFE_DEAD_BEEF_0003, 32'd42);
         print_input("TEST 3: Delete Order", 16'd102, 32'd42,
@@ -465,9 +400,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 4: Order Execution (wire 103 → encoded 3)
-        // ============================================================
         field_errs = 0;
         build_exec_order(32'd1004, 64'h1111_2222_3333_4444,
                          32'd77777, 32'd55000, 32'd50, 32'd9999);
@@ -488,9 +420,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 5: Replace Order (wire 104 → encoded 4)
-        // ============================================================
         field_errs = 0;
         build_replace_order(32'd1005, 64'hAAAA_BBBB_CCCC_DDDD,
                             64'hEEEE_FFFF_0000_1111,
@@ -512,9 +441,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 6: Wrong UDP port — dropped
-        // ============================================================
         build_add_order(32'd1006, 64'hFFFF, 32'd1, 32'd1, 32'd1, "B");
         pkt_write_byte(36, 8'hDE); pkt_write_byte(37, 8'hAD);
         $display("");
@@ -528,9 +454,6 @@ module xdp_chain_tb;
         print_drop_result(!decoded.valid);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 7: Add Order with idle gaps (side = SELL)
-        // ============================================================
         field_errs = 0;
         build_add_order(32'd1007, 64'h7777_8888_9999_AAAA,
                         32'd123456, 32'd75, 32'd321, "S");
@@ -549,9 +472,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 8: Back-to-back Add → Delete
-        // ============================================================
         $display("");
         $display("  ┌─────────────────────────────────────────────────────────────┐");
         $display("  │ TEST 8: Back-to-back Add -> Delete                         │");
@@ -584,9 +504,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 9: Full lifecycle — Add → Modify → Exec → Delete
-        // ============================================================
         $display("");
         $display("  ┌─────────────────────────────────────────────────────────────┐");
         $display("  │ TEST 9: Full order lifecycle                               │");
@@ -645,9 +562,6 @@ module xdp_chain_tb;
         print_result(field_errs);
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 10: Add → Replace → Delete
-        // ============================================================
         $display("");
         $display("  ┌─────────────────────────────────────────────────────────────┐");
         $display("  │ TEST 10: Cancel-Replace flow                               │");
@@ -697,9 +611,6 @@ module xdp_chain_tb;
         end
         print_result(field_errs);
 
-        // ============================================================
-        // Summary
-        // ============================================================
         repeat(4) @(posedge clk);
         $display("");
         $display("  ╔═════════════════════════════════════════════════════════════╗");

@@ -31,7 +31,7 @@ module adder_tb;
   task automatic test_add(input [31:0] a, b, input [31:0] expected);
       input_a = a;
       input_b = b;
-      // Wait for DUT to acknowledge inputs and produce output
+
       @(posedge clk iff output_z_stb);
       if (output_z === expected)
           $display("@@@ Passed: 0x%h + 0x%h = 0x%h", a, b, output_z);
@@ -56,9 +56,9 @@ module adder_tb;
     input_b_stb  = 1'b1;
     output_z_ack = 1'b1;
 
-  test_add(32'h3f800000, 32'h3f800000, 32'h40000000); // 1.0 + 1.0 = 2.0
-  test_add(32'h3f000000, 32'h3f000000, 32'h3f800000); // 0.5 + 0.5 = 1.0
-  test_add(32'h3f000000, 32'hbf000000, 32'h00000000); // 0.5 + (-0.5) = 0.0
+  test_add(32'h3f800000, 32'h3f800000, 32'h40000000);
+  test_add(32'h3f000000, 32'h3f000000, 32'h3f800000);
+  test_add(32'h3f000000, 32'hbf000000, 32'h00000000);
 
     $finish;
   end

@@ -1,48 +1,22 @@
 `timescale 1ns/1ps
 
-// ============================================================================
-// skewed_hash_table_tb.sv
-//
-// Module-level testbench for skewed_hash_table.sv
-// Hash function: CRC32 (IEEE 802.3, poly 0x04C11DB7) with per-way seeds
-//
-// Tests:
-//   1. Post-reset ready
-//   2. Single insert + lookup hit
-//   3. Lookup miss on empty table
-//   4. Multiple inserts + lookup all
-//   5. Update existing key with new value
-//   6. Delete + verify miss
-//   7. Back-to-back lookups (pipeline throughput)
-//   8. Fill all ways for one index (force cuckoo eviction)
-//   9. Insert after delete (reuse slot)
-// ============================================================================
-
 module skewed_hash_table_tb;
 
-    // ----------------------------------------------------------------
-    // DUT parameters
-    // ----------------------------------------------------------------
     localparam KEY_W       = 32;
     localparam VALUE_W     = 64;
     localparam N_WAYS      = 4;
-    localparam TBL_ENTRIES = 2;       // Small for fast simulation
+    localparam TBL_ENTRIES = 2;
     localparam MAX_CHAIN   = 8;
 
-    // ----------------------------------------------------------------
-    // DUT signals
-    // ----------------------------------------------------------------
     logic                  clk, rst_n;
     logic                  ready;
 
-    // Lookup
     logic                  lookup_valid;
     logic [KEY_W-1:0]      lookup_key;
     logic                  lookup_result_valid;
     logic                  lookup_hit;
     logic [VALUE_W-1:0]    lookup_value;
 
-    // Insert
     logic                  insert_valid;
     logic [KEY_W-1:0]      insert_key;
     logic [VALUE_W-1:0]    insert_value;
@@ -50,16 +24,12 @@ module skewed_hash_table_tb;
     logic                  insert_done;
     logic                  insert_fail;
 
-    // Delete
     logic                  delete_valid;
     logic [KEY_W-1:0]      delete_key;
     logic                  delete_ready;
     logic                  delete_done;
     logic                  delete_not_found;
 
-    // ----------------------------------------------------------------
-    // DUT instantiation
-    // ----------------------------------------------------------------
     skewed_hash_table #(
         .KEY_W       (KEY_W),
         .VALUE_W     (VALUE_W),
@@ -91,30 +61,17 @@ module skewed_hash_table_tb;
         .delete_not_found   (delete_not_found)
     );
 
-    // ----------------------------------------------------------------
-    // Clock: 250 MHz
-    // ----------------------------------------------------------------
     initial clk = 0;
     always #2 clk = ~clk;
 
-    // ----------------------------------------------------------------
-    // VCD dump
-    // ----------------------------------------------------------------
     initial begin
         $dumpfile("skewed_hash_table_tb.vcd");
         $dumpvars(0, skewed_hash_table_tb);
     end
 
-    // ----------------------------------------------------------------
-    // Scoreboard
-    // ----------------------------------------------------------------
     integer fail_count;
     integer test_num;
 
-    // ----------------------------------------------------------------
-    // Lookup result capture FIFO (for back-to-back tests)
-    // Runs continuously; reset cap_wr before each batch.
-    // ----------------------------------------------------------------
     logic               cap_hits   [0:31];
     logic [VALUE_W-1:0] cap_values [0:31];
     integer             cap_wr;
@@ -127,11 +84,6 @@ module skewed_hash_table_tb;
         end
     end
 
-    // ----------------------------------------------------------------
-    // Helper tasks
-    // ----------------------------------------------------------------
-
-    // Wait for ready to assert (with timeout)
     task wait_ready;
         input integer timeout;
         integer cnt;
@@ -146,7 +98,6 @@ module skewed_hash_table_tb;
         end
     endtask
 
-    // Insert a key/value pair and wait for completion
     task do_insert;
         input [KEY_W-1:0]    key;
         input [VALUE_W-1:0]  value;
@@ -163,7 +114,6 @@ module skewed_hash_table_tb;
         @(posedge clk); #1;
         insert_valid <= 1'b0;
 
-        // Wait for insert_done or insert_fail
         timeout = 0;
         while (!insert_done && !insert_fail && timeout < 500) begin
             @(posedge clk); #1;
@@ -181,14 +131,12 @@ module skewed_hash_table_tb;
         end
     endtask
 
-    // Lookup a key, wait for result, return hit/value
     task do_lookup;
         input  [KEY_W-1:0]    key;
         output logic           hit;
         output [VALUE_W-1:0]   value;
         integer timeout;
 
-        // Lookup uses the pipelined path — no need to wait for ready
         @(posedge clk); #1;
         lookup_valid <= 1'b1;
         lookup_key   <= key;
@@ -196,7 +144,6 @@ module skewed_hash_table_tb;
         @(posedge clk); #1;
         lookup_valid <= 1'b0;
 
-        // Wait for lookup_result_valid
         timeout = 0;
         while (!lookup_result_valid && timeout < 20) begin
             @(posedge clk); #1;
@@ -214,7 +161,6 @@ module skewed_hash_table_tb;
         end
     endtask
 
-    // Delete a key and wait for completion
     task do_delete;
         input  [KEY_W-1:0]    key;
         output logic           found;
@@ -229,7 +175,6 @@ module skewed_hash_table_tb;
         @(posedge clk); #1;
         delete_valid <= 1'b0;
 
-        // Wait for delete_done or delete_not_found
         timeout = 0;
         while (!delete_done && !delete_not_found && timeout < 500) begin
             @(posedge clk); #1;
@@ -245,7 +190,6 @@ module skewed_hash_table_tb;
         end
     endtask
 
-    // Check a lookup result against expected values
     task check_lookup;
         input [KEY_W-1:0]    key;
         input logic          exp_hit;
@@ -269,16 +213,12 @@ module skewed_hash_table_tb;
         end
     endtask
 
-    // ----------------------------------------------------------------
-    // Main test sequence
-    // ----------------------------------------------------------------
     logic        ins_ok;
     logic        del_ok;
     logic        lu_hit;
     logic [VALUE_W-1:0] lu_val;
     integer      i;
 
-    // Keys and values for multi-insert test
     logic [KEY_W-1:0]   test_keys   [0:7];
     logic [VALUE_W-1:0] test_values [0:7];
 
@@ -287,7 +227,6 @@ module skewed_hash_table_tb;
         test_num     = 0;
         cap_wr       = 0;
 
-        // Default signal states
         lookup_valid = 1'b0;
         lookup_key   = '0;
         insert_valid = 1'b0;
@@ -296,7 +235,6 @@ module skewed_hash_table_tb;
         delete_valid = 1'b0;
         delete_key   = '0;
 
-        // Populate test data
         test_keys[0] = 32'h0000_1001; test_values[0] = 64'hAAAA_BBBB_CCCC_0001;
         test_keys[1] = 32'h0000_2002; test_values[1] = 64'hAAAA_BBBB_CCCC_0002;
         test_keys[2] = 32'h0000_3003; test_values[2] = 64'hAAAA_BBBB_CCCC_0003;
@@ -306,20 +244,13 @@ module skewed_hash_table_tb;
         test_keys[6] = 32'h0000_7007; test_values[6] = 64'hAAAA_BBBB_CCCC_0007;
         test_keys[7] = 32'h0000_8008; test_values[7] = 64'hAAAA_BBBB_CCCC_0008;
 
-        // ============================================================
-        // Reset
-        // ============================================================
         rst_n = 0;
         repeat (4) @(posedge clk); #1;
         rst_n = 1;
 
-        // Wait for post-reset BRAM clear to finish
         wait_ready(TBL_ENTRIES + 20);
         $display("\n=== Table ready after reset clear ===\n");
 
-        // ============================================================
-        // TEST 1: Post-reset ready
-        // ============================================================
         test_num = 1;
         $display("=== TEST %0d: Post-reset ready ===", test_num);
         if (ready)
@@ -331,18 +262,12 @@ module skewed_hash_table_tb;
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 2: Lookup miss on empty table
-        // ============================================================
         test_num = 2;
         $display("\n=== TEST %0d: Lookup miss on empty table ===", test_num);
         check_lookup(32'hDEAD_BEEF, 1'b0, '0);
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 3: Single insert + lookup hit
-        // ============================================================
         test_num = 3;
         $display("\n=== TEST %0d: Single insert + lookup hit ===", test_num);
         do_insert(test_keys[0], test_values[0], ins_ok);
@@ -353,17 +278,12 @@ module skewed_hash_table_tb;
             $display("  Insert key=%h value=%h done", test_keys[0], test_values[0]);
         end
 
-        // Now look it up
         check_lookup(test_keys[0], 1'b1, test_values[0]);
 
-        // Verify a different key still misses
         check_lookup(32'hFFFF_FFFF, 1'b0, '0);
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 4: Multiple inserts + lookup all
-        // ============================================================
         test_num = 4;
         $display("\n=== TEST %0d: Multiple inserts + lookup all ===", test_num);
 
@@ -376,37 +296,27 @@ module skewed_hash_table_tb;
         end
         $display("  Inserted keys 1..7");
 
-        // Verify all 8 keys (including key 0 from test 3)
         for (i = 0; i < 8; i = i + 1) begin
             check_lookup(test_keys[i], 1'b1, test_values[i]);
         end
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 5: Update existing key with new value
-        // ============================================================
         test_num = 5;
         $display("\n=== TEST %0d: Update existing key ===", test_num);
 
-        // Re-insert key 0 with a different value
         do_insert(test_keys[0], 64'hFE00_DEAD_BEEF_CAFE, ins_ok);
         if (!ins_ok) begin
             $display("  FAIL: update insert unsuccessful");
             fail_count = fail_count + 1;
         end
 
-        // Lookup should return the new value
         check_lookup(test_keys[0], 1'b1, 64'hFE00_DEAD_BEEF_CAFE);
 
-        // Other keys should be unaffected
         check_lookup(test_keys[1], 1'b1, test_values[1]);
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 6: Delete + verify miss
-        // ============================================================
         test_num = 6;
         $display("\n=== TEST %0d: Delete + verify miss ===", test_num);
 
@@ -418,17 +328,12 @@ module skewed_hash_table_tb;
             $display("  Deleted key=%h", test_keys[2]);
         end
 
-        // Verify it misses now
         check_lookup(test_keys[2], 1'b0, '0);
 
-        // Verify other keys still hit
         check_lookup(test_keys[3], 1'b1, test_values[3]);
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 7: Delete non-existent key
-        // ============================================================
         test_num = 7;
         $display("\n=== TEST %0d: Delete non-existent key ===", test_num);
 
@@ -442,11 +347,6 @@ module skewed_hash_table_tb;
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 8: Back-to-back lookups (pipeline throughput)
-        //   Issue lookups on consecutive cycles, verify all results
-        //   arrive in order via the capture FIFO (always block).
-        // ============================================================
         test_num = 8;
         $display("\n=== TEST %0d: Back-to-back lookups ===", test_num);
         begin
@@ -458,14 +358,12 @@ module skewed_hash_table_tb;
 
             bb_keys[0] = test_keys[0]; bb_exp_hit[0] = 1'b1; bb_exp_val[0] = 64'hFE00_DEAD_BEEF_CAFE;
             bb_keys[1] = test_keys[1]; bb_exp_hit[1] = 1'b1; bb_exp_val[1] = test_values[1];
-            bb_keys[2] = test_keys[2]; bb_exp_hit[2] = 1'b0; bb_exp_val[2] = '0;  // deleted
+            bb_keys[2] = test_keys[2]; bb_exp_hit[2] = 1'b0; bb_exp_val[2] = '0;
             bb_keys[3] = test_keys[3]; bb_exp_hit[3] = 1'b1; bb_exp_val[3] = test_values[3];
             bb_keys[4] = test_keys[4]; bb_exp_hit[4] = 1'b1; bb_exp_val[4] = test_values[4];
 
-            // Record capture FIFO position before issuing
             bb_base = cap_wr;
 
-            // Issue lookups on consecutive rising edges
             for (bb_idx = 0; bb_idx < 5; bb_idx = bb_idx + 1) begin
                 @(posedge clk); #1;
                 lookup_valid <= 1'b1;
@@ -474,10 +372,8 @@ module skewed_hash_table_tb;
             @(posedge clk); #1;
             lookup_valid <= 1'b0;
 
-            // Wait for pipeline to drain (2-cycle latency after last issue)
             repeat (4) @(posedge clk); #1;
 
-            // Verify captured results
             if ((cap_wr - bb_base) < 5) begin
                 $display("  FAIL: only %0d/5 lookup results captured", cap_wr - bb_base);
                 fail_count = fail_count + 1;
@@ -505,13 +401,9 @@ module skewed_hash_table_tb;
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 9: Insert after delete (reuse freed slot)
-        // ============================================================
         test_num = 9;
         $display("\n=== TEST %0d: Insert after delete (reuse slot) ===", test_num);
 
-        // Key 2 was deleted in test 6. Insert a new key.
         do_insert(32'hFACE_F00D, 64'h1234_5678_9ABC_DEF0, ins_ok);
         if (!ins_ok) begin
             $display("  FAIL: insert after delete unsuccessful");
@@ -520,15 +412,10 @@ module skewed_hash_table_tb;
 
         check_lookup(32'hFACE_F00D, 1'b1, 64'h1234_5678_9ABC_DEF0);
 
-        // Original deleted key should still miss
         check_lookup(test_keys[2], 1'b0, '0);
 
         repeat (2) @(posedge clk); #1;
 
-        // ============================================================
-        // TEST 10: Bulk insert — stress test with many keys
-        //   Insert 32 unique keys and verify all are retrievable.
-        // ============================================================
         test_num = 10;
         $display("\n=== TEST %0d: Bulk insert (32 keys) ===", test_num);
         begin
@@ -551,7 +438,6 @@ module skewed_hash_table_tb;
             $display("  Inserted %0d / 32 keys (%0d eviction failures)",
                 32 - bulk_fails, bulk_fails);
 
-            // Verify all successfully inserted keys
             for (i = 0; i < 32; i = i + 1) begin
                 do_lookup(32'hA000_0000 + i, lu_hit, lu_val);
                 if (lu_hit) begin
@@ -560,16 +446,13 @@ module skewed_hash_table_tb;
                         fail_count = fail_count + 1;
                     end
                 end
-                // Don't count misses as fails if insert itself failed
+
             end
             $display("  Bulk lookup verification complete");
         end
 
         repeat (4) @(posedge clk); #1;
 
-        // ============================================================
-        // Summary
-        // ============================================================
         $display("\n========================================");
         if (fail_count == 0)
             $display("ALL TESTS PASSED (%0d tests)", test_num);
@@ -579,9 +462,6 @@ module skewed_hash_table_tb;
         $finish;
     end
 
-    // ----------------------------------------------------------------
-    // Watchdog — kill simulation if it hangs
-    // ----------------------------------------------------------------
     initial begin
         #100_000;
         $display("\nFATAL: Simulation watchdog timeout");

@@ -1,33 +1,8 @@
 `timescale 1ns/1ps
 `include "sys_defs.svh"
-// ============================================================
-// hft_pipeline_tb.sv
-//
-// Full end-to-end integration test for the 7-stage HFT pipeline:
-//
-//   Network RX → ipv4_udp_port_filter → xdp_packet_framer →
-//   xdp_msg_demux → order_lookup (skewed_hash_table) →
-//   top_of_book → index_arb_engine → order_gen_tx → Network TX
-//
-// Parameterized for fast simulation:
-//   4 index components (symbols 0-3) + 1 index instrument (sym 4)
-//   Hash table: 128 entries (quick init)
-//   Short cooldown for order_gen_tx
-//
-// Test flow:
-//   Phase 1 — Initialize: reset, load weights, set threshold
-//   Phase 2 — Build book: 10 Add Orders (BUY+SELL per symbol)
-//             Verify: no trade signal, order book populated
-//   Phase 3 — Trigger: Modify component 0 bid 10000 → 12000
-//             Verify: SELL trade signal, output packet correct
-//   Phase 4 — Drop: wrong UDP port → no pipeline output
-//   Phase 5 — Recovery: valid Add after drop succeeds
-// ============================================================
+
 module hft_pipeline_tb;
 
-    // ----------------------------------------------------------------
-    // Test parameters
-    // ----------------------------------------------------------------
     localparam TB_N_COMP      = 4;
     localparam [8:0] TB_IDX   = 9'd4;
     localparam TB_N_SYMBOLS   = 8;
@@ -37,43 +12,32 @@ module hft_pipeline_tb;
     localparam TB_OFFSET      = 32'd10;
     localparam AW             = `ACCUM_W;
 
-    localparam [31:0] WEIGHT_Q = 32'd262144;         // 0.25 in Q12.20
-    localparam [63:0] THRESH   = 64'd104_857_600;    // 100 cents in Q44.20
+    localparam [31:0] WEIGHT_Q = 32'd262144;
+    localparam [63:0] THRESH   = 64'd104_857_600;
 
-    // Packet BFM
     localparam KEEP_W    = 8;
     localparam MAX_PKT_B = 256;
     localparam PKT_BITS  = MAX_PKT_B * 8;
     localparam [15:0] XDP_PORT = `XDP_PORT;
 
-    // ----------------------------------------------------------------
-    // Signals
-    // ----------------------------------------------------------------
     logic clk, rst_n;
 
-    // AXI-Stream RX input (BFM drives this)
     logic [63:0] rx_tdata;   logic [7:0] rx_tkeep;
     logic        rx_tvalid, rx_tlast, rx_tready;
 
-    // filter → framer
     logic [63:0] f2f_tdata;  logic [7:0] f2f_tkeep;
     logic        f2f_tvalid, f2f_tlast, f2f_tready;
 
-    // framer → demux
     logic [63:0] f2d_tdata;  logic [7:0] f2d_tkeep;
     logic        f2d_tvalid, f2d_tlast, f2d_tready;
 
-    // demux → order_lookup
     pillar_msg_t decoded;
 
-    // order_lookup
     order_lookup_out_t ol_out;
     logic              ol_ready;
 
-    // top_of_book
     tob_out_t tob;
 
-    // index_arb_engine
     trade_signal_t trade;
     logic [AW-1:0] idx_value;
     logic          wt_wr_en;
@@ -81,16 +45,12 @@ module hft_pipeline_tb;
     logic [31:0]   wt_wr_data;
     logic [AW-1:0] threshold;
 
-    // order_gen_tx output
     logic [63:0] tx_tdata;  logic [7:0] tx_tkeep;
     logic        tx_tvalid, tx_tlast;
     logic [31:0] order_count;
     logic signed [31:0] net_position;
     logic        pkt_sent;
 
-    // ----------------------------------------------------------------
-    // DUT instances
-    // ----------------------------------------------------------------
     ipv4_udp_port_filter #(.FILTER_PORT(XDP_PORT)) u_filter (
         .clk(clk), .rst_n(rst_n),
         .s_axis_tdata(rx_tdata),   .s_axis_tkeep(rx_tkeep),
@@ -168,23 +128,14 @@ module hft_pipeline_tb;
         .pkt_sent(pkt_sent)
     );
 
-    // ----------------------------------------------------------------
-    // Clock: 250 MHz
-    // ----------------------------------------------------------------
     initial clk = 0;
     always #2 clk = ~clk;
 
-    // ----------------------------------------------------------------
-    // VCD
-    // ----------------------------------------------------------------
     initial begin
         $dumpfile("hft_pipeline_dump.vcd");
         $dumpvars(0, hft_pipeline_tb);
     end
 
-    // ================================================================
-    // Packet buffer + BFM (reused from xdp_chain_tb)
-    // ================================================================
     logic [PKT_BITS-1:0] pkt_buf;
     integer pkt_len;
 
@@ -263,7 +214,6 @@ module hft_pipeline_tb;
         pkt_len = 42+16+SZ;
     endtask
 
-    // AXI-Stream master BFM
     task axis_send(input integer idle_cycles);
         integer bt, bk, bi, bthis, beats_total, remainder;
         logic [63:0] bd; logic [7:0] bkp;
@@ -285,15 +235,11 @@ module hft_pipeline_tb;
         rx_tvalid = 0; rx_tlast = 0; rx_tkeep = '0; rx_tdata = '0;
     endtask
 
-    // Send message and wait for full pipeline processing
     task send_and_settle;
         axis_send(0);
         repeat(60) @(posedge clk); #1;
     endtask
 
-    // ================================================================
-    // TX output packet capture
-    // ================================================================
     logic [7:0]  cap_buf [0:79];
     integer      cap_bytes;
     logic        cap_done;
@@ -319,9 +265,6 @@ module hft_pipeline_tb;
         return {cap_buf[off+3], cap_buf[off+2], cap_buf[off+1], cap_buf[off]};
     endfunction
 
-    // ================================================================
-    // Trade signal capture (latches first trade)
-    // ================================================================
     logic        trade_seen;
     logic        trade_dir_cap;
     logic signed [AW-1:0] trade_spread_cap;
@@ -343,9 +286,6 @@ module hft_pipeline_tb;
         trade_actual_cap = '0;
     endtask
 
-    // ================================================================
-    // Weight loading helper
-    // ================================================================
     task load_weight(input [8:0] addr, input [31:0] w);
         wt_wr_en   = 1'b1;
         wt_wr_addr = addr;
@@ -354,14 +294,8 @@ module hft_pipeline_tb;
         wt_wr_en = 1'b0;
     endtask
 
-    // ================================================================
-    // Scoreboard
-    // ================================================================
     integer fail_count;
 
-    // ================================================================
-    // Main test sequence
-    // ================================================================
     initial begin
         integer t;
         fail_count = 0;
@@ -380,16 +314,12 @@ module hft_pipeline_tb;
         $display("  ║          → index_arb_engine → order_gen_tx                 ║");
         $display("  ╚═════════════════════════════════════════════════════════════╝");
 
-        // ============================================================
-        // PHASE 1: Reset & Initialization
-        // ============================================================
         $display("\n--- PHASE 1: System initialization ---");
 
         rst_n = 0;
         repeat(6) @(posedge clk); #1;
         rst_n = 1;
 
-        // Wait for hash table clear → order_lookup ready
         t = 0;
         while (!ol_ready && t < 500) begin @(posedge clk); #1; t++; end
         if (t >= 500) begin
@@ -399,32 +329,17 @@ module hft_pipeline_tb;
             $display("    Hash table initialized, order_lookup ready (%0d cycles)", t);
         end
 
-        // Load equal weights (0.25 each, Q12.20)
         for (int i = 0; i < TB_N_COMP; i++)
             load_weight(i[8:0], WEIGHT_Q);
         $display("    Loaded %0d weights = %0d (0.25 in Q12.20)", TB_N_COMP, WEIGHT_Q);
 
-        // Set arb threshold
         threshold = THRESH;
         $display("    Threshold = %0d (100 cents in Q44.20)", THRESH);
 
         repeat(4) @(posedge clk); #1;
 
-        // ============================================================
-        // PHASE 2: Establish order book
-        //
-        //   Component 0: bid=10000 ask=10100 → mid=10050
-        //   Component 1: bid=20000 ask=20100 → mid=20050
-        //   Component 2: bid=30000 ask=30100 → mid=30050
-        //   Component 3: bid=40000 ask=40100 → mid=40050
-        //   Index (sym4): bid=25000 ask=25100 → mid=25050
-        //
-        //   Computed index = 0.25*(10050+20050+30050+40050) = 25050
-        //   Spread = 25050 - 25050 = 0  →  no trade
-        // ============================================================
         $display("\n--- PHASE 2: Build order book (10 Add Orders) ---");
 
-        // Component 0
         build_add_order(32'd1, 64'd1, 32'd10000, TB_QTY, 32'd0, "B");
         send_and_settle();
         $display("    [1]  sym=0 BUY  price=10000");
@@ -433,7 +348,6 @@ module hft_pipeline_tb;
         send_and_settle();
         $display("    [2]  sym=0 SELL price=10100  → mid=10050");
 
-        // Component 1
         build_add_order(32'd3, 64'd3, 32'd20000, TB_QTY, 32'd1, "B");
         send_and_settle();
         $display("    [3]  sym=1 BUY  price=20000");
@@ -442,7 +356,6 @@ module hft_pipeline_tb;
         send_and_settle();
         $display("    [4]  sym=1 SELL price=20100  → mid=20050");
 
-        // Component 2
         build_add_order(32'd5, 64'd5, 32'd30000, TB_QTY, 32'd2, "B");
         send_and_settle();
         $display("    [5]  sym=2 BUY  price=30000");
@@ -451,7 +364,6 @@ module hft_pipeline_tb;
         send_and_settle();
         $display("    [6]  sym=2 SELL price=30100  → mid=30050");
 
-        // Component 3
         build_add_order(32'd7, 64'd7, 32'd40000, TB_QTY, 32'd3, "B");
         send_and_settle();
         $display("    [7]  sym=3 BUY  price=40000");
@@ -460,7 +372,6 @@ module hft_pipeline_tb;
         send_and_settle();
         $display("    [8]  sym=3 SELL price=40100  → mid=40050");
 
-        // Index instrument (symbol 4)
         build_add_order(32'd9, 64'd9, 32'd25000, TB_QTY, 32'd4, "B");
         send_and_settle();
         $display("    [9]  sym=4 BUY  price=25000  (index bid)");
@@ -469,7 +380,6 @@ module hft_pipeline_tb;
         send_and_settle();
         $display("    [10] sym=4 SELL price=25100  (index ask, mid=25050)");
 
-        // -- Verify post-init state --
         $display("");
         $display("    ── Post-initialization ──");
         $display("    Index accum:  %0d", $signed(u_index.index_accum));
@@ -490,21 +400,6 @@ module hft_pipeline_tb;
             $display("    FAIL: actual_mid expected 25050, got %0d", u_index.actual_mid);
         end
 
-        // ============================================================
-        // PHASE 3: Trigger trade
-        //
-        //   Modify component 0's bid: 10000 → 12000
-        //   New mid = (12000 + 10100) / 2 = 11050
-        //   Delta   = 11050 - 10050 = 1000
-        //   Index delta = 1000 × 0.25 = 250 cents
-        //   New computed index = 25300, actual = 25050
-        //   Spread = 250 cents > 100 cents threshold → SELL
-        //
-        //   Expected output: SELL order packet
-        //     price  = 25050 - 10 = 25040
-        //     symbol = 4
-        //     qty    = 100
-        // ============================================================
         $display("\n--- PHASE 3: Trigger trade (Modify sym=0 bid → 12000) ---");
 
         reset_cap();
@@ -513,7 +408,6 @@ module hft_pipeline_tb;
         build_mod_order(32'd11, 64'd1, 32'd12000, TB_QTY, 32'd0);
         axis_send(0);
 
-        // Wait for output order packet
         t = 0;
         while (!pkt_sent && t < 300) begin @(posedge clk); #1; t++; end
 
@@ -526,7 +420,6 @@ module hft_pipeline_tb;
 
         repeat(5) @(posedge clk); #1;
 
-        // -- Verify trade signal --
         $display("");
         $display("    ── Trade signal ──");
         if (!trade_seen) begin
@@ -549,7 +442,6 @@ module hft_pipeline_tb;
             end
         end
 
-        // -- Verify output packet --
         $display("");
         $display("    ── Output packet (%0d bytes) ──", cap_bytes);
 
@@ -591,7 +483,6 @@ module hft_pipeline_tb;
             end
         end
 
-        // -- Verify counters --
         if (order_count !== 32'd1) begin
             fail_count++;
             $display("    FAIL: order_count=%0d, expected 1", order_count);
@@ -603,9 +494,6 @@ module hft_pipeline_tb;
 
         repeat(TB_COOLDOWN + 5) @(posedge clk); #1;
 
-        // ============================================================
-        // PHASE 4: Protocol drop (wrong UDP port)
-        // ============================================================
         $display("\n--- PHASE 4: Wrong UDP port → expect drop ---");
 
         reset_cap();
@@ -629,9 +517,6 @@ module hft_pipeline_tb;
             $display("    FAIL: trade signal fired for dropped packet");
         end
 
-        // ============================================================
-        // PHASE 5: Pipeline recovery after drop
-        // ============================================================
         $display("\n--- PHASE 5: Pipeline recovery after drop ---");
 
         build_add_order(32'd21, 64'd20, 32'd15000, 32'd50, 32'd0, "B");
@@ -647,9 +532,6 @@ module hft_pipeline_tb;
             $display("    Pipeline recovered, message processed (%0d cycles)", t);
         end
 
-        // ============================================================
-        // Summary
-        // ============================================================
         repeat(4) @(posedge clk);
         $display("");
         $display("  ╔═════════════════════════════════════════════════════════════╗");
@@ -664,9 +546,6 @@ module hft_pipeline_tb;
         $finish;
     end
 
-    // ----------------------------------------------------------------
-    // Watchdog
-    // ----------------------------------------------------------------
     initial begin
         #1_000_000;
         $display("\nFATAL: Simulation watchdog timeout");

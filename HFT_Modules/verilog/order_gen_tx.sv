@@ -1,42 +1,5 @@
 `include "sys_defs.svh"
-// ============================================================
-// order_gen_tx.sv
-//
-// Order generation and AXI-Stream TX path.
-//
-// When the index arbitrage engine fires a trade signal, this
-// module applies risk checks, constructs a UDP order-entry
-// packet, and serializes it as AXI-Stream beats for the
-// Corundum TX MAC.
-//
-// Packet format (74 bytes total):
-//   Ethernet  14 B
-//   IPv4      20 B  (header checksum computed at elaboration)
-//   UDP        8 B  (checksum = 0; offload to NIC)
-//   Order     32 B  (msg_type, side, symbol, price, qty,
-//                     client_oid, spread snapshot)
-//
-// 74 bytes / 8 B per beat = 10 beats (last beat: 2 valid bytes)
-//
-// Price logic:
-//   BUY  → price = actual_price + PRICE_OFFSET  (lift the ask)
-//   SELL → price = actual_price - PRICE_OFFSET  (hit the bid)
-//
-// Risk controls:
-//   - Cooldown timer between consecutive orders
-//   - Signed net-position limit
-//   - Global enable gate
-//
-// Order entry payload (32 bytes, little-endian fields):
-//   [0:1]   msg_type     = 0x0001 (NEW_ORDER)
-//   [2]     side         = 'B' (0x42) or 'S' (0x53)
-//   [3]     reserved
-//   [4:7]   symbol_id
-//   [8:11]  price
-//   [12:15] qty
-//   [16:23] client_oid   (incrementing 64-bit sequence)
-//   [24:31] spread_snap  (raw Q44.20 spread for audit trail)
-// ============================================================
+
 module order_gen_tx #(
     parameter [47:0] SRC_MAC       = 48'hDE_AD_BE_EF_CA_FE,
     parameter [47:0] DST_MAC       = 48'h01_00_5E_00_00_01,
@@ -56,34 +19,25 @@ module order_gen_tx #(
 
     input  trade_signal_t     in_trade,
 
-    // Master AXI-Stream (to NIC TX)
     output AXI_TDATA          m_axis_tdata,
     output AXI_TKEEP          m_axis_tkeep,
     output logic              m_axis_tvalid,
     output logic              m_axis_tlast,
     input  logic              m_axis_tready,
 
-    // Status / monitoring
     output logic [31:0]       order_count,
     output logic signed [31:0] net_position,
     output logic              pkt_sent
 );
 
-    // ================================================================
-    // Constants
-    // ================================================================
     localparam N_BEATS   = 10;
     localparam LAST_BEAT = N_BEATS - 1;
     localparam BEAT_W    = 4;
 
     localparam [15:0] ORDER_MSG_NEW = 16'h0001;
-    localparam [15:0] IP_TOTAL_LEN  = 16'd60;    // 20 + 8 + 32
-    localparam [15:0] UDP_LEN       = 16'd40;     //  8 + 32
+    localparam [15:0] IP_TOTAL_LEN  = 16'd60;
+    localparam [15:0] UDP_LEN       = 16'd40;
 
-    // ================================================================
-    // IPv4 header checksum — constant since all header fields are
-    // parameters.  Computed at elaboration time.
-    // ================================================================
     function automatic [15:0] compute_ip_csum(input [31:0] sip, dip);
         logic [31:0] s;
         s = 32'h4500 + {16'd0, IP_TOTAL_LEN} + 32'h0000 +
@@ -97,9 +51,6 @@ module order_gen_tx #(
 
     localparam [15:0] IP_CSUM = compute_ip_csum(SRC_IP, DST_IP);
 
-    // ================================================================
-    // FSM
-    // ================================================================
     typedef enum logic [0:0] {
         S_IDLE = 1'b0,
         S_SEND = 1'b1
@@ -108,23 +59,14 @@ module order_gen_tx #(
     state_t            state_r;
     logic [BEAT_W-1:0] beat_r;
 
-    // ================================================================
-    // Latched order fields (captured in S_IDLE, stable during S_SEND)
-    // ================================================================
-    logic        lat_dir;           // 0=BUY, 1=SELL
+    logic        lat_dir;
     logic [31:0] lat_price;
     logic [63:0] lat_spread;
     logic [63:0] lat_oid;
 
-    // ================================================================
-    // Cooldown counter
-    // ================================================================
     logic [31:0] cd_cnt;
     wire         cd_ok = (cd_cnt == 32'd0);
 
-    // ================================================================
-    // Position-limit check
-    // ================================================================
     logic signed [31:0] next_pos;
     logic               pos_ok;
 
@@ -136,36 +78,13 @@ module order_gen_tx #(
                  (next_pos <=  $signed(MAX_POS));
     end
 
-    // ================================================================
-    // Order-ID sequence generator
-    // ================================================================
     logic [63:0] oid_seq;
 
-    // ================================================================
-    // Byte-packing helper
-    //   b0 → tdata[7:0]   (lowest wire address)
-    //   b7 → tdata[63:56]  (highest wire address)
-    // ================================================================
     function automatic [63:0] pk(
         input [7:0] b0, b1, b2, b3, b4, b5, b6, b7);
         return {b7, b6, b5, b4, b3, b2, b1, b0};
     endfunction
 
-    // ================================================================
-    // Per-beat packet construction (combinational)
-    //
-    // Byte layout:
-    //   Beat 0 [ 0: 7] dst_mac[5:0], src_mac[1:0]
-    //   Beat 1 [ 8:15] src_mac[5:2], ethertype, ipv4 ver/tos
-    //   Beat 2 [16:23] ipv4 len/id/flags/ttl/proto
-    //   Beat 3 [24:31] ipv4 csum, src_ip, dst_ip[1:0]
-    //   Beat 4 [32:39] dst_ip[3:2], udp sport/dport/len
-    //   Beat 5 [40:47] udp csum, order msg_type/side/rsvd/sym[1:0]
-    //   Beat 6 [48:55] sym[3:2], price, qty[1:0]
-    //   Beat 7 [56:63] qty[3:2], client_oid[5:0]
-    //   Beat 8 [64:71] client_oid[7:6], spread[5:0]
-    //   Beat 9 [72:73] spread[7:6]  (2 valid bytes, tlast)
-    // ================================================================
     logic [63:0] beat_data;
     logic [7:0]  beat_keep;
     logic        beat_last;
@@ -238,17 +157,11 @@ module order_gen_tx #(
         endcase
     end
 
-    // ================================================================
-    // AXI-Stream output
-    // ================================================================
     assign m_axis_tdata  = beat_data;
     assign m_axis_tkeep  = (state_r == S_SEND) ? beat_keep : '0;
     assign m_axis_tvalid = (state_r == S_SEND);
     assign m_axis_tlast  = (state_r == S_SEND) && beat_last;
 
-    // ================================================================
-    // FSM + sequential logic
-    // ================================================================
     always_ff @(posedge clk) begin
         if (!rst_n) begin
             state_r      <= S_IDLE;
@@ -269,7 +182,6 @@ module order_gen_tx #(
                 cd_cnt <= cd_cnt - 32'd1;
 
             case (state_r)
-                // =====================================================
                 S_IDLE: begin
                     if (in_trade.valid && enable && cd_ok && pos_ok) begin
                         lat_dir    <= in_trade.direction;
@@ -289,7 +201,6 @@ module order_gen_tx #(
                     end
                 end
 
-                // =====================================================
                 S_SEND: begin
                     if (m_axis_tready) begin
                         if (beat_r == BEAT_W'(LAST_BEAT)) begin

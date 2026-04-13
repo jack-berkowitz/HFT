@@ -1,27 +1,3 @@
-// ============================================================================
-// order_lookup.sv
-//
-// Order hash-table controller for Pillar message types 0-4.
-//
-// Assumes `include "sys_defs.svh" provides:
-//   pillar_msg_t, order_lookup_out_t, hash_entry_t
-//   `MSG_ADD  .. `MSG_REPL
-//
-// Instantiates a skewed_hash_table with:
-//   Key   = order_id           (64 bits)
-//   Value = {price, qty, side} (65 bits packed)
-//
-// Message handling:
-//   Add     (0) : Insert order_id -> {price, qty, side}.  No prior lookup.
-//   Modify  (1) : Lookup order_id; overwrite price/qty, preserve side.
-//   Delete  (2) : Lookup order_id; remove entry.
-//   Exec    (3) : Lookup order_id; subtract executed qty.
-//                  qty == 0 -> remove; else update in place.
-//   Replace (4) : Lookup old order_id; delete old; insert new_order_id
-//                  with new price/qty and old side.
-//
-// ============================================================================
-
 `include "sys_defs.svh"
 
 module order_lookup #(
@@ -39,20 +15,13 @@ module order_lookup #(
     output order_lookup_out_t out
 );
 
-    // =================================================================
-    // Hash table dimensioning
-    // =================================================================
-    localparam KEY_W   = 64;              // order_id
-    localparam VALUE_W = 32 + 32 + 1;     // price + qty + side = 65
+    localparam KEY_W   = 64;
+    localparam VALUE_W = 32 + 32 + 1;
 
-    // Value bit-field positions
-    localparam P_HI  = 64, P_LO = 33;    // price [64:33]
-    localparam Q_HI  = 32, Q_LO =  1;    // qty   [32:1]
-    localparam S_BIT = 0;                 // side  [0]
+    localparam P_HI  = 64, P_LO = 33;
+    localparam Q_HI  = 32, Q_LO =  1;
+    localparam S_BIT = 0;
 
-    // =================================================================
-    // Value packing helper
-    // =================================================================
     function automatic [VALUE_W-1:0] pack_val(
         input [31:0] price,
         input [31:0] qty,
@@ -61,9 +30,6 @@ module order_lookup #(
         return {price, qty, side};
     endfunction
 
-    // =================================================================
-    // Hash table instance
-    // =================================================================
     logic                  ht_ready;
 
     logic                  ht_lu_valid;
@@ -116,9 +82,6 @@ module order_lookup #(
         .delete_not_found    (ht_del_not_found)
     );
 
-    // =================================================================
-    // Exec remaining-qty computation (combinational)
-    // =================================================================
     logic [31:0] exec_remaining;
 
     always_comb begin
@@ -128,9 +91,6 @@ module order_lookup #(
             exec_remaining = 32'd0;
     end
 
-    // =================================================================
-    // Controller FSM
-    // =================================================================
     typedef enum logic [3:0] {
         ST_IDLE,
         ST_LOOKUP,
@@ -156,9 +116,6 @@ module order_lookup #(
 
     logic                repl_pending_r;
 
-    // -----------------------------------------------------------------
-    // Hash-table signal drive (combinational)
-    // -----------------------------------------------------------------
     always_comb begin
         ht_lu_valid  = 1'b0;
         ht_lu_key    = '0;
@@ -189,9 +146,6 @@ module order_lookup #(
         endcase
     end
 
-    // -----------------------------------------------------------------
-    // State machine (sequential)
-    // -----------------------------------------------------------------
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state_r        <= ST_IDLE;
@@ -208,7 +162,6 @@ module order_lookup #(
             out.valid <= 1'b0;
 
             case (state_r)
-                // =====================================================
                 ST_IDLE: begin
                     if (msg_in.valid && ht_ready) begin
                         msg_r          <= msg_in;
@@ -230,17 +183,14 @@ module order_lookup #(
                     end
                 end
 
-                // =====================================================
                 ST_LOOKUP: begin
                     state_r <= ST_LU_PIPE;
                 end
 
-                // =====================================================
                 ST_LU_PIPE: begin
                     state_r <= ST_LU_LATCH;
                 end
 
-                // =====================================================
                 ST_LU_LATCH: begin
                     lu_hit_r   <= ht_lu_hit;
                     lu_price_r <= ht_lu_hit ? ht_lu_value[P_HI:P_LO] : '0;
@@ -248,7 +198,6 @@ module order_lookup #(
                     lu_side_r  <= ht_lu_hit ? ht_lu_value[S_BIT]      : 1'b0;
 
                     case (msg_r.msg_type)
-                        // -----------------------------------------
                         `MSG_MOD: begin
                             if (ht_lu_hit) begin
                                 wr_key_r <= msg_r.order_id;
@@ -263,7 +212,6 @@ module order_lookup #(
                             end
                         end
 
-                        // -----------------------------------------
                         `MSG_DEL: begin
                             if (ht_lu_hit) begin
                                 wr_key_r <= msg_r.order_id;
@@ -273,7 +221,6 @@ module order_lookup #(
                             end
                         end
 
-                        // -----------------------------------------
                         `MSG_EXEC: begin
                             if (ht_lu_hit) begin
                                 if (exec_remaining == 32'd0) begin
@@ -293,7 +240,6 @@ module order_lookup #(
                             end
                         end
 
-                        // -----------------------------------------
                         `MSG_REPL: begin
                             if (ht_lu_hit) begin
                                 wr_key_r       <= msg_r.order_id;
@@ -310,24 +256,20 @@ module order_lookup #(
                             end
                         end
 
-                        // -----------------------------------------
                         default: state_r <= ST_EMIT;
                     endcase
                 end
 
-                // =====================================================
                 ST_INSERT: begin
                     if (ht_ins_ready)
                         state_r <= ST_WAIT_OP;
                 end
 
-                // =====================================================
                 ST_DELETE: begin
                     if (ht_del_ready)
                         state_r <= ST_WAIT_OP;
                 end
 
-                // =====================================================
                 ST_WAIT_OP: begin
                     if (ht_ins_done || ht_ins_fail ||
                         ht_del_done || ht_del_not_found) begin
@@ -347,7 +289,6 @@ module order_lookup #(
                     end
                 end
 
-                // =====================================================
                 ST_EMIT: begin
                     out.valid       <= 1'b1;
                     out.pillar_msg  <= msg_r;
@@ -359,13 +300,11 @@ module order_lookup #(
                     state_r         <= ST_IDLE;
                 end
 
-                // =====================================================
                 default: state_r <= ST_IDLE;
             endcase
         end
     end
 
-    // =================================================================
     assign ready = (state_r == ST_IDLE) && ht_ready;
 
 endmodule
