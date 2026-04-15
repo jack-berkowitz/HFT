@@ -148,6 +148,7 @@ module index_arb_engine #(
     logic               s0_valid;
     logic               s0_is_index;
     logic               s0_is_component;
+    logic               s0_in_component_range;
     logic [SYMW-1:0]    s0_sym;
     logic [31:0]        s0_new_mid;
     logic signed [32:0] s0_delta;
@@ -160,12 +161,16 @@ module index_arb_engine #(
         s0_two_sided  = (in_tob.best_bid.qty != 32'd0) &&
                         (in_tob.best_ask.qty != 32'd0);
         s0_is_index   = (in_tob.symbol_idx == IDX_SYM[SYMW-1:0]);
+        s0_in_component_range = (in_tob.symbol_idx < SYMW'(N_COMPONENTS));
         s0_is_component = ready && in_tob.valid && !s0_is_index &&
-                          s0_two_sided &&
-                          (in_tob.symbol_idx < SYMW'(N_COMPONENTS));
-        s0_delta      = $signed({1'b0, s0_new_mid}) -
+                          s0_two_sided && s0_in_component_range;
+        s0_delta      = '0;
+        s0_weight     = '0;
+        if (s0_in_component_range) begin
+            s0_delta  = $signed({1'b0, s0_new_mid}) -
                         $signed({1'b0, old_mid[s0_sym]});
-        s0_weight     = weight_tbl[s0_sym];
+            s0_weight = weight_tbl[s0_sym];
+        end
         s0_valid      = ready && in_tob.valid;
     end
 
@@ -198,22 +203,6 @@ module index_arb_engine #(
             // Zero-extend {1'b0, weight} = 33-bit unsigned to 64 bits
             s1_mplier       <= {{(AW-33){1'b0}}, 1'b0, s0_weight};
         end
-    end
-
-    // Update old_mid at end of stage 0 (registered)
-    always_ff @(posedge clk) begin
-`ifndef SYNTH
-        if (!rst_n) begin
-            for (int i = 0; i < N_COMPONENTS; i++)
-                old_mid[i] <= 32'd0;
-        end else if (s0_is_component) begin
-            old_mid[s0_sym] <= s0_new_mid;
-        end
-`else
-        if (s0_is_component) begin
-            old_mid[s0_sym] <= s0_new_mid;
-        end
-`endif
     end
 
     // ----------------------------------------------------------------
@@ -370,8 +359,12 @@ module index_arb_engine #(
 `ifndef SYNTH
         if (!rst_n) begin
             ready <= 1'b0;
+            for (int i = 0; i < N_COMPONENTS; i++)
+                old_mid[i] <= 32'd0;
         end else begin
             ready <= 1'b1;
+            if (s0_is_component)
+                old_mid[s0_sym] <= s0_new_mid;
         end
 `else
         if (!rst_n) begin
@@ -387,6 +380,8 @@ module index_arb_engine #(
             end
         end else begin
             ready <= 1'b1;
+            if (s0_is_component)
+                old_mid[s0_sym] <= s0_new_mid;
         end
 `endif
     end
