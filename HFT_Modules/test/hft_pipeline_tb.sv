@@ -72,10 +72,12 @@ module hft_pipeline_tb;
 
     // top_of_book
     tob_out_t tob;
+    logic     tob_ready;
 
     // index_arb_engine
     trade_signal_t trade;
     logic [AW-1:0] idx_value;
+    logic          index_ready;
     logic          wt_wr_en;
     logic [8:0]    wt_wr_addr;
     logic [31:0]   wt_wr_data;
@@ -133,6 +135,7 @@ module hft_pipeline_tb;
     ) u_tob (
         .clk(clk), .rst_n(rst_n),
         .in_update(ol_out),
+        .ready(tob_ready),
         .out_tob(tob)
     );
 
@@ -146,6 +149,7 @@ module hft_pipeline_tb;
         .wt_wr_addr(wt_wr_addr),
         .wt_wr_data(wt_wr_data),
         .threshold(threshold),
+        .ready(index_ready),
         .out_trade(trade),
         .out_index(idx_value)
     );
@@ -398,6 +402,14 @@ module hft_pipeline_tb;
         end else begin
             $display("    Hash table initialized, order_lookup ready (%0d cycles)", t);
         end
+
+        $display("    Waiting for top_of_book ready...");
+        wait (tob_ready);
+        $display("    top_of_book ready");
+
+        $display("    Waiting for index_arb_engine ready...");
+        wait (index_ready);
+        $display("    index_arb_engine ready");
 
         // Load equal weights (0.25 each, Q12.20)
         for (int i = 0; i < TB_N_COMP; i++)

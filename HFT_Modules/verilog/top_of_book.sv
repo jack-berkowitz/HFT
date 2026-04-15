@@ -35,16 +35,23 @@ module top_of_book #(
 
     input  order_lookup_out_t in_update,
 
+    output logic              ready,
     output tob_out_t          out_tob
 );
 
     localparam SYM_W = $clog2(N_SYMBOLS);
+    localparam LVL_W = (N_LEVELS > 1) ? $clog2(N_LEVELS) : 1;
 
     // ----------------------------------------------------------------
     // Book storage — register arrays
     // ----------------------------------------------------------------
     price_level_t bid_book [N_SYMBOLS][N_LEVELS];
     price_level_t ask_book [N_SYMBOLS][N_LEVELS];
+
+`ifdef SYNTH
+    logic [SYM_W-1:0] clear_sym_r;
+    logic [LVL_W-1:0] clear_lvl_r;
+`endif
 
     // ----------------------------------------------------------------
     // Input decode — extract fields from order_lookup_out_t
@@ -242,7 +249,8 @@ module top_of_book #(
     // ----------------------------------------------------------------
     // Write back — update register file on clock edge
     // ----------------------------------------------------------------
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge rst_n) begin
+`ifndef SYNTH
         if (!rst_n) begin
             for (int s = 0; s < N_SYMBOLS; s++)
                 for (int l = 0; l < N_LEVELS; l++) begin
@@ -251,6 +259,37 @@ module top_of_book #(
                     ask_book[s][l].price <= 32'd0;
                     ask_book[s][l].qty   <= 32'd0;
                 end
+            ready <= 1'b0;
+        end else begin
+            ready <= 1'b1;
+            if (sym_valid) begin
+                if (is_bid) begin
+                    for (int l = 0; l < N_LEVELS; l++)
+                        bid_book[sym][l] <= after_add[l];
+                end else begin
+                    for (int l = 0; l < N_LEVELS; l++)
+                        ask_book[sym][l] <= after_add[l];
+                end
+            end
+        end
+`else
+        if (!rst_n) begin
+            ready        <= 1'b0;
+            clear_sym_r  <= '0;
+            clear_lvl_r  <= '0;
+        end else if (!ready) begin
+            bid_book[clear_sym_r][clear_lvl_r] <= '0;
+            ask_book[clear_sym_r][clear_lvl_r] <= '0;
+
+            if ((clear_sym_r == SYM_W'(N_SYMBOLS - 1)) &&
+                (clear_lvl_r == LVL_W'(N_LEVELS - 1))) begin
+                ready <= 1'b1;
+            end else if (clear_lvl_r == LVL_W'(N_LEVELS - 1)) begin
+                clear_lvl_r <= '0;
+                clear_sym_r  <= clear_sym_r + 1'b1;
+            end else begin
+                clear_lvl_r <= clear_lvl_r + 1'b1;
+            end
         end else if (sym_valid) begin
             if (is_bid) begin
                 for (int l = 0; l < N_LEVELS; l++)
@@ -260,6 +299,7 @@ module top_of_book #(
                     ask_book[sym][l] <= after_add[l];
             end
         end
+`endif
     end
 
     // ----------------------------------------------------------------
@@ -268,8 +308,10 @@ module top_of_book #(
     // and the registered value for the other side.
     // Pulses valid for one cycle per accepted update.
     // ----------------------------------------------------------------
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            out_tob <= '0;
+        end else if (!ready) begin
             out_tob <= '0;
         end else begin
             out_tob.valid      <= sym_valid;

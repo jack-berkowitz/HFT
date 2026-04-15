@@ -79,6 +79,8 @@ module index_arb_engine #(
     // Spread threshold (unsigned, in Q44.20 fixed-point)
     input  logic [`ACCUM_W-1:0]       threshold,
 
+    output logic                       ready,
+
     // Trade signal output
     output trade_signal_t              out_trade,
 
@@ -113,16 +115,26 @@ module index_arb_engine #(
     // Tracked actual index instrument mid-price
     logic [31:0]          actual_mid;
 
+`ifdef SYNTH
+    logic [SYMW-1:0]      clear_mid_r;
+`endif
+
     // ----------------------------------------------------------------
     // Weight load port
     // ----------------------------------------------------------------
     always_ff @(posedge clk) begin
+`ifndef SYNTH
         if (!rst_n) begin
             for (int i = 0; i < N_COMPONENTS; i++)
                 weight_tbl[i] <= '0;
         end else if (wt_wr_en && wt_wr_addr < SYMW'(N_COMPONENTS)) begin
             weight_tbl[wt_wr_addr] <= wt_wr_data;
         end
+`else
+        if (wt_wr_en && wt_wr_addr < SYMW'(N_COMPONENTS)) begin
+            weight_tbl[wt_wr_addr] <= wt_wr_data;
+        end
+`endif
     end
 
     // ----------------------------------------------------------------
@@ -148,13 +160,13 @@ module index_arb_engine #(
         s0_two_sided  = (in_tob.best_bid.qty != 32'd0) &&
                         (in_tob.best_ask.qty != 32'd0);
         s0_is_index   = (in_tob.symbol_idx == IDX_SYM[SYMW-1:0]);
-        s0_is_component = in_tob.valid && !s0_is_index &&
+        s0_is_component = ready && in_tob.valid && !s0_is_index &&
                           s0_two_sided &&
                           (in_tob.symbol_idx < SYMW'(N_COMPONENTS));
         s0_delta      = $signed({1'b0, s0_new_mid}) -
                         $signed({1'b0, old_mid[s0_sym]});
         s0_weight     = weight_tbl[s0_sym];
-        s0_valid      = in_tob.valid;
+        s0_valid      = ready && in_tob.valid;
     end
 
     // Pipeline register: Stage 0 → Stage 1
@@ -190,12 +202,18 @@ module index_arb_engine #(
 
     // Update old_mid at end of stage 0 (registered)
     always_ff @(posedge clk) begin
+`ifndef SYNTH
         if (!rst_n) begin
             for (int i = 0; i < N_COMPONENTS; i++)
                 old_mid[i] <= 32'd0;
         end else if (s0_is_component) begin
             old_mid[s0_sym] <= s0_new_mid;
         end
+`else
+        if (s0_is_component) begin
+            old_mid[s0_sym] <= s0_new_mid;
+        end
+`endif
     end
 
     // ----------------------------------------------------------------
@@ -330,6 +348,9 @@ module index_arb_engine #(
         if (!rst_n) begin
             index_accum <= '0;
             actual_mid  <= '0;
+        end else if (!ready) begin
+            index_accum <= '0;
+            actual_mid  <= '0;
         end else begin
             if (mp3_is_component)
                 index_accum <= index_accum + $signed(mp3_product);
@@ -337,6 +358,37 @@ module index_arb_engine #(
             if (mp3_is_index)
                 actual_mid <= mp3_new_mid;
         end
+    end
+
+    // ----------------------------------------------------------------
+    // Startup clear / ready sequencing
+    //
+    // Synthesis clears old_mid one entry per cycle after reset so the
+    // reset path does not fan out across the entire table.
+    // ----------------------------------------------------------------
+    always_ff @(posedge clk or negedge rst_n) begin
+`ifndef SYNTH
+        if (!rst_n) begin
+            ready <= 1'b0;
+        end else begin
+            ready <= 1'b1;
+        end
+`else
+        if (!rst_n) begin
+            ready       <= 1'b0;
+            clear_mid_r <= '0;
+        end else if (!ready) begin
+            old_mid[clear_mid_r] <= 32'd0;
+
+            if (clear_mid_r == SYMW'(N_COMPONENTS - 1)) begin
+                ready <= 1'b1;
+            end else begin
+                clear_mid_r <= clear_mid_r + 1'b1;
+            end
+        end else begin
+            ready <= 1'b1;
+        end
+`endif
     end
 
     // Spread calculation and trade signal generation
@@ -367,6 +419,8 @@ module index_arb_engine #(
     // Output register
     always_ff @(posedge clk) begin
         if (!rst_n) begin
+            out_trade <= '0;
+        end else if (!ready) begin
             out_trade <= '0;
         end else begin
             out_trade.valid          <= mp3_valid && trade_fire;

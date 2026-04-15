@@ -33,6 +33,7 @@ module index_arb_engine_tb;
     localparam N_COMP = 4;       // mini-index for testing
 
     logic                  clk, rst_n;
+    logic                  ready;
     tob_out_t              tob_in;
     logic                  wt_wr_en;
     logic [SYMW-1:0]       wt_wr_addr;
@@ -52,6 +53,7 @@ module index_arb_engine_tb;
         .wt_wr_addr   (wt_wr_addr),
         .wt_wr_data   (wt_wr_data),
         .threshold    (threshold),
+        .ready        (ready),
         .out_trade    (trade_out),
         .out_index    (index_monitor)
     );
@@ -129,6 +131,7 @@ module index_arb_engine_tb;
 
         rst_n = 0; repeat(4) @(posedge clk); #1;
         rst_n = 1; repeat(2) @(posedge clk); #1;
+        wait (ready);
 
         // ============================================================
         // Load weights

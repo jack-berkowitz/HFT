@@ -476,6 +476,14 @@ module hft_pipeline_top_tb;
         wait(ol_ready);
         $display("  order_lookup ready — hash table initialised");
 
+        $display("  Waiting for top_of_book ready...");
+        wait (dut.u_tob.ready);
+        $display("  top_of_book ready");
+
+        $display("  Waiting for index_arb_engine ready...");
+        wait (dut.u_index_arb.ready);
+        $display("  index_arb_engine ready");
+
         // Load weights: 4 components, each 0.25
         load_weight(9'd0, WEIGHT_Q);
         load_weight(9'd1, WEIGHT_Q);

@@ -15,6 +15,7 @@ module top_of_book_tb;
     localparam SYM_W     = $clog2(N_SYMBOLS);
 
     logic                clk, rst_n;
+    logic                ready;
     order_lookup_out_t   update;
     tob_out_t            tob;
 
@@ -25,6 +26,7 @@ module top_of_book_tb;
         .clk       (clk),
         .rst_n     (rst_n),
         .in_update (update),
+        .ready     (ready),
         .out_tob   (tob)
     );
 
@@ -195,6 +197,7 @@ module top_of_book_tb;
 
         rst_n = 0; repeat(4) @(posedge clk); #1;
         rst_n = 1; repeat(2) @(posedge clk); #1;
+        wait (ready);
 
         // ============================================================
         // TEST 1: Add three bid levels — sorted descending

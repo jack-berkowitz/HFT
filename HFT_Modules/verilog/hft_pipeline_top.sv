@@ -223,6 +223,7 @@ module hft_pipeline_top #(
         .clk       (clk),
         .rst_n     (rst_n),
         .in_update (ol_out),
+        .ready     (),
         .out_tob   (tob_out)
     );
 
@@ -240,6 +241,7 @@ module hft_pipeline_top #(
         .wt_wr_addr (wt_wr_addr),
         .wt_wr_data (wt_wr_data),
         .threshold  (threshold),
+        .ready      (),
         .out_trade  (arb_trade),
         .out_index  (computed_index)
     );
