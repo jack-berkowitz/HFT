@@ -31,8 +31,8 @@ Please use '-no_save' simv switch to avoid this.
             Inclusivity and Diversity" (Refer to article 000036315 at
                         https://solvnetplus.synopsys.com)
 Initializing...
-Current time:       Tue Apr  7 14:04:48 2026
-Hostname:           caen-vnc-mi11.engin.umich.edu
+Current time:       Fri Apr 17 18:46:30 2026
+Hostname:           caen-vnc-mi18.engin.umich.edu
 CPU Model:          Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz
 CPU Details:        Cores = 9 : Sockets = 17 : Cache Size = 49152 KB : Freq = 2.59 GHz
 OS:                 Linux 5.14.0-611.16.1.el9_7.x86_64
@@ -40,10 +40,10 @@ RAM:                 17 GB (Free   6 GB)
 Swap:                 8 GB (Free   8 GB)
 Work Filesystem:    /home/jackberk mounted to //engin-labs.m.storage.umich.edu/engin-labs/home/jackberk/dotfiles
 Tmp Filesystem:     /tmp mounted to /dev/mapper/vg1-lv_tmp
-Work Disk:          64512 GB (Free 9220 GB)
-Tmp Disk:            29 GB (Free  29 GB)
+Work Disk:          64512 GB (Free 8900 GB)
+Tmp Disk:            29 GB (Free  28 GB)
 
-CPU Load: 68%, Ram Free: 6 GB, Swap Free: 8 GB, Work Disk Free: 9220 GB, Tmp Disk Free: 29 GB
+CPU Load: 70%, Ram Free: 6 GB, Swap Free: 8 GB, Work Disk Free: 8900 GB, Tmp Disk Free: 28 GB
 ##########################
 # ---- Introduction ---- #
 ##########################
@@ -141,10 +141,10 @@ set search_path [list "./" "../" "../verilog" "/usr/caen/misc/class/eecs470/lib/
 ###########################################
 # this script assumes your clock and reset variables will be named "clock" and "reset" everywhere
 # note: these are just local variables
-set clock_name clock
-clock
-set reset_name reset
-reset
+set clock_name clk
+clk
+set reset_name rst_n
+rst_n
 # this makes it so you don't need to add
 # // synopsys sync_set_reset "reset"
 # before every always_ff block
@@ -185,7 +185,6 @@ Compiling source file ../verilog/order_lookup.sv
 Opening include file ../verilog/sys_defs.svh
 Compiling source file ../verilog/top_of_book.sv
 Opening include file ../verilog/sys_defs.svh
-Warning:  ../verilog/order_lookup.sv:126: Forward references to 'msg_r' are non-standard. This may be treated as an error in the future. (VER-733)
 Compiling source file ../verilog/index_arb_engine.sv
 Opening include file ../verilog/sys_defs.svh
 Compiling source file ../verilog/order_gen_tx.sv
@@ -210,24 +209,24 @@ Current design is now 'hft_pipeline_top'.
 Information: Building the design 'ipv4_udp_port_filter' instantiated from design 'hft_pipeline_top' with
 	the parameters "FILTER_PORT=16'h2b5d". (HDL-193)
 
-Statistics for case statements in always block at line 137 in file
+Statistics for case statements in always block at line 72 in file
 	'../verilog/ipv4_udp_port_filter.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           143            |    auto/auto     |
+|            78            |    auto/auto     |
 ===============================================
 
-Statistics for case statements in always block at line 155 in file
+Statistics for case statements in always block at line 87 in file
 	'../verilog/ipv4_udp_port_filter.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           157            |    auto/auto     |
+|            89            |    auto/auto     |
 ===============================================
 
 Inferred memory devices in process
-	in routine ipv4_udp_port_filter_2b5d line 137 in file
+	in routine ipv4_udp_port_filter_2b5d line 72 in file
 		'../verilog/ipv4_udp_port_filter.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -238,7 +237,7 @@ Inferred memory devices in process
 ===============================================================================
 
 Inferred memory devices in process
-	in routine ipv4_udp_port_filter_2b5d line 194 in file
+	in routine ipv4_udp_port_filter_2b5d line 120 in file
 		'../verilog/ipv4_udp_port_filter.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -250,32 +249,32 @@ Presto compilation completed successfully. (ipv4_udp_port_filter_2b5d)
 Information: Building the design 'xdp_packet_framer' instantiated from design 'hft_pipeline_top' with
 	the parameters "HEADER_BYTES=10". (HDL-193)
 
-Statistics for case statements in always block at line 104 in file
+Statistics for case statements in always block at line 51 in file
 	'../verilog/xdp_packet_framer.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           111            |    auto/auto     |
+|            58            |    auto/auto     |
 ===============================================
 
-Statistics for case statements in always block at line 158 in file
+Statistics for case statements in always block at line 93 in file
 	'../verilog/xdp_packet_framer.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           160            |    auto/auto     |
+|            95            |    auto/auto     |
 ===============================================
 
-Statistics for case statements in always block at line 208 in file
+Statistics for case statements in always block at line 133 in file
 	'../verilog/xdp_packet_framer.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           218            |    auto/auto     |
+|           143            |    auto/auto     |
 ===============================================
 
 Inferred memory devices in process
-	in routine xdp_packet_framer_HEADER_BYTES10 line 208 in file
+	in routine xdp_packet_framer_HEADER_BYTES10 line 133 in file
 		'../verilog/xdp_packet_framer.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -290,28 +289,28 @@ Information:  Complex logic will not be considered for set/reset inference. (ELA
 Presto compilation completed successfully. (xdp_packet_framer_HEADER_BYTES10)
 Information: Building the design 'xdp_msg_demux'. (HDL-193)
 
-Statistics for case statements in always block at line 102 in file
+Statistics for case statements in always block at line 56 in file
 	'../verilog/xdp_msg_demux.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           104            |     no/auto      |
+|            58            |     no/auto      |
 ===============================================
 
-Statistics for case statements in always block at line 122 in file
+Statistics for case statements in always block at line 73 in file
 	'../verilog/xdp_msg_demux.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           139            |     no/auto      |
-|           145            |    auto/auto     |
-|           168            |    auto/auto     |
-|           182            |    auto/auto     |
-|           201            |    auto/auto     |
+|            90            |     no/auto      |
+|            95            |    auto/auto     |
+|           117            |    auto/auto     |
+|           128            |    auto/auto     |
+|           146            |    auto/auto     |
 ===============================================
 
 Inferred memory devices in process
-	in routine xdp_msg_demux line 122 in file
+	in routine xdp_msg_demux line 73 in file
 		'../verilog/xdp_msg_demux.sv'.
 ================================================================================
 |    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -334,25 +333,25 @@ Presto compilation completed successfully. (xdp_msg_demux)
 Information: Building the design 'order_lookup' instantiated from design 'hft_pipeline_top' with
 	the parameters "N_WAYS=4,TBL_ENTRIES=4096,MAX_CHAIN=16". (HDL-193)
 
-Statistics for case statements in always block at line 162 in file
+Statistics for case statements in always block at line 119 in file
 	'../verilog/order_lookup.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           171            |    auto/auto     |
+|           128            |    auto/auto     |
 ===============================================
 
-Statistics for case statements in always block at line 195 in file
+Statistics for case statements in always block at line 149 in file
 	'../verilog/order_lookup.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           210            |    auto/auto     |
-|           250            |    auto/auto     |
+|           164            |    auto/auto     |
+|           200            |    auto/auto     |
 ===============================================
 
 Inferred memory devices in process
-	in routine order_lookup_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 195 in file
+	in routine order_lookup_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 149 in file
 		'../verilog/order_lookup.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -370,62 +369,112 @@ Inferred memory devices in process
 Presto compilation completed successfully. (order_lookup_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16)
 Information: Building the design 'top_of_book' instantiated from design 'hft_pipeline_top' with
 	the parameters "N_LEVELS=3,N_SYMBOLS=500". (HDL-193)
+Warning:  ../verilog/top_of_book.sv:359: signed to unsigned conversion occurs. (VER-318)
+Warning:  ../verilog/top_of_book.sv:333: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+Warning:  ../verilog/top_of_book.sv:414: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
 
-Statistics for case statements in always block at line 70 in file
+Statistics for case statements in always block at line 95 in file
 	'../verilog/top_of_book.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|            80            |    auto/auto     |
+|           105            |    auto/auto     |
+===============================================
+
+Statistics for case statements in always block at line 285 in file
+	'../verilog/top_of_book.sv'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           295            |    auto/auto     |
+===============================================
+
+Statistics for case statements in always block at line 337 in file
+	'../verilog/top_of_book.sv'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           357            |    auto/auto     |
 ===============================================
 
 Inferred memory devices in process
-	in routine top_of_book_N_LEVELS3_N_SYMBOLS500 line 245 in file
+	in routine top_of_book_N_LEVELS3_N_SYMBOLS500 line 337 in file
 		'../verilog/top_of_book.sv'.
-===============================================================================
-|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
-===============================================================================
-|    bid_book_reg     | Flip-flop | 96000 |  Y  | N  | N  | N  | Y  | N  | N  |
-|    ask_book_reg     | Flip-flop | 96000 |  Y  | N  | N  | N  | Y  | N  | N  |
-===============================================================================
-
-Inferred memory devices in process
-	in routine top_of_book_N_LEVELS3_N_SYMBOLS500 line 271 in file
-		'../verilog/top_of_book.sv'.
-===============================================================================
-|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
-===============================================================================
-|     out_tob_reg     | Flip-flop |  138  |  Y  | N  | N  | N  | Y  | N  | N  |
-===============================================================================
-Statistics for MUX_OPs
-============================================================================
-|            block name/line             | Inputs | Outputs | # sel inputs |
-============================================================================
-| top_of_book_N_LEVELS3_N_SYMBOLS500/131 |  512   |   384   |      9       |
-| top_of_book_N_LEVELS3_N_SYMBOLS500/282 |  512   |   128   |      9       |
-============================================================================
+================================================================================
+|    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+================================================================================
+|  after_rm_qty_r_reg  | Flip-flop |  96   |  Y  | N  | N  | N  | Y  | N  | N  |
+|     state_r_reg      | Flip-flop |   2   |  Y  | N  | N  | N  | Y  | N  | N  |
+|   clear_addr_r_reg   | Flip-flop |   9   |  Y  | N  | N  | N  | Y  | N  | N  |
+|      sym_r_reg       | Flip-flop |   9   |  Y  | N  | N  | N  | Y  | N  | N  |
+|   sym_valid_r_reg    | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+|   do_remove_r_reg    | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+|     do_add_r_reg     | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+|    rm_price_r_reg    | Flip-flop |  32   |  Y  | N  | N  | N  | Y  | N  | N  |
+|     rm_qty_r_reg     | Flip-flop |  32   |  Y  | N  | N  | N  | Y  | N  | N  |
+|   add_price_r_reg    | Flip-flop |  32   |  Y  | N  | N  | N  | Y  | N  | N  |
+|    add_qty_r_reg     | Flip-flop |  32   |  Y  | N  | N  | N  | Y  | N  | N  |
+|     is_bid_r_reg     | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+|   other_side_r_reg   | Flip-flop |  64   |  Y  | N  | N  | N  | Y  | N  | N  |
+|     out_tob_reg      | Flip-flop |  138  |  Y  | N  | N  | N  | Y  | N  | N  |
+| after_rm_price_r_reg | Flip-flop |  96   |  Y  | N  | N  | N  | Y  | N  | N  |
+================================================================================
+Information:  Complex logic will not be considered for set/reset inference. (ELAB-2008)
 Presto compilation completed successfully. (top_of_book_N_LEVELS3_N_SYMBOLS500)
-Module: top_of_book_N_LEVELS3_N_SYMBOLS500, Elapsed Time: 00:00:54, CPU Time: 00:00:52, Total Mem: 2.45 GB, Mem: 2.30 GB, Time: Tue Apr  7 14:05:48 2026
 Information: Building the design 'index_arb_engine' instantiated from design 'hft_pipeline_top' with
 	the parameters "N_COMPONENTS=500,IDX_SYM=9'h1f4". (HDL-193)
+Warning:  ../verilog/index_arb_engine.sv:50: signed to unsigned conversion occurs. (VER-318)
 Warning:  ../verilog/index_arb_engine.sv:123: signed to unsigned conversion occurs. (VER-318)
-Warning:  ../verilog/index_arb_engine.sv:151: signed to unsigned conversion occurs. (VER-318)
-Warning:  ../verilog/index_arb_engine.sv:360: unsigned to signed assignment occurs. (VER-318)
-Warning:  ../verilog/index_arb_engine.sv:362: signed to unsigned assignment occurs. (VER-318)
-Warning:  ../verilog/index_arb_engine.sv:375: signed to unsigned assignment occurs. (VER-318)
-Warning:  ../verilog/index_arb_engine.sv:381: signed to unsigned assignment occurs. (VER-318)
+Warning:  ../verilog/index_arb_engine.sv:139: signed to unsigned conversion occurs. (VER-318)
+Warning:  ../verilog/index_arb_engine.sv:396: unsigned to signed assignment occurs. (VER-318)
+Warning:  ../verilog/index_arb_engine.sv:398: signed to unsigned assignment occurs. (VER-318)
+Warning:  ../verilog/index_arb_engine.sv:410: signed to unsigned assignment occurs. (VER-318)
+Warning:  ../verilog/index_arb_engine.sv:415: signed to unsigned assignment occurs. (VER-318)
+
+Statistics for case statements in always block at line 116 in file
+	'../verilog/index_arb_engine.sv'
+===============================================
+|           Line           |  full/ parallel  |
+===============================================
+|           121            |    auto/auto     |
+===============================================
 
 Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 119 in file
+	in routine index_arb_engine_500_1f4 line 116 in file
 		'../verilog/index_arb_engine.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
 ===============================================================================
-|   weight_tbl_reg    | Flip-flop | 16000 |  Y  | N  | N  | N  | Y  | N  | N  |
+|  clear_addr_r_reg   | Flip-flop |   9   |  Y  | N  | N  | N  | Y  | N  | N  |
+|     state_r_reg     | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
 ===============================================================================
 
 Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 171 in file
+	in routine index_arb_engine_500_1f4 line 153 in file
+		'../verilog/index_arb_engine.sv'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   lt_new_mid_reg    | Flip-flop |  32   |  Y  | N  | N  | N  | Y  | N  | N  |
+|    lt_valid_reg     | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+|   lt_is_index_reg   | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+| lt_is_component_reg | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+|     lt_sym_reg      | Flip-flop |   9   |  Y  | N  | N  | N  | Y  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+	in routine index_arb_engine_500_1f4 line 186 in file
+		'../verilog/index_arb_engine.sv'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   wr_bp_valid_reg   | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+|    wr_bp_sym_reg    | Flip-flop |   9   |  Y  | N  | N  | N  | Y  | N  | N  |
+|    wr_bp_mid_reg    | Flip-flop |  32   |  Y  | N  | N  | N  | Y  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+	in routine index_arb_engine_500_1f4 line 227 in file
 		'../verilog/index_arb_engine.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -440,16 +489,7 @@ Inferred memory devices in process
 ===============================================================================
 
 Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 192 in file
-		'../verilog/index_arb_engine.sv'.
-===============================================================================
-|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
-===============================================================================
-|     old_mid_reg     | Flip-flop | 16000 |  Y  | N  | N  | N  | Y  | N  | N  |
-===============================================================================
-
-Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 234 in file
+	in routine index_arb_engine_500_1f4 line 266 in file
 		'../verilog/index_arb_engine.sv'.
 ================================================================================
 |    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -465,7 +505,7 @@ Inferred memory devices in process
 ================================================================================
 
 Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 267 in file
+	in routine index_arb_engine_500_1f4 line 301 in file
 		'../verilog/index_arb_engine.sv'.
 ================================================================================
 |    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -481,7 +521,7 @@ Inferred memory devices in process
 ================================================================================
 
 Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 298 in file
+	in routine index_arb_engine_500_1f4 line 334 in file
 		'../verilog/index_arb_engine.sv'.
 ================================================================================
 |    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -494,7 +534,7 @@ Inferred memory devices in process
 ================================================================================
 
 Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 329 in file
+	in routine index_arb_engine_500_1f4 line 367 in file
 		'../verilog/index_arb_engine.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -504,44 +544,47 @@ Inferred memory devices in process
 ===============================================================================
 
 Inferred memory devices in process
-	in routine index_arb_engine_500_1f4 line 368 in file
+	in routine index_arb_engine_500_1f4 line 382 in file
+		'../verilog/index_arb_engine.sv'.
+===============================================================================
+|    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
+===============================================================================
+|   mp3_valid_d_reg   | Flip-flop |   1   |  N  | N  | N  | N  | Y  | N  | N  |
+===============================================================================
+
+Inferred memory devices in process
+	in routine index_arb_engine_500_1f4 line 403 in file
 		'../verilog/index_arb_engine.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
 ===============================================================================
 |    out_trade_reg    | Flip-flop |  162  |  Y  | N  | N  | N  | Y  | N  | N  |
 ===============================================================================
-Statistics for MUX_OPs
-==================================================================
-|       block name/line        | Inputs | Outputs | # sel inputs |
-==================================================================
-| index_arb_engine_500_1f4/154 |  512   |   64    |      9       |
-==================================================================
 Presto compilation completed successfully. (index_arb_engine_500_1f4)
 Information: Building the design 'order_gen_tx' instantiated from design 'hft_pipeline_top' with
 	the parameters "SRC_MAC=48'hdeadbeefcafe,DST_MAC=48'h01005e000001,SRC_IP=32'h0a000001,DST_IP=32'h0a000002,SRC_PORT=16'h3039,DST_PORT=16'hd431,ORDER_QTY=32'h00000064,COOLDOWN_CYC=32'h00000064,MAX_POS=32'h000003e8,PRICE_OFFSET=32'h0000000a,IDX_SYM_ID=32'h000001f4". (HDL-193)
-Warning:  ../verilog/order_gen_tx.sv:276: signed to unsigned assignment occurs. (VER-318)
-Warning:  ../verilog/order_gen_tx.sv:295: signed to unsigned conversion occurs. (VER-318)
-Warning:  ../verilog/order_gen_tx.sv:314: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
+Warning:  ../verilog/order_gen_tx.sv:188: signed to unsigned assignment occurs. (VER-318)
+Warning:  ../verilog/order_gen_tx.sv:206: signed to unsigned conversion occurs. (VER-318)
+Warning:  ../verilog/order_gen_tx.sv:225: DEFAULT branch of CASE statement cannot be reached. (ELAB-311)
 
-Statistics for case statements in always block at line 173 in file
+Statistics for case statements in always block at line 92 in file
 	'../verilog/order_gen_tx.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           178            |    auto/auto     |
+|            97            |    auto/auto     |
 ===============================================
 
-Statistics for case statements in always block at line 252 in file
+Statistics for case statements in always block at line 165 in file
 	'../verilog/order_gen_tx.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           271            |    auto/auto     |
+|           184            |    auto/auto     |
 ===============================================
 
 Inferred memory devices in process
-	in routine order_gen_tx_deadbeefcafe_01005e000001_0a000001_0a000002_3039_d431_00000064_00000064_000003e8_0000000a_000001f4 line 252 in file
+	in routine order_gen_tx_deadbeefcafe_01005e000001_0a000001_0a000002_3039_d431_00000064_00000064_000003e8_0000000a_000001f4 line 165 in file
 		'../verilog/order_gen_tx.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -563,35 +606,35 @@ Information:  Complex logic will not be considered for set/reset inference. (ELA
 Presto compilation completed successfully. (order_gen_tx_deadbeefcafe_01005e000001_0a000001_0a000002_3039_d431_00000064_00000064_000003e8_0000000a_000001f4)
 Information: Building the design 'skewed_hash_table' instantiated from design 'order_lookup_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16' with
 	the parameters "KEY_W=64,VALUE_W=65,N_WAYS=4,TBL_ENTRIES=4096,MAX_CHAIN=16". (HDL-193)
-Warning:  ../verilog/skewed_hash_table.sv:279: signed to unsigned assignment occurs. (VER-318)
-Warning:  ../verilog/skewed_hash_table.sv:289: signed to unsigned assignment occurs. (VER-318)
-Warning:  ../verilog/skewed_hash_table.sv:380: signed to unsigned conversion occurs. (VER-318)
-Warning:  ../verilog/skewed_hash_table.sv:424: signed to unsigned assignment occurs. (VER-318)
-Warning:  ../verilog/skewed_hash_table.sv:470: signed to unsigned conversion occurs. (VER-318)
+Warning:  ../verilog/skewed_hash_table.sv:202: signed to unsigned assignment occurs. (VER-318)
+Warning:  ../verilog/skewed_hash_table.sv:211: signed to unsigned assignment occurs. (VER-318)
+Warning:  ../verilog/skewed_hash_table.sv:291: signed to unsigned conversion occurs. (VER-318)
+Warning:  ../verilog/skewed_hash_table.sv:328: signed to unsigned assignment occurs. (VER-318)
+Warning:  ../verilog/skewed_hash_table.sv:367: signed to unsigned conversion occurs. (VER-318)
 
-Statistics for case statements in always block at line 305 in file
+Statistics for case statements in always block at line 221 in file
 	'../verilog/skewed_hash_table.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           312            |    auto/auto     |
+|           228            |    auto/auto     |
 ===============================================
-Warning:  ../verilog/skewed_hash_table.sv:114: Statement unreachable (Branch condition impossible to meet).  (VER-61)
-Warning:  ../verilog/skewed_hash_table.sv:115: Statement unreachable (Branch condition impossible to meet).  (VER-61)
-Warning:  ../verilog/skewed_hash_table.sv:116: Statement unreachable (Branch condition impossible to meet).  (VER-61)
-Warning:  ../verilog/skewed_hash_table.sv:117: Statement unreachable (Branch condition impossible to meet).  (VER-61)
+Warning:  ../verilog/skewed_hash_table.sv:68: Statement unreachable (Branch condition impossible to meet).  (VER-61)
+Warning:  ../verilog/skewed_hash_table.sv:69: Statement unreachable (Branch condition impossible to meet).  (VER-61)
+Warning:  ../verilog/skewed_hash_table.sv:70: Statement unreachable (Branch condition impossible to meet).  (VER-61)
+Warning:  ../verilog/skewed_hash_table.sv:71: Statement unreachable (Branch condition impossible to meet).  (VER-61)
 
-Statistics for case statements in always block at line 351 in file
+Statistics for case statements in always block at line 264 in file
 	'../verilog/skewed_hash_table.sv'
 ===============================================
 |           Line           |  full/ parallel  |
 ===============================================
-|           377            |    auto/auto     |
-|           109            |    auto/auto     |
+|           289            |    auto/auto     |
+|            63            |    auto/auto     |
 ===============================================
 
 Inferred memory devices in process
-	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 186 in file
+	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 122 in file
 		'../verilog/skewed_hash_table.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -600,7 +643,7 @@ Inferred memory devices in process
 ===============================================================================
 
 Inferred memory devices in process
-	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 190 in file
+	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 126 in file
 		'../verilog/skewed_hash_table.sv'.
 ===============================================================================
 |    Register Name    |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -609,7 +652,7 @@ Inferred memory devices in process
 ===============================================================================
 
 Inferred memory devices in process
-	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 211 in file
+	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 145 in file
 		'../verilog/skewed_hash_table.sv'.
 ===================================================================================
 |      Register Name      |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -620,7 +663,7 @@ Inferred memory devices in process
 ===================================================================================
 
 Inferred memory devices in process
-	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 351 in file
+	in routine skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16 line 264 in file
 		'../verilog/skewed_hash_table.sv'.
 ================================================================================
 |    Register Name     |   Type    | Width | Bus | MB | AR | AS | SR | SS | ST |
@@ -647,12 +690,18 @@ Statistics for MUX_OPs
 =================================================================================================================
 |                              block name/line                                | Inputs | Outputs | # sel inputs |
 =================================================================================================================
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/300 |   4    |    1    |      2       |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/479 |   4    |   129   |      2       |
-| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/482 |   4    |   64    |      2       |
+| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/219 |   4    |    1    |      2       |
+| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/373 |   4    |   129   |      2       |
+| skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16/376 |   4    |   64    |      2       |
 =================================================================================================================
 Information:  Complex logic will not be considered for set/reset inference. (ELAB-2008)
 Presto compilation completed successfully. (skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16)
+Information: Building the design 'dp_ram' instantiated from design 'top_of_book_N_LEVELS3_N_SYMBOLS500' with
+	the parameters "ADDR_W=9,DATA_W=192,DEPTH=500". (HDL-193)
+Presto compilation completed successfully. (dp_ram_ADDR_W9_DATA_W192_DEPTH500)
+Information: Building the design 'dp_ram' instantiated from design 'index_arb_engine_500_1f4' with
+	the parameters "ADDR_W=9,DATA_W=32,DEPTH=512". (HDL-193)
+Presto compilation completed successfully. (dp_ram_ADDR_W9_DATA_W32_DEPTH512)
 Information: Building the design 'dp_ram' instantiated from design 'skewed_hash_table_KEY_W64_VALUE_W65_N_WAYS4_TBL_ENTRIES4096_MAX_CHAIN16' with
 	the parameters "ADDR_W=12,DATA_W=130,DEPTH=4096". (HDL-193)
 Presto compilation completed successfully. (dp_ram_ADDR_W12_DATA_W130_DEPTH4096)
@@ -741,38 +790,17 @@ if { ![link] } {exit 1}
   Linking design 'hft_pipeline_top'
   Using the following designs and libraries:
   --------------------------------------------------------------------------
-  * (10 designs)              /home/jackberk/HFT/HFT_Modules/synth/hft_pipeline_top.db, etc
+  * (12 designs)              /home/jackberk/HFT/HFT_Modules/synth/hft_pipeline_top.db, etc
   lec25dscc25_TT (library)    /usr/caen/misc/class/eecs470/lib/synopsys/lec25dscc25_TT.db
 
 eecs_470_set_wire_load $design_name
 1
 eecs_470_generate_clock $clock_name $clock_period
-Warning: Can't find port 'clock' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list 'source_objects' must have 1 elements. (CMD-036)
-Warning: Can't find object 'clock' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list 'object_list' must have 1 elements. (CMD-036)
-Warning: Can't find clock 'clock' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list '<clock_list>' must have 1 elements. (CMD-036)
-0
+1
 eecs_470_setup_paths $clock_name
 Warning: The driving cell dffacs1 has multiple outputs, -pin is required. (UID-989)
-Warning: Can't find port 'clock' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list 'port_list' must have 1 elements. (CMD-036)
-0
+1
 eecs_470_set_design_constraints $reset_name $clock_name $clock_period
-Warning: Can't find clock 'clock' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list '-clock' must have 1 elements. (CMD-036)
-Warning: Can't find clock 'clock' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list '-clock' must have 1 elements. (CMD-036)
-Warning: Can't find port 'clock' in design 'hft_pipeline_top'. (UID-95)
-Warning: Can't find clock 'clock' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list 'port_pin_list' must have 1 elements. (CMD-036)
-Warning: Can't find object 'reset' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list 'object_list' must have 1 elements. (CMD-036)
-Warning: Can't find net 'reset' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list 'net_list' must have 1 elements. (CMD-036)
-Warning: Can't find port 'reset' in design 'hft_pipeline_top'. (UID-95)
-Error: Value for list 'port_list' must have 1 elements. (CMD-036)
 Current design is 'hft_pipeline_top'.
 1
 # separate the subdesign instances to improve synthesis (excluding set_dont_touch designs)
@@ -781,7 +809,7 @@ uniquify
 1
 ungroup -all -flatten
 Information: Updating graph... (UID-83)
-Warning: Design 'hft_pipeline_top' contains 202 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+Warning: Design 'hft_pipeline_top' contains 7 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
 1
 # write the check file before compiling
 set chk_file ./${design_name}.chk
@@ -790,47 +818,458 @@ redirect $chk_file { check_design }
 # where the magic happens
 # map_effort can be changed to high if you're ok with time increasing for better performance
 # or you can change from compile to compile_ultra for best performance, but likely increased time
-compile -map_effort medium
-CPU Load: 51%, Ram Free: 3 GB, Swap Free: 8 GB, Work Disk Free: 9221 GB, Tmp Disk Free: 29 GB
+# compile -map_effort medium
+compile_ultra
+Loading db file '/usr/caen/synopsys-synth-2023.12-SP5/libraries/syn/dw_foundation.sldb'
+Information: Failed to find dw_foundation.sldb in the user defined search_path, load it from 'Synopsys Root'. (UISN-70)
+Warning: DesignWare synthetic library dw_foundation.sldb is added to the synthetic_library in the current command. (UISN-40)
+Information: Performing leakage power optimization. (PWR-850)
+CPU Load: 60%, Ram Free: 6 GB, Swap Free: 8 GB, Work Disk Free: 8900 GB, Tmp Disk Free: 28 GB
+Alib files are up-to-date.
 Information: Evaluating DesignWare library utilization. (UISN-27)
 
 ============================================================================
 | DesignWare Building Block Library  |         Version         | Available |
 ============================================================================
 | Basic DW Building Blocks           | V-2023.12-DWBB_202312.5 |     *     |
-| Licensed DW Building Blocks        |                         |           |
+| Licensed DW Building Blocks        | V-2023.12-DWBB_202312.5 |     *     |
 ============================================================================
 
 ====================================================================================================
 | Flow Information                                                                                 |
 ----------------------------------------------------------------------------------------------------
-| Flow         | Design Compiler                                                                   |
+| Flow         | Design Compiler WLM                                                               |
+| Command Line | compile_ultra                                                                     |
 ====================================================================================================
 | Design Information                                      | Value                                  |
 ====================================================================================================
 | Number of Scenarios                                     | 0                                      |
-| Leaf Cell Count                                         | 253721                                 |
+| Leaf Cell Count                                         | 26052                                  |
 | Number of User Hierarchies                              | 0                                      |
-| Sequential Cell Count                                   | 227069                                 |
+| Sequential Cell Count                                   | 3574                                   |
 | Macro Count                                             | 0                                      |
 | Number of Power Domains                                 | 0                                      |
-| Number of Path Groups                                   | 3                                      |
+| Number of Path Groups                                   | 4                                      |
 | Number of VT Class                                      | 0                                      |
-| Number of Clocks                                        | 0                                      |
-| Number of Dont Touch Cells                              | 2883                                   |
-| Number of Dont Touch Nets                               | 0                                      |
-| Number of Size Only Cells                               | 0                                      |
+| Number of Clocks                                        | 1                                      |
+| Number of Dont Touch Cells                              | 2904                                   |
+| Number of Dont Touch Nets                               | 1                                      |
+| Number of Size Only Cells                               | 8                                      |
 | Design with UPF Data                                    | false                                  |
 ----------------------------------------------------------------------------------------------------
 | Variables                                               | Value                                  |
 ----------------------------------------------------------------------------------------------------
 | set_fix_multiple_port_nets                              | -outputs -buffer_constants             |
 ====================================================================================================
+Information: Sequential output inversion is enabled.  SVF file must be used for formal verification. (OPT-1208)
 
-Information: There are 275 potential problems in your design. Please run 'check_design' for more information. (LINT-99)
+Information: There are 727 potential problems in your design. Please run 'check_design' for more information. (LINT-99)
 
+  Simplifying Design 'hft_pipeline_top'
 
+Loaded alib file './alib-52/lec25dscc25_TT.db.alib'
+  Building model 'DW01_NAND2'
+Information: Ungrouping 0 of 1 hierarchies before Pass 1 (OPT-775)
+CPU Load: 57%, Ram Free: 6 GB, Swap Free: 8 GB, Work Disk Free: 8900 GB, Tmp Disk Free: 28 GB
+Information: State dependent leakage is now switched from on to off.
 
   Beginning Pass 1 Mapping
   ------------------------
   Processing 'hft_pipeline_top'
+Information: Added key list 'DesignWare' to design 'hft_pipeline_top'. (DDB-72)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[30]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[30]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[29]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[29]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[28]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[28]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[27]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[27]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[26]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[26]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[25]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[25]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[24]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[24]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[23]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[23]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[22]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[22]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[21]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[21]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[20]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[20]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[19]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[19]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[18]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[18]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[17]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[17]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[16]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[16]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[15]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[15]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[14]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[14]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[13]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[13]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[12]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[12]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[11]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[11]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[10]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[10]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[9]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[9]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[8]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[8]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[7]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[7]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[6]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[6]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[5]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[5]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[4]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[4]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[3]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[3]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[2]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[2]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[1]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[1]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_mid_reg[0]' is removed because it is merged to 'u_index_arb/s1_new_mid_reg[0]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/wr_bp_valid_reg' is removed because it is merged to 'u_index_arb/s1_is_component_reg'. (OPT-1215)
+ Implement Synthetic for 'hft_pipeline_top'.
+CPU Load: 23%, Ram Free: 6 GB, Swap Free: 8 GB, Work Disk Free: 8900 GB, Tmp Disk Free: 28 GB
+
+  Updating timing information
+Information: Updating design information... (UID-85)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[33]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[34]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[35]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[36]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[37]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[38]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[39]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[40]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[41]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[42]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[43]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[44]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[45]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[46]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[47]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[48]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[49]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[50]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[51]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[52]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[53]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[54]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[55]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[56]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[57]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[58]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[59]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[60]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[61]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[62]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/s1_mcand_reg[63]' is removed because it is merged to 'u_index_arb/s1_mcand_reg[32]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][0]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][0]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][3]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][3]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][2]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][2]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][1]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][1]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][6]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][6]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][5]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][5]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][4]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][4]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][9]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][9]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][8]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][8]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][7]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][7]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][10]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][10]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][11]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][11]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][14]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][14]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][13]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][13]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][12]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][12]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][17]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][17]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][16]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][16]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][15]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][15]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][19]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][19]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/out_trade_reg[spread][18]' is removed because it is merged to 'u_index_arb/out_trade_reg[computed_index][18]'. (OPT-1215)
+
+  Beginning Mapping Optimizations  (Ultra High effort)
+  -------------------------------
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[63]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[62]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[61]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[60]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[59]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[58]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[57]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[56]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[55]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[54]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[53]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[52]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[51]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[50]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[49]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[48]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[47]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[46]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[45]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_mcand_reg[44]' is removed because it is merged to 'u_index_arb/mp1_mcand_reg[43]'. (OPT-1215)
+  Mapping Optimization (Phase 1)
+  Mapping Optimization (Phase 2)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[55]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[56]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[57]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[58]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[59]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[60]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[61]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[62]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp2_mcand_reg[63]' is removed because it is merged to 'u_index_arb/mp2_mcand_reg[54]'. (OPT-1215)
+
+                                  TOTAL                                                            
+   ELAPSED            WORST NEG   SETUP    DESIGN                              LEAKAGE   MIN DELAY 
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT            POWER      COST    
+  --------- --------- --------- --------- --------- ------------------------- --------- -----------
+    0:02:48 2292058.7      0.46     123.0     584.2                           971229.9375      0.00  
+    0:02:50 2285791.0      0.51     123.2     579.7                           967488.8750      0.00  
+
+  Beginning Constant Register Removal
+  -----------------------------------
+    0:02:51 2285791.0      0.51     123.2     579.7                           967488.8750      0.00  
+    0:02:53 2285674.9      0.51     123.4     579.7                           967395.1875      0.00  
+
+  Beginning Global Optimizations
+  ------------------------------
+  Numerical Synthesis (Phase 1)
+  Numerical Synthesis (Phase 2)
+  Global Optimization (Phase 1)
+  Global Optimization (Phase 2)
+  Global Optimization (Phase 3)
+  Global Optimization (Phase 4)
+  Global Optimization (Phase 5)
+  Global Optimization (Phase 6)
+  Global Optimization (Phase 7)
+  Global Optimization (Phase 8)
+  Global Optimization (Phase 9)
+  Global Optimization (Phase 10)
+  Global Optimization (Phase 11)
+  Global Optimization (Phase 12)
+  Global Optimization (Phase 13)
+  Global Optimization (Phase 14)
+  Global Optimization (Phase 15)
+  Global Optimization (Phase 16)
+  Global Optimization (Phase 17)
+  Global Optimization (Phase 18)
+  Global Optimization (Phase 19)
+  Global Optimization (Phase 20)
+  Global Optimization (Phase 21)
+  Global Optimization (Phase 22)
+  Global Optimization (Phase 23)
+  Global Optimization (Phase 24)
+  Global Optimization (Phase 25)
+  Global Optimization (Phase 26)
+  Global Optimization (Phase 27)
+  Global Optimization (Phase 28)
+  Global Optimization (Phase 29)
+  Global Optimization (Phase 30)
+  Global Optimization (Phase 31)
+  Mapping 'hft_pipeline_top_DW_mult_uns_1'
+
+  Beginning Isolate Ports
+  -----------------------
+
+  Beginning Delay Optimization
+  ----------------------------
+    0:03:08 1664026.3      1.28     121.9     158.0                           713684.1875      0.00  
+    0:03:15 1696005.2      0.33      33.4     203.6                           744224.0625      0.00  
+    0:03:15 1696005.2      0.33      33.4     203.6                           744224.0625      0.00  
+    0:03:19 1683530.5      0.57      37.2     372.1                           714656.4375      0.00  
+    0:03:23 1682607.0      0.57      37.0     372.1                           714008.0625      0.00  
+    0:03:26 1680284.6      0.57      41.5     369.0                           713296.1250      0.00  
+
+  Beginning WLM Backend Optimization
+  --------------------------------------
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[45]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[46]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[47]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[48]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[49]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[50]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[51]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[52]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[53]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[54]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[55]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[56]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[57]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[58]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[59]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[60]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[61]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[62]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+Information: In design 'hft_pipeline_top', the register 'u_index_arb/mp1_sum_reg[63]' is removed because it is merged to 'u_index_arb/mp1_sum_reg[44]'. (OPT-1215)
+    0:03:33 1643228.6      0.57      39.9     322.6                           709007.9375      0.00  
+    0:03:35 1621845.6      0.57      29.6     294.8                           703235.3125      0.00  
+    0:03:38 1634777.9      0.31      16.9     297.2                           716442.3750      0.00  
+    0:03:38 1634777.9      0.31      16.9     297.2                           716442.3750      0.00  
+    0:03:38 1634777.9      0.31      16.9     297.2                           716442.3750      0.00  
+    0:03:38 1634777.9      0.31      16.9     297.2                           716442.3750      0.00  
+    0:03:40 1631767.0      0.30      20.3     288.5                           713307.0625      0.00  
+    0:03:40 1631767.0      0.30      20.3     288.5                           713307.0625      0.00  
+    0:03:53 1656640.4      0.20      12.1     292.5                           727937.8750      0.00  
+    0:03:53 1656640.4      0.20      12.1     292.5                           727937.8750      0.00  
+    0:03:54 1657013.6      0.19      11.9     292.6                           728478.1875      0.00  
+    0:03:54 1657013.6      0.19      11.9     292.6                           728478.1875      0.00  
+    0:04:07 1678447.1      0.31      13.3     305.7                           737234.0625      0.00  
+    0:04:07 1678447.1      0.31      13.3     305.7                           737234.0625      0.00  
+    0:04:14 1702894.0      0.11       5.2     311.7                           757942.3750      0.00  
+    0:04:14 1702894.0      0.11       5.2     311.7                           757942.3750      0.00  
+    0:04:38 1730044.4      0.03       1.0     342.5                           769128.1875      0.00  
+    0:04:38 1730044.4      0.03       1.0     342.5                           769128.1875      0.00  
+    0:04:42 1735912.7      0.02       0.2     339.2                           775505.8125      0.00  
+    0:04:42 1735912.7      0.02       0.2     339.2                           775505.8125      0.00  
+    0:04:43 1736277.6      0.00       0.0     337.5                           775921.1250      0.00  
+    0:04:43 1736277.6      0.00       0.0     337.5                           775921.1250      0.00  
+    0:04:43 1736277.6      0.00       0.0     337.5                           775921.1250      0.00  
+    0:04:43 1736277.6      0.00       0.0     337.5                           775921.1250      0.00  
+    0:04:43 1736277.6      0.00       0.0     337.5                           775921.1250      0.00  
+
+
+  Beginning Design Rule Fixing  (max_transition)  (max_fanout)
+  ----------------------------
+
+                                  TOTAL                                                            
+   ELAPSED            WORST NEG   SETUP    DESIGN                              LEAKAGE   MIN DELAY 
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT            POWER      COST    
+  --------- --------- --------- --------- --------- ------------------------- --------- -----------
+    0:04:43 1736277.6      0.00       0.0     337.5                           775921.1250      0.00  
+  Global Optimization (Phase 32)
+  Global Optimization (Phase 33)
+  Global Optimization (Phase 34)
+    0:04:46 1738697.3      0.00       0.0       0.0                           778961.0000      0.00  
+    0:04:46 1738697.3      0.00       0.0       0.0                           778961.0000      0.00  
+    0:04:46 1738697.3      0.00       0.0       0.0                           778961.0000      0.00  
+    0:04:46 1738697.3      0.00       0.0       0.0                           778961.0000      0.00  
+    0:04:46 1738697.3      0.00       0.0       0.0                           778961.0000      0.00  
+    0:04:51 1725343.3      0.00       0.0       7.3                           668092.8750      0.00  
+    0:04:51 1725343.3      0.00       0.0       7.3                           668092.8750      0.00  
+    0:04:52 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:52 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:52 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+    0:04:53 1726031.7      0.00       0.0       7.3                           668338.3750      0.00  
+
+                                  TOTAL                                                            
+   ELAPSED            WORST NEG   SETUP    DESIGN                              LEAKAGE   MIN DELAY 
+    TIME      AREA      SLACK     COST    RULE COST         ENDPOINT            POWER      COST    
+  --------- --------- --------- --------- --------- ------------------------- --------- -----------
+    0:04:54 1726131.3      0.00       0.0       7.3                           668343.1875      0.00  
+    0:04:56 1712774.6      0.00       0.0      22.0                           648623.1250      0.00  
+    0:04:57 1712846.4      0.00       0.0      22.0                           648601.5625      0.00  
+    0:04:57 1712846.4      0.00       0.0      22.0                           648601.5625      0.00  
+    0:04:59 1710136.9      0.00       0.0       7.6                           643167.2500      0.00  
+
+  Beginning Delay Optimization HSVT Pass
+  --------------------------------------
+    0:05:00 1710136.9      0.00       0.0       7.6                           643167.2500      0.00  
+    0:05:00 1710136.9      0.00       0.0       7.6                           643167.2500      0.00  
+    0:05:00 1710136.9      0.00       0.0       7.6                           643167.2500      0.00  
+    0:05:03 1710054.0      0.00       0.0       7.6                           643247.0625      0.00  
+    0:05:06 1702970.2      0.00       0.0       7.2                           638835.0000      0.00  
+    0:05:07 1708674.4      0.00       0.0       0.0                           636713.9375      0.00  
+    0:05:07 1708674.4      0.00       0.0       0.0                           636713.9375      0.00  
+    0:05:07 1708674.4      0.00       0.0       0.0                           636713.9375      0.00  
+    0:05:08 1708674.4      0.00       0.0       0.0                           636713.9375      0.00  
+    0:05:08 1708674.4      0.00       0.0       0.0                           636713.9375      0.00  
+    0:05:08 1708674.4      0.00       0.0       0.0                           636713.9375      0.00  
+    0:05:12 1698373.7      0.00       0.0       0.0                           639482.8750      0.00  
+CPU Load: 19%, Ram Free: 6 GB, Swap Free: 8 GB, Work Disk Free: 8900 GB, Tmp Disk Free: 28 GB
+Loading db file '/usr/caen/misc/class/eecs470/lib/synopsys/lec25dscc25_TT.db'
+
+
+Note: Symbol # after min delay cost means estimated hold TNS across all active scenarios 
+
+
+  Optimization Complete
+  ---------------------
+Warning: Design 'hft_pipeline_top' contains 1 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+     Net 'clk': 3021 load(s), 1 driver(s)
+Information: State dependent leakage is now switched from off to on.
+Information: Propagating switching activity (low effort zero delay simulation). (PWR-6)
+Warning: Design has unannotated black box outputs. (PWR-428)
+CPU Load: 19%, Ram Free: 5 GB, Swap Free: 8 GB, Work Disk Free: 8900 GB, Tmp Disk Free: 28 GB
+Information: Total number of MV cells in the design.
+----------------------------------------------------------------------------------------------------
+ MV Cells                                           Total Number                                   
+----------------------------------------------------------------------------------------------------
+ Level Shifter:                                     0                                             
+ Enable Level Shifter:                              0                                             
+ Isolation Cell:                                    0                                             
+ Retention Cell:                                    0                                             
+ Retention Clamp Cell:                              0                                             
+ Switch Cell:                                       0                                             
+ Always-On Cell:                                    0                                             
+ Repeater Cell:                                     0                                             
+
+----------------------------------------------------------------------------------------------------
+Unmapped MV Cells 
+----------------------------------------------------------------------------------------------------
+0 Isolation Cells are unmapped 
+0 Retention Clamp Cells are unmapped 
+----------------------------------------------------------------------------------------------------
+1
+################################
+# ---- write output files ---- #
+################################
+# note the .chk file is written just before the compile command above
+set netlist_file ./${design_name}.vg       ;# our .vg file! it's generated here!
+./hft_pipeline_top.vg
+set ddc_file     ./${design_name}.ddc      ;# the internal dc_shell design representation (binary data)
+./hft_pipeline_top.ddc
+set svsim_file   ./${design_name}_svsim.sv ;# a simulation instantiation wrapper
+./hft_pipeline_top_svsim.sv
+set rep_file     ./${design_name}.rep      ;# area, timing, constraint, resource, and netlist reports
+./hft_pipeline_top.rep
+# write the design into both sv and ddc formats, also the svsim wrapper
+write_file -hierarchy -format verilog -output $netlist_file $design_name
+Writing verilog file '/home/jackberk/HFT/HFT_Modules/synth/hft_pipeline_top.vg'.
+Warning: Verilog 'assign' or 'tran' statements are written out. (VO-4)
+1
+write_file -hierarchy -format ddc     -output $ddc_file     $design_name
+Writing ddc file './hft_pipeline_top.ddc'.
+1
+write_file            -format svsim   -output $svsim_file   $design_name
+Writing svsim file '/home/jackberk/HFT/HFT_Modules/synth/hft_pipeline_top_svsim.sv'.
+1
+# the various reports (design, area, timing, constraints, resources)
+redirect         $rep_file { report_design -nosplit }
+redirect -append $rep_file { report_area }
+redirect -append $rep_file { report_timing -max_paths 2 -input_pins -nets -transition_time -nosplit }
+redirect -append $rep_file { report_constraint -max_delay -verbose -nosplit }
+redirect -append $rep_file { report_resources -hier }
+# also report a reference of the used modules from the final netlist
+remove_design -all
+Removing design 'dp_ram_ADDR_W9_DATA_W192_DEPTH500'
+Removing design 'dp_ram_ADDR_W9_DATA_W32_DEPTH512'
+Removing design 'dp_ram_ADDR_W12_DATA_W130_DEPTH4096'
+Removing design 'hft_pipeline_top'
+Removing library 'lec25dscc25_TT'
+Removing library 'gtech'
+Removing library 'standard.sldb'
+Removing library 'dw_foundation.sldb'
+1
+read_file -format verilog $netlist_file
+Loading db file '/usr/caen/misc/class/eecs470/lib/synopsys/lec25dscc25_TT.db'
+Loading db file '/usr/caen/synopsys-synth-2023.12-SP5/libraries/syn/gtech.db'
+Loading db file '/usr/caen/synopsys-synth-2023.12-SP5/libraries/syn/standard.sldb'
+  Loading link library 'lec25dscc25_TT'
+  Loading link library 'gtech'
+Loading verilog file '/home/jackberk/HFT/HFT_Modules/synth/hft_pipeline_top.vg'
+Detecting input file type automatically (-rtl or -netlist).
+Running DC verilog reader
+Performing 'read' command.
+Compiling source file /home/jackberk/HFT/HFT_Modules/synth/hft_pipeline_top.vg
+Reading with netlist reader (equivalent to -netlist option).
+Verilog netlist reader completed successfully.
+Current design is now '/home/jackberk/HFT/HFT_Modules/synth/dp_ram_ADDR_W12_DATA_W130_DEPTH4096.db:dp_ram_ADDR_W12_DATA_W130_DEPTH4096'
+Loaded 4 designs.
+Current design is 'dp_ram_ADDR_W12_DATA_W130_DEPTH4096'.
+dp_ram_ADDR_W12_DATA_W130_DEPTH4096 dp_ram_ADDR_W9_DATA_W192_DEPTH500 dp_ram_ADDR_W9_DATA_W32_DEPTH512 hft_pipeline_top
+current_design $design_name
+Current design is 'hft_pipeline_top'.
+{hft_pipeline_top}
+redirect -append $rep_file { report_reference -nosplit }
+exit 0 ;# success! (maybe)
+
+Memory usage for this session 333 Mbytes.
+Memory usage for this session including child processes 980 Mbytes.
+CPU usage for this session 320 seconds ( 0.09 hours ).
+Elapsed time for this session 338 seconds ( 0.09 hours ).
+
+Thank you...

@@ -61,6 +61,7 @@ module index_arb_engine_tb;
         @(posedge clk); #1;
         @(posedge clk); #1;
         @(posedge clk); #1;
+        @(posedge clk); #1;
 
     endtask
 

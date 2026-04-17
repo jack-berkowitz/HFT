@@ -34,9 +34,19 @@
 # Directory layout:
 #   verilog/sys_defs.svh            <- shared defines and typedefs
 #   verilog/<module>.sv             <- RTL implementation
+#   verilog/dp_ram.sv               <- BEHAVIORAL dp_ram (sim + post-synth sim)
+#   synth/dp_ram_stub.sv            <- EMPTY dp_ram stub (synthesis only — keeps DC
+#                                      from inferring flops for BRAM arrays)
 #   test/<module>_tb.sv             <- testbench
 #   synth/470synth.tcl              <- synthesis TCL script (from EECS 470)
 #   synth/<module>.vg               <- synthesized gate-level netlist (generated)
+#
+# dp_ram swap rationale:
+#   Synopsys DC silently ignores FPGA `ram_style` attributes and would infer
+#   a sea of flops for BRAM arrays. During synthesis we substitute an empty
+#   stub so DC leaves `dp_ram` as an unresolved module reference. During
+#   post-synth simulation we MUST link the behavioral dp_ram.sv back in, or
+#   the netlist has no memory and reads return X (order book stays empty).
 
 .DEFAULT_GOAL = xdp_chain.pass
 
@@ -44,7 +54,7 @@
 # ---- Compilation Commands and Other Variables ---- #
 ######################################################
 
-export CLOCK_PERIOD = 50.0   # 250 MHz
+export CLOCK_PERIOD = 4.0   # 250 MHz
 
 VCS = module load vcs/2023.12-SP2-1 && \
       vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc \
@@ -111,9 +121,11 @@ order_lookup_DEPS         = verilog/order_lookup.sv \
 
 # ... and similarly for hft_pipeline_DEPS, hft_pipeline_top_DEPS, xdp_chain_DEPS
 
-top_of_book_DEPS          = verilog/top_of_book.sv
+top_of_book_DEPS          = verilog/top_of_book.sv \
+                            verilog/dp_ram.sv
 
-index_arb_engine_DEPS     = verilog/index_arb_engine.sv
+index_arb_engine_DEPS     = verilog/index_arb_engine.sv \
+                            verilog/dp_ram.sv
 
 order_gen_tx_DEPS         = verilog/order_gen_tx.sv
 
@@ -151,6 +163,9 @@ hft_pipeline_top_DEPS     = verilog/hft_pipeline_top.sv      \
 # By default a module synthesizes from its own single .sv file.
 # Modules with internal sub-module dependencies (like order_lookup) need
 # all their RTL listed here so dc_shell can elaborate the full hierarchy.
+# dp_ram is stubbed out for synthesis (empty module) so DC doesn't infer
+# flops for BRAM arrays — the behavioral version is swapped back in for
+# post-synth sim via _SYN_SIM_DEPS below.
 
 ipv4_udp_port_filter_SYN_SRCS = verilog/ipv4_udp_port_filter.sv
 
@@ -165,9 +180,11 @@ order_lookup_SYN_SRCS         = verilog/order_lookup.sv \
                                 verilog/skewed_hash_table.sv \
                                 synth/dp_ram_stub.sv
 
-top_of_book_SYN_SRCS          = verilog/top_of_book.sv
+top_of_book_SYN_SRCS          = verilog/top_of_book.sv \
+                                synth/dp_ram_stub.sv
 
-index_arb_engine_SYN_SRCS     = verilog/index_arb_engine.sv
+index_arb_engine_SYN_SRCS     = verilog/index_arb_engine.sv \
+                                synth/dp_ram_stub.sv
 
 order_gen_tx_SYN_SRCS         = verilog/order_gen_tx.sv
 
@@ -182,6 +199,23 @@ hft_pipeline_top_SYN_SRCS    = verilog/hft_pipeline_top.sv      \
                                  verilog/top_of_book.sv           \
                                  verilog/index_arb_engine.sv      \
                                  verilog/order_gen_tx.sv
+
+# ---- Per-module post-synth simulation deps ---- #
+# Non-synthesizable support modules that must be linked alongside the
+# gate-level netlist (.vg) during post-synth sim. The netlist references
+# `dp_ram` by name but does not contain its implementation (it was stubbed
+# out for synthesis), so the behavioral model must be compiled in or the
+# memory is empty and reads come back X.
+
+ipv4_udp_port_filter_SYN_SIM_DEPS =
+xdp_packet_framer_SYN_SIM_DEPS    =
+xdp_msg_demux_SYN_SIM_DEPS        =
+skewed_hash_table_SYN_SIM_DEPS    = verilog/dp_ram.sv
+order_lookup_SYN_SIM_DEPS         = verilog/dp_ram.sv
+top_of_book_SYN_SIM_DEPS          = verilog/dp_ram.sv
+index_arb_engine_SYN_SIM_DEPS     = verilog/dp_ram.sv
+order_gen_tx_SYN_SIM_DEPS         =
+hft_pipeline_top_SYN_SIM_DEPS     = verilog/dp_ram.sv
 
 ###############################
 # ---- Compile Targets ---- #
@@ -319,12 +353,21 @@ slack:
 # Recompiles each testbench against the gate-level netlist (.vg) and the
 # standard cell library. +define+SYNTH is passed so testbenches can gate
 # any RTL-only constructs (e.g. $dumpvars, non-synthesizable checks).
-
-# Build the synthesis simulation executable
-$(MODULES:%=build/%.syn.simv): build/%.syn.simv: test/%_tb.sv synth/%.vg | build
-	@$(call PRINT_COLOR, 5, compiling synthesized $* testbench...)
-	$(VCS) +define+SYNTH $^ $(LIB) -o $@
-	@$(call PRINT_COLOR, 6, done)
+#
+# Behavioral support modules (e.g. dp_ram) are linked in via _SYN_SIM_DEPS —
+# the netlist references these by name but does not implement them (they
+# were stubbed for synthesis to prevent DC from inferring flops for BRAM).
+# Without this, memory reads return X and the pipeline appears dead.
+#
+# Uses foreach+eval (same reason as SYNTH_RULE) so $* can be used to look
+# up per-module _SYN_SIM_DEPS at rule-generation time.
+define SYN_SIM_RULE
+build/$(1).syn.simv: test/$(1)_tb.sv synth/$(1).vg $($(1)_SYN_SIM_DEPS) | build
+	@$$(call PRINT_COLOR, 5, compiling synthesized $(1) testbench...)
+	$$(VCS) +define+SYNTH $$^ $$(LIB) -o $$@
+	@$$(call PRINT_COLOR, 6, done)
+endef
+$(foreach mod,$(MODULES),$(eval $(call SYN_SIM_RULE,$(mod))))
 
 # Run the synthesized simulation
 $(MODULES:%=build/%.syn.out): build/%.syn.out: build/%.syn.simv

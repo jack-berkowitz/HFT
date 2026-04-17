@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1776466327.333585392, "rt":14.77, "ut":6.55, "st":1.14}}
+{"vcselab":{"timestamp_begin":1776466342.205530238, "rt":3.00, "ut":1.25, "st":0.18}}
+{"link":{"timestamp_begin":1776466345.314370655, "rt":1.88, "ut":0.28, "st":0.26}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1776466325.800593494}
+{"VCS_COMP_START_TIME": 1776466325.800593494}
+{"VCS_COMP_END_TIME": 1776466348.588154718}
+{"VCS_USER_OPTIONS": "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED +define+CLOCK_PERIOD=4.0 +incdir+verilog +define+SYNTH test/hft_pipeline_top_tb.sv synth/hft_pipeline_top.vg verilog/dp_ram.sv /afs/umich.edu/class/eecs470/lib/verilog/lec25dscc25.v -o build/hft_pipeline_top.syn.simv"}
+{"vcs1": {"peak_mem": 466212}}
+{"vcselab": {"peak_mem": 208800}}

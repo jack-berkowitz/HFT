@@ -6,6 +6,7 @@ module top_of_book_tb;
     localparam N_LEVELS  = `TOB_LEVELS;
     localparam N_SYMBOLS = `TOB_SYMBOLS;
     localparam SYM_W     = $clog2(N_SYMBOLS);
+    localparam DATA_W    = N_LEVELS * 64;
 
     logic                clk, rst_n;
     order_lookup_out_t   update;
@@ -104,13 +105,14 @@ module top_of_book_tb;
     endtask
 
     task print_book(input [31:0] s);
+        logic [DATA_W-1:0] bid_entry, ask_entry;
+        bid_entry = dut.bid_ram.mem[s[SYM_W-1:0]];
+        ask_entry = dut.ask_ram.mem[s[SYM_W-1:0]];
         $display("    Book for symbol %0d:", s);
         for (int i = 0; i < N_LEVELS; i++)
             $display("      bid[%0d]: %6d x %4d   ask[%0d]: %6d x %4d",
-                     i, dut.bid_book[s[SYM_W-1:0]][i].price,
-                        dut.bid_book[s[SYM_W-1:0]][i].qty,
-                     i, dut.ask_book[s[SYM_W-1:0]][i].price,
-                        dut.ask_book[s[SYM_W-1:0]][i].qty);
+                     i, bid_entry[i*64+32 +: 32], bid_entry[i*64 +: 32],
+                     i, ask_entry[i*64+32 +: 32], ask_entry[i*64 +: 32]);
     endtask
 
     task check_bid(input [31:0] ep, eq);
@@ -136,13 +138,13 @@ module top_of_book_tb;
         input [31:0] ep, eq
     );
         logic [31:0] gp, gq;
-        if (side_is_bid) begin
-            gp = dut.bid_book[s[SYM_W-1:0]][lvl].price;
-            gq = dut.bid_book[s[SYM_W-1:0]][lvl].qty;
-        end else begin
-            gp = dut.ask_book[s[SYM_W-1:0]][lvl].price;
-            gq = dut.ask_book[s[SYM_W-1:0]][lvl].qty;
-        end
+        logic [DATA_W-1:0] entry;
+        if (side_is_bid)
+            entry = dut.bid_ram.mem[s[SYM_W-1:0]];
+        else
+            entry = dut.ask_ram.mem[s[SYM_W-1:0]];
+        gp = entry[lvl*64+32 +: 32];
+        gq = entry[lvl*64 +: 32];
         if (gp !== ep || gq !== eq) begin
             $display("    FAIL %s[%0d]: got %0d x %0d, exp %0d x %0d",
                      side_is_bid ? "bid" : "ask", lvl, gp, gq, ep, eq);
@@ -175,7 +177,7 @@ module top_of_book_tb;
         $display("  ╚═════════════════════════════════════════════════════════════╝");
 
         rst_n = 0; repeat(4) @(posedge clk); #1;
-        rst_n = 1; repeat(2) @(posedge clk); #1;
+        rst_n = 1; repeat(510) @(posedge clk); #1;
 
         $display("\n--- TEST 1: Add 3 bid levels ---");
         fb = fail_count;

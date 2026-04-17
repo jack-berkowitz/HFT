@@ -1,0 +1,12 @@
+test/hft_pipeline_top_tb.sv:244 NO "a non-instrumentable statement" (246)
+test/hft_pipeline_top_tb.sv:292 YES
+test/hft_pipeline_top_tb.sv:311 YES
+test/hft_pipeline_top_tb.sv:330 NO "a dynamic type expression" (331)
+test/hft_pipeline_top_tb.sv:337 NO "a dynamic type expression" (338)
+verilog/dp_ram.sv:52 YES
+verilog/dp_ram.sv:59 YES
+==================================================
+X P R O P   S T A T I S T I C S
+instrumentable assignments:    15
+instrumented assignments:      13
+instrumentation success rate:  86%

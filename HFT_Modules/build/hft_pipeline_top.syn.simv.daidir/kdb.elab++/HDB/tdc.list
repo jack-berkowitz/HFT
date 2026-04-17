@@ -1,0 +1,5 @@
+/afs/umich.edu/class/eecs470/lib/verilog/lec25dscc25.v
+synth/hft_pipeline_top.vg
+test/hft_pipeline_top_tb.sv
+verilog/dp_ram.sv
+verilog/sys_defs.svh

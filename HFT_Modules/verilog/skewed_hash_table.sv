@@ -100,6 +100,7 @@ module skewed_hash_table #(
                 .DEPTH  (TBL_ENTRIES)
             ) u_ram (
                 .clk     (clk),
+                .rst_n   (rst_n),
                 .a_addr  (bram_addr_a[w]),
                 .a_rdata (bram_rdata_a[w]),
                 .b_addr  (bram_addr_b[w]),

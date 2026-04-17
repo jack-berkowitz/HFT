@@ -1,0 +1,14 @@
+test/hft_pipeline_top_tb.sv:292 YES:SyncFF
+test/hft_pipeline_top_tb.sv:311 YES:SyncFF
+verilog/dp_ram.sv:52 YES:SyncFF
+verilog/dp_ram.sv:59 YES:SyncFF
+==================================================
+Unified Inference Statistics
+Number of always_ff:                   1
+Number of always_latch:                0
+Number of always @*:                   0
+Number of always_comb :                0
+Number of always :                     4
+Number of flip-flop candidates:        4
+Number of synchronous flops inferred:  4
+Number of Asynchronous flops inferred: 0

@@ -128,8 +128,10 @@ module hft_pipeline_top_tb;
     endtask
 
     task build_net_header(input [15:0] udp_payload_len, input [15:0] dst_port);
-        automatic logic [15:0] ip_total_len  = 20 + 8 + udp_payload_len;
-        automatic logic [15:0] udp_total_len = 8 + udp_payload_len;
+        logic [15:0] ip_total_len;
+        logic [15:0] udp_total_len;
+        ip_total_len  = 20 + 8 + udp_payload_len;
+        udp_total_len = 8 + udp_payload_len;
 
         pkt_buf = '0;
 
@@ -180,7 +182,8 @@ module hft_pipeline_top_tb;
     task build_add_order(input [31:0] sym, input [31:0] ssn,
                          input [63:0] oid, input [31:0] price,
                          input [31:0] qty, input logic side);
-        automatic logic [15:0] udp_payload = 16 + 39;
+        logic [15:0] udp_payload;
+        udp_payload = 16 + 39;
         build_net_header(udp_payload, XDP_PORT);
         build_xdp_pkt_hdr(16'd55, 8'd1, ssn);
         build_msg_common(16'd39, `XDP_MSG_ADD_ORDER, sym, ssn, oid);
@@ -194,7 +197,8 @@ module hft_pipeline_top_tb;
     task build_mod_order(input [31:0] sym, input [31:0] ssn,
                          input [63:0] oid, input [31:0] price,
                          input [31:0] qty);
-        automatic logic [15:0] udp_payload = 16 + 35;
+        logic [15:0] udp_payload;
+        udp_payload = 16 + 35;
         build_net_header(udp_payload, XDP_PORT);
         build_xdp_pkt_hdr(16'd51, 8'd1, ssn);
         build_msg_common(16'd35, `XDP_MSG_MOD_ORDER, sym, ssn, oid);
@@ -205,7 +209,8 @@ module hft_pipeline_top_tb;
 
     task build_del_order(input [31:0] sym, input [31:0] ssn,
                          input [63:0] oid);
-        automatic logic [15:0] udp_payload = 16 + 25;
+        logic [15:0] udp_payload;
+        udp_payload = 16 + 25;
         build_net_header(udp_payload, XDP_PORT);
         build_xdp_pkt_hdr(16'd41, 8'd1, ssn);
         build_msg_common(16'd25, `XDP_MSG_DEL_ORDER, sym, ssn, oid);
@@ -215,7 +220,8 @@ module hft_pipeline_top_tb;
     task build_exec_order(input [31:0] sym, input [31:0] ssn,
                           input [63:0] oid, input [31:0] price,
                           input [31:0] qty);
-        automatic logic [15:0] udp_payload = 16 + 42;
+        logic [15:0] udp_payload;
+        udp_payload = 16 + 42;
         build_net_header(udp_payload, XDP_PORT);
         build_xdp_pkt_hdr(16'd58, 8'd1, ssn);
         build_msg_common(16'd42, `XDP_MSG_EXEC_ORDER, sym, ssn, oid);
@@ -446,7 +452,8 @@ module hft_pipeline_top_tb;
         fb = fail_count;
 
         begin
-            automatic logic [31:0] saved_order_count = order_count;
+            logic [31:0] saved_order_count;
+            saved_order_count = order_count;
 
             build_net_header(16'd55, 16'hDEAD);
             build_xdp_pkt_hdr(16'd55, 8'd1, seq); seq++;
@@ -498,7 +505,8 @@ module hft_pipeline_top_tb;
         repeat(TB_COOLDOWN + 10) @(posedge clk); #1;
 
         begin
-            automatic logic [31:0] saved_count = order_count;
+            logic [31:0] saved_count;
+            saved_count = order_count;
 
             tx_enable = 1'b0;
 

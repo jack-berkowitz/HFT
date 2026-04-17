@@ -1,0 +1,54 @@
+Info: [VCS_SAVE_RESTORE_INFO] ASLR (Address Space Layout Randomization) is detected on the machine. To enable $save functionality, ASLR will be switched off and simv re-executed.
+Please use '-no_save' simv switch to avoid re-execution or '-suppress=ASLR_DETECTED_INFO' to suppress this message.
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version V-2023.12-SP2-1_Full64; Runtime version V-2023.12-SP2-1_Full64;  Apr 17 18:52 2026
+
+  ╔═══════════════════════════════════════════════════════════════╗
+  ║  HFT Pipeline Top-Level Integration Test                     ║
+  ║  filter → framer → demux → order_lookup → top_of_book       ║
+  ║          → index_arb_engine → order_gen_tx                   ║
+  ╚═══════════════════════════════════════════════════════════════╝
+
+=== PHASE 1: Reset + Hash Table Init + Weight Load ===
+  Waiting for order_lookup ready...
+  order_lookup ready — hash table initialised
+  PASS: Phase 1: Reset + Init
+
+=== PHASE 2: Build Order Book (10 Add Orders) ===
+  computed_index = x (Q44.20)
+  order_count    = x
+  PASS: Phase 2: Build Book
+
+=== PHASE 3: Trigger Arbitrage via Modify ===
+  WARNING: No trade signal captured
+  computed_index = x (Q44.20)
+  order_count    = x
+  net_position   = X
+  PASS: Phase 3: Trigger Arb
+
+=== PHASE 4: Wrong UDP Port → Dropped ===
+  PASS: Phase 4: Wrong Port Drop
+
+=== PHASE 5: Valid Packet After Drop ===
+  PASS: Phase 5: Recovery
+
+=== PHASE 6: Delete Order ===
+  PASS: Phase 6: Delete
+
+=== PHASE 7: Exec Partial Fill ===
+  PASS: Phase 7: Exec Partial
+
+=== PHASE 8: TX Enable Gate ===
+  PASS: Phase 8: TX Enable Gate
+
+  ════════════════════════════════════════════
+  @@@ Passed: All tests passed!
+  ════════════════════════════════════════════
+
+$finish called from file "test/hft_pipeline_top_tb.sv", line 534.
+$finish at simulation time               208710
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 20871000 ps
+CPU Time:      0.510 seconds;       Data structure size:   5.2Mb
+Fri Apr 17 18:52:29 2026

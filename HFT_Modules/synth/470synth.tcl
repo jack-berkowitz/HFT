@@ -256,8 +256,8 @@ redirect $chk_file { check_design }
 # where the magic happens
 # map_effort can be changed to high if you're ok with time increasing for better performance
 # or you can change from compile to compile_ultra for best performance, but likely increased time
-compile -map_effort medium
-# compile_ultra
+# compile -map_effort medium
+compile_ultra
 
 ################################
 # ---- write output files ---- #

@@ -1,0 +1,45 @@
+*design* DebussyLib (btIdent Verdi_V-2023.12-SP2-1)
+Command arguments:  -lib  /home/jackberk/HFT/HFT_Modules/build/hft_pipeline_top.syn.simv.daidir/work  -saveLevel  -elab  /home/jackberk/HFT/HFT_Modules/build/hft_pipeline_top.syn.simv.daidir/kdb  -simflow  -simdir  /home/jackberk/HFT/HFT_Modules/build/hft_pipeline_top.syn.simv.daidir/kdb_libs  -topfile  /home/jackberk/HFT/HFT_Modules/build/hft_pipeline_top.syn.simv.daidir/.elabcomTopFile  -ssv  -ssy  -Lf  work  +disable_message+C00380+C00381  +disable_message+C00388+C00389  -SNPS_ELABCOM  -saveElab 
+
+*Warning* Failed to find the specified instance parameter FILTER_PORT in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter HEADER_BYTES in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter HT_N_WAYS in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter HT_TBL_ENTRIES in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter HT_MAX_CHAIN in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter TOB_N_LEVELS in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter TOB_N_SYMBOLS in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter N_COMPONENTS in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter IDX_SYM in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter ORDER_QTY in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter COOLDOWN_CYC in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter MAX_POS in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter PRICE_OFFSET in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+
+*Warning* Failed to find the specified instance parameter IDX_SYM_ID in the master hft_pipeline_top
+"test/hft_pipeline_top_tb.sv", 62: 
+Total	0 error(s),   14 warning(s)

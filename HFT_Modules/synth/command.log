@@ -1,7 +1,7 @@
 #@ # 
 #@ # Running dc_shell Version V-2023.12-SP5 for linux64 -- Jul 16, 2024
-#@ # Date:   Tue Apr  7 14:04:47 2026
-#@ # Run by: jackberk@caen-vnc-mi11.engin.umich.edu
+#@ # Date:   Fri Apr 17 18:46:29 2026
+#@ # Run by: jackberk@caen-vnc-mi18.engin.umich.edu
 #@ 
 
 source /usr/caen/synopsys-synth-2023.12-SP5/admin/setup/.synopsys_dc.setup
@@ -9341,8 +9341,8 @@ source -echo -verbose /home/jackberk/HFT/HFT_Modules/synth/470synth.tcl
 #@ 
 #@ # this script assumes your clock and reset variables will be named "clock" and "reset" everywhere
 #@ # note: these are just local variables
-#@ set clock_name clock
-#@ set reset_name reset
+#@ set clock_name clk
+#@ set reset_name rst_n
 #@ 
 #@ # this makes it so you don't need to add
 #@ # // synopsys sync_set_reset "reset"
@@ -9487,4 +9487,35 @@ source -echo -verbose /home/jackberk/HFT/HFT_Modules/synth/470synth.tcl
 #@ # where the magic happens
 #@ # map_effort can be changed to high if you're ok with time increasing for better performance
 #@ # or you can change from compile to compile_ultra for best performance, but likely increased time
-#@ compile -map_effort medium
+#@ # compile -map_effort medium
+#@ compile_ultra
+#@ 
+#@ ################################
+#@ # ---- write output files ---- #
+#@ ################################
+#@ 
+#@ # note the .chk file is written just before the compile command above
+#@ set netlist_file ./${design_name}.vg       ;# our .vg file! it's generated here!
+#@ set ddc_file     ./${design_name}.ddc      ;# the internal dc_shell design representation (binary data)
+#@ set svsim_file   ./${design_name}_svsim.sv ;# a simulation instantiation wrapper
+#@ set rep_file     ./${design_name}.rep      ;# area, timing, constraint, resource, and netlist reports
+#@ 
+#@ # write the design into both sv and ddc formats, also the svsim wrapper
+#@ write_file -hierarchy -format verilog -output $netlist_file $design_name
+#@ write_file -hierarchy -format ddc     -output $ddc_file     $design_name
+#@ write_file            -format svsim   -output $svsim_file   $design_name
+#@ 
+#@ # the various reports (design, area, timing, constraints, resources)
+#@ redirect         $rep_file { report_design -nosplit }
+#@ redirect -append $rep_file { report_area }
+#@ redirect -append $rep_file { report_timing -max_paths 2 -input_pins -nets -transition_time -nosplit }
+#@ redirect -append $rep_file { report_constraint -max_delay -verbose -nosplit }
+#@ redirect -append $rep_file { report_resources -hier }
+#@ 
+#@ # also report a reference of the used modules from the final netlist
+#@ remove_design -all
+#@ read_file -format verilog $netlist_file
+#@ current_design $design_name
+#@ redirect -append $rep_file { report_reference -nosplit }
+#@ 
+#@ exit 0 ;# success! (maybe)
