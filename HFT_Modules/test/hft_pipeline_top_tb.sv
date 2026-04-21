@@ -425,6 +425,10 @@ module hft_pipeline_top_tb;
         reset_trade_cap();
         reset_tx_cap();
 
+        // Modify sym=0 bid up to 12000 → pushes computed index ABOVE actual.
+        // Under the corrected arb convention, spread > 0 means the index
+        // instrument is UNDERPRICED relative to fair value, so the engine
+        // should fire a BUY (direction=0).
         build_mod_order(32'd0, seq, 64'h100, 32'd12000, 32'd100); seq++;
         send_pkt_and_wait(50);
 
@@ -445,7 +449,7 @@ module hft_pipeline_top_tb;
 
         check(trade_seen, "trade signal fired after modify");
         if (trade_seen)
-            check(trade_dir_cap == 1'b1, "trade direction is SELL (index overvalued)");
+            check(trade_dir_cap == 1'b0, "trade direction is BUY (instrument underpriced)");
         pr("Phase 3: Trigger Arb");
 
         $display("\n=== PHASE 4: Wrong UDP Port → Dropped ===");

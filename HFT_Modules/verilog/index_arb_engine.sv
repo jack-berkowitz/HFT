@@ -397,7 +397,7 @@ module index_arb_engine #(
         spread     = $signed(index_accum) - actual_q;
         abs_spread = spread[AW-1] ? AW'(-spread) : AW'(spread);
         trade_fire = (abs_spread > threshold) && (actual_mid != 32'd0);
-        trade_dir  = ~spread[AW-1];
+        trade_dir  = spread[AW-1];
     end
 
     always_ff @(posedge clk) begin

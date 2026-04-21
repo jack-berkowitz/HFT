@@ -142,7 +142,7 @@ module index_arb_engine_tb;
         end
         pr("no-trade within threshold");
 
-        $display("\n--- TEST 3: Component jump — computed > actual — SELL ---");
+        $display("\n--- TEST 3: Component jump — computed > actual — BUY ---");
         fb = fail_count;
 
         send_tob(9'd0, 32'd15900, 32'd100, 32'd16100, 32'd100);
@@ -157,12 +157,12 @@ module index_arb_engine_tb;
             $display("    Trade fired: direction=%s  spread=%0d (Q44.20)",
                      trade_out.direction ? "SELL" : "BUY",
                      $signed(trade_out.spread));
-            if (trade_out.direction != 1'b1) begin
-                $display("    FAIL: expected SELL (direction=1)");
+            if (trade_out.direction != 1'b0) begin
+                $display("    FAIL: expected BUY (direction=0)");
                 fail_count++;
             end
         end
-        pr("SELL signal on positive spread");
+        pr("BUY signal on positive spread");
 
         $display("\n--- TEST 4: Actual catches up — spread collapses ---");
         fb = fail_count;
@@ -180,7 +180,7 @@ module index_arb_engine_tb;
         end
         pr("spread collapse after actual update");
 
-        $display("\n--- TEST 5: Component drop — computed < actual — BUY ---");
+        $display("\n--- TEST 5: Component drop — computed < actual — SELL ---");
         fb = fail_count;
 
         send_tob(9'd1, 32'd17900, 32'd100, 32'd18100, 32'd100);
@@ -195,12 +195,12 @@ module index_arb_engine_tb;
             $display("    Trade fired: direction=%s  spread=%0d",
                      trade_out.direction ? "SELL" : "BUY",
                      $signed(trade_out.spread));
-            if (trade_out.direction != 1'b0) begin
-                $display("    FAIL: expected BUY (direction=0)");
+            if (trade_out.direction != 1'b1) begin
+                $display("    FAIL: expected SELL (direction=1)");
                 fail_count++;
             end
         end
-        pr("BUY signal on negative spread");
+        pr("SELL signal on negative spread");
 
         $display("\n--- TEST 6: One-sided market — no update ---");
         fb = fail_count;
